@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "postinstall": "prisma generate",
-    "build": "if [ \"$VERCEL_ENV\" = 'production' ]; then prisma migrate deploy && prisma generate && next build; else prisma generate && next build; fi",
+    "build": "next build",
+    "migrate": "prisma migrate deploy",
     "start": "next start",
     "lint": "biome lint .",
     "format": "biome format --write .",

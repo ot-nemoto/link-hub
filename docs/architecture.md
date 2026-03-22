@@ -61,3 +61,34 @@ Client (Browser)
 - API ルートは `src/app/api/` 配下に配置し、ユニットテストを必須とする
 - バリデーションは Zod を使用し、`src/lib/validations/` に集約する
 - ユーザー分離は全 API ルートで `auth()` による `clerkId` チェックを必須とする
+
+## デプロイフロー
+
+```
+git push origin develop
+  → Vercel が自動検知
+    → ビルド（next build）
+      → Vercel にデプロイ
+```
+
+マイグレーションはビルドから分離し、手動で実施する（下記参照）。
+
+## DB マイグレーション（手動運用）
+
+### ローカル開発
+
+```bash
+# マイグレーションファイルを作成して適用
+npx prisma migrate dev --name <migration-name>
+```
+
+### 本番環境
+
+Vercel ダッシュボードの「Functions」>「Shell」、または devcontainer から本番の `DATABASE_URL` を設定した上で実行する。
+
+```bash
+npm run migrate
+# 実行内容: prisma migrate deploy
+```
+
+> **注意**: 本番マイグレーションはデプロイ前に実施すること。アプリのデプロイと migrate deploy の順序は「migrate → deploy」が原則。
