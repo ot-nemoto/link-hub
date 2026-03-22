@@ -9,8 +9,7 @@
 | 言語 | TypeScript (strict) | latest |
 | スタイリング | Tailwind CSS | 4 |
 | ORM | Prisma | 7.5.0 |
-| DB（開発） | SQLite | - |
-| DB（本番） | PostgreSQL | - |
+| DB | PostgreSQL (Neon) | - |
 | 認証 | Clerk | latest |
 | バリデーション | Zod | latest |
 | フォーマッタ/リンター | Biome | 2.4.6 |
@@ -52,7 +51,7 @@ Client (Browser)
   └── Next.js App Router (React Server Components / Client Components)
         └── API Routes (src/app/api/)
               └── Prisma ORM
-                    └── PostgreSQL (prod) / SQLite (dev)
+                    └── PostgreSQL (Neon)
 ```
 
 ## 実装方針
@@ -92,3 +91,19 @@ npm run migrate
 ```
 
 > **注意**: 本番マイグレーションはデプロイ前に実施すること。アプリのデプロイと migrate deploy の順序は「migrate → deploy」が原則。
+
+## 環境変数
+
+```env
+# Database（Neon）
+DATABASE_URL=       # 接続プール URL（ランタイム用）
+DIRECT_URL=         # 直接接続 URL（prisma migrate 用）
+
+# Clerk
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
+CLERK_SECRET_KEY=
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL=/bookmarks
+```
+
+`DATABASE_URL` と `DIRECT_URL` の使い分けは Prisma 7 の要件に基づく。`DATABASE_URL` は接続プール URL（ランタイムクエリ用）、`DIRECT_URL` は直接接続 URL（`prisma migrate` 用）。
