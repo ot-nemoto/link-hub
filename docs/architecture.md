@@ -104,6 +104,27 @@ NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
 CLERK_SECRET_KEY=
 NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
 NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL=/bookmarks
+
+# ローカル開発用認証バイパス（任意、どちらか一方を設定）
+# MOCK_USER_ID="<DB の users.id>"
+# MOCK_USER_EMAIL="your@example.com"
 ```
 
 `DATABASE_URL` と `DIRECT_URL` の使い分けは Prisma 7 の要件に基づく。`DATABASE_URL` は接続プール URL（ランタイムクエリ用）、`DIRECT_URL` は直接接続 URL（`prisma migrate` 用）。
+
+## ローカル開発用認証バイパス
+
+Clerk 認証なしで動作確認するため、`MOCK_USER_ID` または `MOCK_USER_EMAIL` を `.env.local` に設定する。
+
+```env
+# DB の users.id を指定する場合
+MOCK_USER_ID="<DB の users.id>"
+
+# メールアドレスを指定する場合
+MOCK_USER_EMAIL="your@example.com"
+```
+
+- 設定すると `src/proxy.ts`（middleware）が Clerk 認証をスキップし、`src/lib/auth.ts` の `getSession()` が DB から直接ユーザーを返す
+- **優先順位**: `MOCK_USER_ID` > `MOCK_USER_EMAIL`（両方設定した場合は `MOCK_USER_ID` が使われる）
+- **本番環境（`NODE_ENV=production`）では設定しても無効**
+- どちらも設定されていない場合は通常の Clerk 認証フローが動作する

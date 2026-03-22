@@ -36,8 +36,66 @@ const dbUser = {
   updatedAt: new Date(),
 };
 
+describe("getSession - モックバイパス", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.unstubAllEnvs();
+    vi.stubEnv("DATABASE_URL", "postgresql://test");
+    vi.stubEnv("NODE_ENV", "test");
+  });
+
+  it("MOCK_USER_ID が設定されている場合、DB からユーザーを取得して session を返す", async () => {
+    vi.stubEnv("MOCK_USER_ID", "user_1");
+    mockUserFindUnique.mockResolvedValue(dbUser);
+
+    const session = await getSession();
+
+    expect(session).toEqual({
+      user: { id: "user_1", name: "Test User", email: "test@example.com" },
+    });
+    expect(mockUserFindUnique).toHaveBeenCalledWith({ where: { id: "user_1" } });
+    expect(mockAuth).not.toHaveBeenCalled();
+  });
+
+  it("MOCK_USER_ID に対応するユーザーが存在しない場合、null を返す", async () => {
+    vi.stubEnv("MOCK_USER_ID", "not_exist");
+    mockUserFindUnique.mockResolvedValue(null);
+
+    const session = await getSession();
+
+    expect(session).toBeNull();
+  });
+
+  it("MOCK_USER_EMAIL が設定されている場合、DB からユーザーを取得して session を返す", async () => {
+    vi.stubEnv("MOCK_USER_EMAIL", "test@example.com");
+    mockUserFindUnique.mockResolvedValue(dbUser);
+
+    const session = await getSession();
+
+    expect(session).toEqual({
+      user: { id: "user_1", name: "Test User", email: "test@example.com" },
+    });
+    expect(mockUserFindUnique).toHaveBeenCalledWith({ where: { email: "test@example.com" } });
+    expect(mockAuth).not.toHaveBeenCalled();
+  });
+
+  it("MOCK_USER_EMAIL に対応するユーザーが存在しない場合、null を返す", async () => {
+    vi.stubEnv("MOCK_USER_EMAIL", "not@exist.com");
+    mockUserFindUnique.mockResolvedValue(null);
+
+    const session = await getSession();
+
+    expect(session).toBeNull();
+  });
+});
+
 describe("getSession", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.unstubAllEnvs();
+    vi.stubEnv("DATABASE_URL", "postgresql://test");
+    vi.stubEnv("NODE_ENV", "production");
+  });
 
   it("認証済みでDBにユーザーが存在する場合、session を返す", async () => {
     mockAuth.mockResolvedValue({ userId: "clerk_123" } as never);

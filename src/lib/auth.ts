@@ -11,6 +11,20 @@ export type Session = {
 };
 
 export async function getSession(): Promise<Session | null> {
+  // 非本番環境: MOCK_USER_ID / MOCK_USER_EMAIL が設定されている場合は DB から直接返す
+  if (process.env.NODE_ENV !== "production") {
+    if (process.env.MOCK_USER_ID) {
+      const user = await prisma.user.findUnique({ where: { id: process.env.MOCK_USER_ID } });
+      if (!user) return null;
+      return { user: { id: user.id, name: user.name, email: user.email } };
+    }
+    if (process.env.MOCK_USER_EMAIL) {
+      const user = await prisma.user.findUnique({ where: { email: process.env.MOCK_USER_EMAIL } });
+      if (!user) return null;
+      return { user: { id: user.id, name: user.name, email: user.email } };
+    }
+  }
+
   const { userId } = await auth();
   if (!userId) return null;
 
