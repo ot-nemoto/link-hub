@@ -1,0 +1,38 @@
+{
+  "name": "link-hub",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "postinstall": "prisma generate",
+    "build": "if [ \"$VERCEL_ENV\" = 'production' ]; then prisma migrate deploy && prisma generate && next build; else prisma generate && next build; fi",
+    "start": "next start",
+    "lint": "biome lint .",
+    "format": "biome format --write .",
+    "check": "biome check --write .",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@clerk/nextjs": "^7.0.4",
+    "@prisma/client": "^7.5.0",
+    "next": "16.1.6",
+    "prisma": "^7.5.0",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.4.6",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^6.0.0",
+    "dotenv": "^17.3.1",
+    "tailwindcss": "^4",
+    "tsx": "^4.21.0",
+    "typescript": "^5",
+    "vitest": "^4.1.0"
+  }
+}
