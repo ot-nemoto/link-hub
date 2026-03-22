@@ -4,8 +4,8 @@
 
 | フェーズ | 内容 | Milestone |
 |---------|------|-----------|
-| Phase 1 | インフラ・認証基盤 | [Milestone: Phase 1](../../milestones/1) |
-| Phase 2 | ブックマーク機能 | [Milestone: Phase 2](../../milestones/2) |
+| Phase 1 | インフラ・認証基盤 | [Milestone: Phase 1](https://github.com/ot-nemoto/link-hub/milestone/1) |
+| Phase 2 | ブックマーク機能 | [Milestone: Phase 2](https://github.com/ot-nemoto/link-hub/milestone/2) |
 
 ---
 
