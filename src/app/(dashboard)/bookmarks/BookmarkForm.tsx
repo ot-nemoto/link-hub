@@ -120,7 +120,7 @@ export function BookmarkForm({ defaultValues, action }: Props) {
         </button>
         <button
           type="button"
-          onClick={() => router.back()}
+          onClick={() => router.push("/bookmarks")}
           className="rounded border border-gray-300 px-4 py-2 text-sm text-gray-600 hover:bg-gray-100"
         >
           キャンセル
