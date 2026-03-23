@@ -13,8 +13,8 @@
 | 認証 | Clerk | latest |
 | バリデーション | Zod | latest |
 | フォーマッタ/リンター | Biome | 2.4.6 |
-| テスト（ユニット） | Vitest | latest |
-| テスト（E2E） | Playwright | latest |
+| テスト（ユニット） | Vitest | 4.x |
+| テスト（E2E） | Playwright | 1.51.x |
 
 ## ディレクトリ構成
 
@@ -52,6 +52,18 @@ Client (Browser)
         └── API Routes (src/app/api/)
               └── Prisma ORM
                     └── PostgreSQL (Neon)
+```
+
+## テスト実行
+
+詳細は `docs/testing.md` を参照。
+
+```bash
+# ユニットテスト
+npm test
+
+# E2E テスト（初回セットアップが必要 → docs/testing.md 参照）
+npm run test:e2e
 ```
 
 ## 実装方針
