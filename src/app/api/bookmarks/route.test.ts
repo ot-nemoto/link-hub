@@ -88,6 +88,14 @@ describe("POST /api/bookmarks", () => {
     expect(res.status).toBe(400);
   });
 
+  it("javascript: スキームの URL は 400 を返す", async () => {
+    mockCurrentUser.mockResolvedValue(clerkUser as never);
+    mockUserFindUnique.mockResolvedValue(dbUser);
+
+    const res = await POST(makeRequest({ url: "javascript:alert(1)", title: "Example" }));
+    expect(res.status).toBe(400);
+  });
+
   it("タイトルが空の場合 400 を返す", async () => {
     mockCurrentUser.mockResolvedValue(clerkUser as never);
     mockUserFindUnique.mockResolvedValue(dbUser);

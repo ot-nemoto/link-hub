@@ -5,7 +5,12 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 
 const createSchema = z.object({
-  url: z.url(),
+  url: z
+    .string()
+    .url()
+    .refine((v) => v.startsWith("http://") || v.startsWith("https://"), {
+      message: "URL must use http or https",
+    }),
   title: z.string().min(1).max(200),
   memo: z.string().max(1000).optional(),
 });
