@@ -85,6 +85,15 @@ describe("PUT /api/bookmarks/[id]", () => {
     const res = await PUT(makeRequest({ url: "not-a-url" }), makeParams("bm_1"));
     expect(res.status).toBe(400);
   });
+
+  it("javascript: スキームの URL は 400 を返す", async () => {
+    mockCurrentUser.mockResolvedValue(clerkUser as never);
+    mockUserFindUnique.mockResolvedValue(dbUser);
+    mockBookmarkFindUnique.mockResolvedValue(bookmark);
+
+    const res = await PUT(makeRequest({ url: "javascript:alert(1)" }), makeParams("bm_1"));
+    expect(res.status).toBe(400);
+  });
 });
 
 describe("DELETE /api/bookmarks/[id]", () => {
