@@ -31,7 +31,10 @@ export function BookmarkForm({ defaultValues, action }: Props) {
     if (!data.url) newErrors.url = "URL は必須です";
     else {
       try {
-        new URL(data.url);
+        const parsed = new URL(data.url);
+        if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+          newErrors.url = "URL は http:// または https:// で始まる必要があります";
+        }
       } catch {
         newErrors.url = "有効な URL を入力してください";
       }
