@@ -8,6 +8,10 @@
 !.yarn/versions
 
 # testing
+/playwright-report/
+/test-results/
+/blob-report/
+/.next-e2e/
 /coverage
 
 # next.js
