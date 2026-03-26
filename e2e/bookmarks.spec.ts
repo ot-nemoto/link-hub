@@ -49,6 +49,28 @@ test.describe("ブックマーク登録", () => {
     await page.getByRole("button", { name: "キャンセル" }).click();
     await expect(page).toHaveURL("/bookmarks");
   });
+
+  test("javascript: スキームの URL を入力するとエラーが表示される", async ({ page }) => {
+    await page.goto("/bookmarks/new");
+    await page.fill('input[name="url"]', "javascript:alert(1)");
+    await page.fill('input[name="title"]', "タイトル");
+    await page.getByRole("button", { name: "保存" }).click();
+
+    await expect(page.getByText("URL は http:// または https:// で始まる必要があります")).toBeVisible();
+    await expect(page).toHaveURL("/bookmarks/new");
+  });
+
+  test("メモを含むブックマークを登録して一覧に表示される", async ({ page }) => {
+    await page.goto("/bookmarks/new");
+    await page.fill('input[name="url"]', "https://zod.dev");
+    await page.fill('input[name="title"]', "Zod");
+    await page.fill('textarea[name="memo"]', "TypeScript ファーストのバリデーションライブラリ");
+    await page.getByRole("button", { name: "保存" }).click();
+
+    await expect(page).toHaveURL("/bookmarks");
+    await expect(page.getByRole("link", { name: "Zod" })).toBeVisible();
+    await expect(page.getByText("TypeScript ファーストのバリデーションライブラリ")).toBeVisible();
+  });
 });
 
 test.describe("ブックマーク編集", () => {
@@ -58,6 +80,17 @@ test.describe("ブックマーク編集", () => {
     await page.fill('input[name="url"]', "https://playwright.dev");
     await page.fill('input[name="title"]', "Playwright");
     await page.getByRole("button", { name: "保存" }).click();
+    await expect(page).toHaveURL("/bookmarks");
+  });
+
+  test("編集フォームの「キャンセル」で一覧ページに戻る", async ({ page }) => {
+    // dev モードの初回コンパイルに備え、タイムアウトを3倍（90秒）に延長
+    test.slow();
+    await page.goto("/bookmarks");
+    await page.getByRole("link", { name: "編集" }).first().click();
+    // URL 変化ではなく、編集フォームの表示を直接待機する
+    await expect(page.getByRole("button", { name: "キャンセル" })).toBeVisible({ timeout: 60000 });
+    await page.getByRole("button", { name: "キャンセル" }).click();
     await expect(page).toHaveURL("/bookmarks");
   });
 
