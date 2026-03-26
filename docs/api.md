@@ -9,6 +9,41 @@
 
 ---
 
+## エラーレスポンス定義
+
+### 形式
+
+すべてのエラーレスポンスは以下の JSON 形式で返す。
+
+```json
+{ "error": "<メッセージ文字列 または バリデーションエラーオブジェクト>" }
+```
+
+バリデーションエラー（400）の場合は Zod の `flatten()` 形式を返す。
+
+```json
+{
+  "error": {
+    "formErrors": [],
+    "fieldErrors": {
+      "url": ["Invalid url"],
+      "title": ["String must contain at least 1 character(s)"]
+    }
+  }
+}
+```
+
+### 共通ステータスコード
+
+| ステータス | 意味 | 使用条件 |
+|-----------|------|---------|
+| 400 | Bad Request | バリデーションエラー（URL 形式不正、必須項目未入力など） |
+| 401 | Unauthorized | 未認証（Clerk セッションなし） |
+| 403 | Forbidden | 他ユーザーのリソースへのアクセス |
+| 404 | Not Found | 指定 ID のリソースが存在しない |
+
+---
+
 ## ユーザー
 
 ### POST /api/users/sync
