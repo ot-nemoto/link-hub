@@ -3,13 +3,12 @@
 ## Prisma スキーマ（`prisma/schema.prisma`）
 
 ```prisma
-// Prisma 7: generator provider は "prisma-client"、output でクライアント生成先を指定
+// Prisma 7: datasource に URL は書かない。URL は prisma.config.ts で管理する
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
 }
 
-// Prisma 7: datasource に URL は書かない。URL は prisma.config.ts で管理する
+// Prisma 7: datasource に URL は書かない（prisma.config.ts で管理）
 datasource db {
   provider = "postgresql"
 }
