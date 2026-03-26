@@ -9,7 +9,9 @@ export function DeleteButton({ id }: { id: string }) {
 
   return (
     <form action={formAction}>
-      {state?.error && <p className="mt-1 text-xs text-red-500">{state.error}</p>}
+      {state?.error && (
+        <p className="mb-1 rounded bg-red-50 px-2 py-1 text-xs text-red-600">{state.error}</p>
+      )}
       <button
         type="submit"
         disabled={isPending}
