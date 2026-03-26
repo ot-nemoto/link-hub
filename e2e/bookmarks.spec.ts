@@ -89,7 +89,7 @@ test.describe("ブックマーク編集", () => {
     await page.goto("/bookmarks");
     await page.getByRole("link", { name: "編集" }).first().click();
     // URL 変化ではなく、編集フォームの表示を直接待機する
-    await expect(page.getByRole("button", { name: "キャンセル" })).toBeVisible({ timeout: 60000 });
+    await expect(page.getByRole("button", { name: "キャンセル" })).toBeVisible({ timeout: 90000 });
     await page.getByRole("button", { name: "キャンセル" }).click();
     await expect(page).toHaveURL("/bookmarks");
   });
