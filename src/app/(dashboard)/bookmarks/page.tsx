@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { deleteBookmark } from "./actions";
+import { DeleteButton } from "./DeleteButton";
 
 export default async function BookmarksPage() {
   const session = await getSession();
@@ -28,7 +28,7 @@ export default async function BookmarksPage() {
 
       {bookmarks.length === 0 ? (
         <div className="rounded-lg border border-dashed border-gray-300 py-16 text-center text-gray-500">
-          ブックマークがありません。「追加」から登録してください。
+          まだブックマークがありません
         </div>
       ) : (
         <ul className="space-y-3">
@@ -54,14 +54,7 @@ export default async function BookmarksPage() {
                   >
                     編集
                   </Link>
-                  <form action={deleteBookmark.bind(null, bm.id)}>
-                    <button
-                      type="submit"
-                      className="cursor-pointer rounded border border-red-300 px-3 py-1 text-sm text-red-600 hover:bg-red-50"
-                    >
-                      削除
-                    </button>
-                  </form>
+                  <DeleteButton id={bm.id} />
                 </div>
               </div>
             </li>

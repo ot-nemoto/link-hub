@@ -42,13 +42,18 @@ export async function updateBookmark(id: string, data: BookmarkData): Promise<{ 
   return {};
 }
 
-export async function deleteBookmark(id: string) {
+export async function deleteBookmark(
+  id: string,
+  _prevState: { error?: string },
+): Promise<{ error?: string }> {
   const session = await getSession();
   if (!session) redirect("/sign-in");
 
   const bookmark = await prisma.bookmark.findUnique({ where: { id } });
-  if (!bookmark || bookmark.userId !== session.user.id) return;
+  if (!bookmark) return { error: "ブックマークが見つかりません" };
+  if (bookmark.userId !== session.user.id) return { error: "権限がありません" };
 
   await prisma.bookmark.delete({ where: { id } });
   revalidatePath("/bookmarks");
+  return {};
 }
