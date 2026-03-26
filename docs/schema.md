@@ -1,15 +1,16 @@
 # Schema
 
-## Prisma スキーマ定義
+## Prisma スキーマ（`prisma/schema.prisma`）
 
 ```prisma
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-
+// Prisma 7: datasource に URL は書かない。URL は prisma.config.ts で管理する
 generator client {
   provider = "prisma-client-js"
+}
+
+// Prisma 7: datasource に URL は書かない（prisma.config.ts で管理）
+datasource db {
+  provider = "postgresql"
 }
 
 model User {
@@ -41,43 +42,66 @@ model Bookmark {
 }
 ```
 
-## テーブル定義
+---
 
-### users
+## リレーション図
 
-| カラム名 | 型 | 制約 | 説明 |
-|----------|-----|------|------|
-| id | VARCHAR | PK, DEFAULT cuid() | 内部 ID |
-| clerk_id | VARCHAR | UNIQUE, NOT NULL | Clerk ユーザー ID |
-| email | VARCHAR | UNIQUE, NOT NULL | メールアドレス |
-| name | VARCHAR | NULL | 表示名 |
-| created_at | TIMESTAMP | NOT NULL, DEFAULT now() | 作成日時 |
-| updated_at | TIMESTAMP | NOT NULL | 更新日時 |
+```mermaid
+erDiagram
+    User {
+        String id PK
+        String clerkId UK
+        String email UK
+        String name "nullable"
+        DateTime createdAt
+        DateTime updatedAt
+    }
+    Bookmark {
+        String id PK
+        String url
+        String title
+        String memo "nullable"
+        String userId FK
+        DateTime createdAt
+        DateTime updatedAt
+    }
 
-### bookmarks
-
-| カラム名 | 型 | 制約 | 説明 |
-|----------|-----|------|------|
-| id | VARCHAR | PK, DEFAULT cuid() | ブックマーク ID |
-| url | VARCHAR | NOT NULL | ブックマーク URL |
-| title | VARCHAR | NOT NULL | タイトル（表示名） |
-| memo | TEXT | NULL | メモ（自由記述） |
-| user_id | VARCHAR | FK → users.id, NOT NULL | 所有ユーザー ID |
-| created_at | TIMESTAMP | NOT NULL, DEFAULT now() | 作成日時 |
-| updated_at | TIMESTAMP | NOT NULL | 更新日時 |
-
-## インデックス
-
-| テーブル | カラム | 種別 | 目的 |
-|---------|--------|------|------|
-| users | clerk_id | UNIQUE | Clerk ID による高速ルックアップ |
-| users | email | UNIQUE | メールアドレス重複防止 |
-| bookmarks | user_id | INDEX | ユーザー別ブックマーク取得の高速化 |
-
-## リレーション
-
-```
-User 1 ──── * Bookmark
+    User ||--o{ Bookmark : "所有"
 ```
 
-- User が削除されると、関連する Bookmark も CASCADE 削除される
+---
+
+## テーブル定義（概要）
+
+### User
+
+| カラム | 型 | 説明 |
+|--------|-----|------|
+| id | String (CUID) | 主キー |
+| clerkId | String | ユニーク。Clerk ユーザー ID（初回ログイン時に同期） |
+| email | String | ユニーク。メールアドレス |
+| name | String? | 表示名（任意） |
+| createdAt | DateTime | 作成日時 |
+| updatedAt | DateTime | 更新日時 |
+
+### Bookmark
+
+| カラム | 型 | 説明 |
+|--------|-----|------|
+| id | String (CUID) | 主キー |
+| url | String | ブックマーク URL（http/https のみ） |
+| title | String | タイトル（必須、最大 200 文字） |
+| memo | String? | メモ（任意、最大 1000 文字） |
+| userId | String | 外部キー → User.id（User 削除時に CASCADE） |
+| createdAt | DateTime | 作成日時 |
+| updatedAt | DateTime | 更新日時 |
+
+---
+
+## インデックス設計
+
+| テーブル | インデックス | 用途 |
+|----------|------------|------|
+| users | `clerk_id` | Clerk ID による高速ルックアップ（UNIQUE） |
+| users | `email` | メールアドレス重複防止（UNIQUE） |
+| bookmarks | `user_id` | ユーザー別ブックマーク取得の高速化 |
