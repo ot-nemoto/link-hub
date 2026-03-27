@@ -1,6 +1,6 @@
 {
   "name": "link-hub",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -17,28 +17,28 @@
     "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
-    "@clerk/nextjs": "^7.0.4",
+    "@clerk/nextjs": "^7.0.7",
     "@neondatabase/serverless": "^1.0.2",
     "@prisma/adapter-neon": "^7.5.0",
     "@prisma/client": "^7.5.0",
-    "next": "16.1.6",
+    "next": "16.2.1",
     "prisma": "^7.5.0",
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
     "zod": "^4.3.6"
   },
   "devDependencies": {
     "@playwright/test": "^1.51.1",
-    "@biomejs/biome": "2.4.6",
+    "@biomejs/biome": "2.4.9",
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
+    "@types/node": "^25",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6.0.0",
     "dotenv": "^17.3.1",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
-    "typescript": "^5",
-    "vitest": "^4.1.0"
+    "typescript": "^6",
+    "vitest": "^4.1.2"
   }
 }

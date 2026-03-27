@@ -44,6 +44,7 @@ export default defineConfig({
     {
       command: "next dev -p 3000",
       url: "http://localhost:3000",
+      timeout: 120000,
       reuseExistingServer: !process.env.CI,
       env: {
         DATABASE_URL: process.env.DATABASE_URL ?? "",
@@ -61,6 +62,7 @@ export default defineConfig({
     {
       command: "next dev -p 3001",
       url: "http://localhost:3001",
+      timeout: 120000,
       reuseExistingServer: !process.env.CI,
       env: {
         DATABASE_URL: process.env.DATABASE_URL ?? "",
