@@ -1,8 +1,29 @@
 "use server";
 
+function isAllowedUrl(url: string): boolean {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return false;
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return false;
+  const hostname = parsed.hostname;
+  if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1") return false;
+  if (
+    /^10\./.test(hostname) ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(hostname) ||
+    /^192\.168\./.test(hostname) ||
+    /^169\.254\./.test(hostname)
+  )
+    return false;
+  return true;
+}
+
 export async function fetchOgp(
   url: string,
 ): Promise<{ title?: string; image?: string; error?: string }> {
+  if (!isAllowedUrl(url)) return { error: "取得できませんでした" };
   try {
     const res = await fetch(url, {
       signal: AbortSignal.timeout(5000),

@@ -105,4 +105,29 @@ describe("fetchOgp", () => {
 
     expect(result).toEqual({ error: "取得できませんでした" });
   });
+
+  it("http/https 以外のプロトコルは error を返す（SSRF対策）", async () => {
+    const result = await fetchOgp("file:///etc/passwd");
+    expect(result).toEqual({ error: "取得できませんでした" });
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("localhost は error を返す（SSRF対策）", async () => {
+    const result = await fetchOgp("http://localhost/admin");
+    expect(result).toEqual({ error: "取得できませんでした" });
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("プライベートIPは error を返す（SSRF対策）", async () => {
+    for (const url of [
+      "http://10.0.0.1/secret",
+      "http://172.16.0.1/secret",
+      "http://192.168.1.1/secret",
+      "http://169.254.169.254/latest/meta-data",
+    ]) {
+      const result = await fetchOgp(url);
+      expect(result).toEqual({ error: "取得できませんでした" });
+      expect(mockFetch).not.toHaveBeenCalled();
+    }
+  });
 });
