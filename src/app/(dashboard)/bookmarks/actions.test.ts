@@ -120,6 +120,20 @@ describe("updateBookmark", () => {
     expect(result).toEqual({ error: "権限がありません" });
     expect(mockBookmarkUpdate).not.toHaveBeenCalled();
   });
+
+  it("ogImage が undefined の場合は update データに ogImage を含めない（既存値を保持）", async () => {
+    mockGetSession.mockResolvedValue(session);
+    mockBookmarkFindUnique.mockResolvedValue(bookmark);
+    mockBookmarkUpdate.mockResolvedValue(bookmark);
+
+    await updateBookmark("bm_1", { ...bookmarkData, ogImage: undefined });
+
+    expect(mockBookmarkUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.not.objectContaining({ ogImage: expect.anything() }),
+      }),
+    );
+  });
 });
 
 describe("deleteBookmark", () => {
