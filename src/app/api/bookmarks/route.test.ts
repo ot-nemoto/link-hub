@@ -25,8 +25,23 @@ const mockBookmarkFindMany = vi.mocked(prisma.bookmark.findMany);
 const mockBookmarkCreate = vi.mocked(prisma.bookmark.create);
 
 const clerkUser = { id: "clerk_123" };
-const dbUser = { id: "user_1", clerkId: "clerk_123", email: "test@example.com", name: null, createdAt: new Date(), updatedAt: new Date() };
-const bookmark = { id: "bm_1", userId: "user_1", url: "https://example.com", title: "Example", memo: null, createdAt: new Date(), updatedAt: new Date() };
+const dbUser = {
+  id: "user_1",
+  clerkId: "clerk_123",
+  email: "test@example.com",
+  name: null,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+};
+const bookmark = {
+  id: "bm_1",
+  userId: "user_1",
+  url: "https://example.com",
+  title: "Example",
+  memo: null,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+};
 
 describe("GET /api/bookmarks", () => {
   beforeEach(() => vi.clearAllMocks());
