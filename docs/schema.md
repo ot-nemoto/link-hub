@@ -31,6 +31,7 @@ model Bookmark {
   url       String
   title     String
   memo      String?
+  ogImage   String?  @map("og_image")
   userId    String   @map("user_id")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -61,6 +62,7 @@ erDiagram
         String url
         String title
         String memo "nullable"
+        String ogImage "nullable"
         String userId FK
         DateTime createdAt
         DateTime updatedAt
@@ -92,6 +94,7 @@ erDiagram
 | url | String | ブックマーク URL（http/https のみ） |
 | title | String | タイトル（必須、最大 200 文字） |
 | memo | String? | メモ（任意、最大 1000 文字） |
+| ogImage | String? | OGP 画像 URL（URL 入力時に自動取得、任意） |
 | userId | String | 外部キー → User.id（User 削除時に CASCADE） |
 | createdAt | DateTime | 作成日時 |
 | updatedAt | DateTime | 更新日時 |
