@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-type BookmarkData = { url: string; title: string; memo: string };
+type BookmarkData = { url: string; title: string; memo: string; ogImage?: string };
 
 export async function createBookmark(data: BookmarkData): Promise<{ error?: string }> {
   const session = await getSession();
@@ -18,6 +18,7 @@ export async function createBookmark(data: BookmarkData): Promise<{ error?: stri
       url: data.url,
       title: data.title,
       memo: data.memo || null,
+      ogImage: data.ogImage ?? null,
     },
   });
 
@@ -35,7 +36,7 @@ export async function updateBookmark(id: string, data: BookmarkData): Promise<{ 
 
   await prisma.bookmark.update({
     where: { id },
-    data: { url: data.url, title: data.title, memo: data.memo || null },
+    data: { url: data.url, title: data.title, memo: data.memo || null, ogImage: data.ogImage ?? null },
   });
 
   revalidatePath("/bookmarks");

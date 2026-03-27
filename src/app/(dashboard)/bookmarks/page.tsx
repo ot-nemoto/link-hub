@@ -61,6 +61,15 @@ export default async function BookmarksPage({
           {bookmarks.map((bm) => (
             <li key={bm.id} className="rounded-lg border bg-white p-4 shadow-sm">
               <div className="flex items-start justify-between gap-4">
+                {bm.ogImage && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={bm.ogImage}
+                    alt=""
+                    className="h-16 w-24 shrink-0 rounded object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                )}
                 <div className="min-w-0 flex-1">
                   <a
                     href={bm.url}

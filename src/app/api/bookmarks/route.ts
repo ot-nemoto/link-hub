@@ -13,6 +13,7 @@ const createSchema = z.object({
     }),
   title: z.string().min(1).max(200),
   memo: z.string().max(1000).optional(),
+  ogImage: z.string().url().optional(),
 });
 
 export async function GET() {
@@ -57,6 +58,7 @@ export async function POST(request: Request) {
       url: result.data.url,
       title: result.data.title,
       memo: result.data.memo ?? null,
+      ogImage: result.data.ogImage ?? null,
     },
   });
 
