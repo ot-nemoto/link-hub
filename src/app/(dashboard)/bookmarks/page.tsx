@@ -4,20 +4,40 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { BookmarkList } from "./BookmarkList";
+import { SortSelect } from "./SortSelect";
 
 const PAGE_SIZE = 20;
+
+const SORT_OPTIONS = [
+  { value: "createdAt_desc", label: "新しい順" },
+  { value: "createdAt_asc", label: "古い順" },
+  { value: "title_asc", label: "タイトル昇順" },
+  { value: "title_desc", label: "タイトル降順" },
+] as const;
+
+type SortValue = (typeof SORT_OPTIONS)[number]["value"];
+
+function toOrderBy(sort: SortValue) {
+  switch (sort) {
+    case "createdAt_asc": return { createdAt: "asc" as const };
+    case "title_asc":     return { title: "asc" as const };
+    case "title_desc":    return { title: "desc" as const };
+    default:              return { createdAt: "desc" as const };
+  }
+}
 
 export default async function BookmarksPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; page?: string }>;
+  searchParams: Promise<{ q?: string; page?: string; sort?: string }>;
 }) {
   const session = await getSession();
   if (!session) redirect("/sign-in");
 
-  const { q, page: pageParam } = await searchParams;
+  const { q, page: pageParam, sort: sortParam } = await searchParams;
   const query = q?.trim() ?? "";
   const page = Math.max(1, Number(pageParam) || 1);
+  const sort = (SORT_OPTIONS.some((o) => o.value === sortParam) ? sortParam : "createdAt_desc") as SortValue;
 
   const where = {
     userId: session.user.id,
@@ -33,7 +53,7 @@ export default async function BookmarksPage({
   const [bookmarks, total] = await Promise.all([
     prisma.bookmark.findMany({
       where,
-      orderBy: { createdAt: "desc" },
+      orderBy: toOrderBy(sort),
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
     }),
@@ -54,14 +74,15 @@ export default async function BookmarksPage({
         </Link>
       </div>
 
-      <form method="get" className="mb-4">
+      <form method="get" className="mb-4 flex gap-2">
         <input
           type="search"
           name="q"
           defaultValue={query}
           placeholder="タイトル・URL・メモで検索"
-          className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-400"
+          className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-400"
         />
+        <SortSelect name="sort" defaultValue={sort} options={[...SORT_OPTIONS]} />
       </form>
 
       {bookmarks.length === 0 ? (
@@ -69,14 +90,14 @@ export default async function BookmarksPage({
           {query ? "該当するブックマークがありません" : "まだブックマークがありません"}
         </div>
       ) : (
-        <BookmarkList bookmarks={bookmarks} />
+        <BookmarkList key={`${page}-${sort}-${query}`} bookmarks={bookmarks} />
       )}
 
       {totalPages > 1 && (
         <div className="mt-6 flex items-center justify-center gap-4">
           {page > 1 ? (
             <Link
-              href={`?${new URLSearchParams({ ...(query && { q: query }), page: String(page - 1) })}`}
+              href={`?${new URLSearchParams({ ...(query && { q: query }), sort, page: String(page - 1) })}`}
               className="rounded border border-gray-300 px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
             >
               前へ
@@ -89,7 +110,7 @@ export default async function BookmarksPage({
           </span>
           {page < totalPages ? (
             <Link
-              href={`?${new URLSearchParams({ ...(query && { q: query }), page: String(page + 1) })}`}
+              href={`?${new URLSearchParams({ ...(query && { q: query }), sort, page: String(page + 1) })}`}
               className="rounded border border-gray-300 px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
             >
               次へ
