@@ -39,15 +39,15 @@ export function BookmarkForm({ defaultValues, action }: Props) {
       return;
     }
 
-    // タイトルが既に入力済みの場合は上書きしない
-    if (title) return;
+    // タイトルと ogImage が両方入力済みの場合は取得しない
+    if (title && ogImage) return;
 
     setFetchingOgp(true);
     const result = await fetchOgp(url);
     setFetchingOgp(false);
 
-    if (result.title) setTitle(result.title);
-    if (result.image) setOgImage(result.image);
+    if (!title && result.title) setTitle(result.title);
+    if (!ogImage && result.image) setOgImage(result.image);
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
