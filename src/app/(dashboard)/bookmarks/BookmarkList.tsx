@@ -36,6 +36,13 @@ export function BookmarkList({ bookmarks: initial }: { bookmarks: Bookmark[] }) 
     setItems(initial);
   }, [initial]);
 
+  // アンマウント時に未確定のタイマーをクリア
+  useEffect(() => {
+    return () => {
+      if (pendingRef.current) clearTimeout(pendingRef.current.timerId);
+    };
+  }, []);
+
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const allSelected = items.length > 0 && selectedIds.size === items.length;
 
