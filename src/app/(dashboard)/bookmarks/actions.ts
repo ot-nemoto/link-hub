@@ -40,7 +40,7 @@ export async function updateBookmark(id: string, data: BookmarkData): Promise<{ 
       url: data.url,
       title: data.title,
       memo: data.memo || null,
-      ogImage: data.ogImage ?? null,
+      ...(data.ogImage !== undefined ? { ogImage: data.ogImage ?? null } : {}),
     },
   });
 
