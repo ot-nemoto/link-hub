@@ -65,7 +65,7 @@ describe("fetchOgp", () => {
     expect(result.title).toBe("Page Title");
   });
 
-  it("相対パスの og:image を絶対 URL に解決する", async () => {
+  it("相対パスの og:image を絶対 URL に解決する（ルート相対）", async () => {
     mockFetch.mockResolvedValue(
       makeHtmlResponse(`
         <html>
@@ -79,6 +79,22 @@ describe("fetchOgp", () => {
     const result = await fetchOgp("https://example.com/page");
 
     expect(result.image).toBe("https://example.com/images/og.png");
+  });
+
+  it("相対パスの og:image を絶対 URL に解決する（ページ相対）", async () => {
+    mockFetch.mockResolvedValue(
+      makeHtmlResponse(`
+        <html>
+          <head>
+            <meta property="og:image" content="img.png" />
+          </head>
+        </html>
+      `),
+    );
+
+    const result = await fetchOgp("https://example.com/blog/post");
+
+    expect(result.image).toBe("https://example.com/blog/img.png");
   });
 
   it("fetch が !res.ok の場合 error を返す", async () => {

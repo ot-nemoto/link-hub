@@ -47,7 +47,7 @@ export async function fetchOgp(
     const rawImage = getMetaContent("og:image");
     let image: string | undefined;
     if (rawImage) {
-      image = rawImage.startsWith("http") ? rawImage : new URL(rawImage, new URL(url).origin).href;
+      image = rawImage.startsWith("http") ? rawImage : new URL(rawImage, url).href;
     }
 
     return { title, image };
