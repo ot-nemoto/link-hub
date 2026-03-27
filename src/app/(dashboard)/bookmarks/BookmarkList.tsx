@@ -75,11 +75,11 @@ export function BookmarkList({ bookmarks: initial }: { bookmarks: Bookmark[] }) 
       // 既存 pending があればすぐに確定
       if (pendingRef.current) {
         clearTimeout(pendingRef.current.timerId);
-        commitPending(pendingRef.current);
+        void commitPending(pendingRef.current);
       }
 
       const timerId = setTimeout(() => {
-        if (pendingRef.current) commitPending(pendingRef.current);
+        if (pendingRef.current) void commitPending(pendingRef.current);
       }, UNDO_TIMEOUT_MS);
 
       const next = { bookmarks, timerId };
