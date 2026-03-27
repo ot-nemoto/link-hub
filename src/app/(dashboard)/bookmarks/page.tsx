@@ -5,12 +5,28 @@ import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { DeleteButton } from "./DeleteButton";
 
-export default async function BookmarksPage() {
+export default async function BookmarksPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
   const session = await getSession();
   if (!session) redirect("/sign-in");
 
+  const { q } = await searchParams;
+  const query = q?.trim() ?? "";
+
   const bookmarks = await prisma.bookmark.findMany({
-    where: { userId: session.user.id },
+    where: {
+      userId: session.user.id,
+      ...(query && {
+        OR: [
+          { title: { contains: query, mode: "insensitive" } },
+          { url: { contains: query, mode: "insensitive" } },
+          { memo: { contains: query, mode: "insensitive" } },
+        ],
+      }),
+    },
     orderBy: { createdAt: "desc" },
   });
 
@@ -26,9 +42,19 @@ export default async function BookmarksPage() {
         </Link>
       </div>
 
+      <form method="get" className="mb-4">
+        <input
+          type="search"
+          name="q"
+          defaultValue={query}
+          placeholder="タイトル・URL・メモで検索"
+          className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:border-blue-500 focus:outline-none"
+        />
+      </form>
+
       {bookmarks.length === 0 ? (
         <div className="rounded-lg border border-dashed border-gray-300 py-16 text-center text-gray-500">
-          まだブックマークがありません
+          {query ? "該当するブックマークがありません" : "まだブックマークがありません"}
         </div>
       ) : (
         <ul className="space-y-3">
