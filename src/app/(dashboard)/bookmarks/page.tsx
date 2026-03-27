@@ -45,7 +45,7 @@ export default async function BookmarksPage({
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-gray-900">ブックマーク一覧</h2>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">ブックマーク一覧</h2>
         <Link
           href="/bookmarks/new"
           className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
@@ -60,12 +60,12 @@ export default async function BookmarksPage({
           name="q"
           defaultValue={query}
           placeholder="タイトル・URL・メモで検索"
-          className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:border-blue-500 focus:outline-none"
+          className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-400"
         />
       </form>
 
       {bookmarks.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-gray-300 py-16 text-center text-gray-500">
+        <div className="rounded-lg border border-dashed border-gray-300 py-16 text-center text-gray-500 dark:border-gray-600 dark:text-gray-400">
           {query ? "該当するブックマークがありません" : "まだブックマークがありません"}
         </div>
       ) : (
@@ -77,25 +77,25 @@ export default async function BookmarksPage({
           {page > 1 ? (
             <Link
               href={`?${new URLSearchParams({ ...(query && { q: query }), page: String(page - 1) })}`}
-              className="rounded border border-gray-300 px-4 py-2 text-sm text-gray-600 hover:bg-gray-100"
+              className="rounded border border-gray-300 px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
             >
               前へ
             </Link>
           ) : (
-            <span className="rounded border border-gray-200 px-4 py-2 text-sm text-gray-300">前へ</span>
+            <span className="rounded border border-gray-200 px-4 py-2 text-sm text-gray-300 dark:border-gray-700 dark:text-gray-600">前へ</span>
           )}
-          <span className="text-sm text-gray-600">
+          <span className="text-sm text-gray-600 dark:text-gray-400">
             {page} / {totalPages} ページ
           </span>
           {page < totalPages ? (
             <Link
               href={`?${new URLSearchParams({ ...(query && { q: query }), page: String(page + 1) })}`}
-              className="rounded border border-gray-300 px-4 py-2 text-sm text-gray-600 hover:bg-gray-100"
+              className="rounded border border-gray-300 px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
             >
               次へ
             </Link>
           ) : (
-            <span className="rounded border border-gray-200 px-4 py-2 text-sm text-gray-300">次へ</span>
+            <span className="rounded border border-gray-200 px-4 py-2 text-sm text-gray-300 dark:border-gray-700 dark:text-gray-600">次へ</span>
           )}
         </div>
       )}
