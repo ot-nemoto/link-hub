@@ -5,30 +5,42 @@ import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { DeleteButton } from "./DeleteButton";
 
+const PAGE_SIZE = 20;
+
 export default async function BookmarksPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; page?: string }>;
 }) {
   const session = await getSession();
   if (!session) redirect("/sign-in");
 
-  const { q } = await searchParams;
+  const { q, page: pageParam } = await searchParams;
   const query = q?.trim() ?? "";
+  const page = Math.max(1, Number(pageParam) || 1);
 
-  const bookmarks = await prisma.bookmark.findMany({
-    where: {
-      userId: session.user.id,
-      ...(query && {
-        OR: [
-          { title: { contains: query, mode: "insensitive" } },
-          { url: { contains: query, mode: "insensitive" } },
-          { memo: { contains: query, mode: "insensitive" } },
-        ],
-      }),
-    },
-    orderBy: { createdAt: "desc" },
-  });
+  const where = {
+    userId: session.user.id,
+    ...(query && {
+      OR: [
+        { title: { contains: query, mode: "insensitive" as const } },
+        { url: { contains: query, mode: "insensitive" as const } },
+        { memo: { contains: query, mode: "insensitive" as const } },
+      ],
+    }),
+  };
+
+  const [bookmarks, total] = await Promise.all([
+    prisma.bookmark.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+    }),
+    prisma.bookmark.count({ where }),
+  ]);
+
+  const totalPages = Math.ceil(total / PAGE_SIZE);
 
   return (
     <div>
@@ -95,6 +107,34 @@ export default async function BookmarksPage({
             </li>
           ))}
         </ul>
+      )}
+
+      {totalPages > 1 && (
+        <div className="mt-6 flex items-center justify-center gap-4">
+          {page > 1 ? (
+            <Link
+              href={`?${new URLSearchParams({ ...(query && { q: query }), page: String(page - 1) })}`}
+              className="rounded border border-gray-300 px-4 py-2 text-sm text-gray-600 hover:bg-gray-100"
+            >
+              前へ
+            </Link>
+          ) : (
+            <span className="rounded border border-gray-200 px-4 py-2 text-sm text-gray-300">前へ</span>
+          )}
+          <span className="text-sm text-gray-600">
+            {page} / {totalPages} ページ
+          </span>
+          {page < totalPages ? (
+            <Link
+              href={`?${new URLSearchParams({ ...(query && { q: query }), page: String(page + 1) })}`}
+              className="rounded border border-gray-300 px-4 py-2 text-sm text-gray-600 hover:bg-gray-100"
+            >
+              次へ
+            </Link>
+          ) : (
+            <span className="rounded border border-gray-200 px-4 py-2 text-sm text-gray-300">次へ</span>
+          )}
+        </div>
       )}
     </div>
   );
