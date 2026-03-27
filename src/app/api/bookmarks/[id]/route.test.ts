@@ -26,8 +26,23 @@ const mockBookmarkUpdate = vi.mocked(prisma.bookmark.update);
 const mockBookmarkDelete = vi.mocked(prisma.bookmark.delete);
 
 const clerkUser = { id: "clerk_123" };
-const dbUser = { id: "user_1", clerkId: "clerk_123", email: "test@example.com", name: null, createdAt: new Date(), updatedAt: new Date() };
-const bookmark = { id: "bm_1", userId: "user_1", url: "https://example.com", title: "Example", memo: null, createdAt: new Date(), updatedAt: new Date() };
+const dbUser = {
+  id: "user_1",
+  clerkId: "clerk_123",
+  email: "test@example.com",
+  name: null,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+};
+const bookmark = {
+  id: "bm_1",
+  userId: "user_1",
+  url: "https://example.com",
+  title: "Example",
+  memo: null,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+};
 const otherBookmark = { ...bookmark, userId: "user_other" };
 
 const makeParams = (id: string) => ({ params: Promise.resolve({ id }) });

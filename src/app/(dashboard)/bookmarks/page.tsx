@@ -19,10 +19,14 @@ type SortValue = (typeof SORT_OPTIONS)[number]["value"];
 
 function toOrderBy(sort: SortValue) {
   switch (sort) {
-    case "createdAt_asc": return { createdAt: "asc" as const };
-    case "title_asc":     return { title: "asc" as const };
-    case "title_desc":    return { title: "desc" as const };
-    default:              return { createdAt: "desc" as const };
+    case "createdAt_asc":
+      return [{ createdAt: "asc" as const }, { id: "asc" as const }];
+    case "title_asc":
+      return [{ title: "asc" as const }, { id: "asc" as const }];
+    case "title_desc":
+      return [{ title: "desc" as const }, { id: "desc" as const }];
+    default:
+      return [{ createdAt: "desc" as const }, { id: "desc" as const }];
   }
 }
 
@@ -37,7 +41,9 @@ export default async function BookmarksPage({
   const { q, page: pageParam, sort: sortParam } = await searchParams;
   const query = q?.trim() ?? "";
   const page = Math.max(1, Number(pageParam) || 1);
-  const sort = (SORT_OPTIONS.some((o) => o.value === sortParam) ? sortParam : "createdAt_desc") as SortValue;
+  const sort = (
+    SORT_OPTIONS.some((o) => o.value === sortParam) ? sortParam : "createdAt_desc"
+  ) as SortValue;
 
   const where = {
     userId: session.user.id,
@@ -103,7 +109,9 @@ export default async function BookmarksPage({
               前へ
             </Link>
           ) : (
-            <span className="rounded border border-gray-200 px-4 py-2 text-sm text-gray-300 dark:border-gray-700 dark:text-gray-600">前へ</span>
+            <span className="rounded border border-gray-200 px-4 py-2 text-sm text-gray-300 dark:border-gray-700 dark:text-gray-600">
+              前へ
+            </span>
           )}
           <span className="text-sm text-gray-600 dark:text-gray-400">
             {page} / {totalPages} ページ
@@ -116,7 +124,9 @@ export default async function BookmarksPage({
               次へ
             </Link>
           ) : (
-            <span className="rounded border border-gray-200 px-4 py-2 text-sm text-gray-300 dark:border-gray-700 dark:text-gray-600">次へ</span>
+            <span className="rounded border border-gray-200 px-4 py-2 text-sm text-gray-300 dark:border-gray-700 dark:text-gray-600">
+              次へ
+            </span>
           )}
         </div>
       )}

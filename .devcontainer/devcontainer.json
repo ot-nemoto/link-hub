@@ -8,11 +8,7 @@
   "postCreateCommand": "npm install && npx --no-install playwright install-deps chromium && npx --no-install playwright install chromium",
   "customizations": {
     "vscode": {
-      "extensions": [
-        "biomejs.biome",
-        "Prisma.prisma",
-        "bradlc.vscode-tailwindcss"
-      ]
+      "extensions": ["biomejs.biome", "Prisma.prisma", "bradlc.vscode-tailwindcss"]
     }
   }
 }

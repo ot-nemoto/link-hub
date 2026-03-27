@@ -6,11 +6,7 @@ export type ViewMode = "card" | "list";
 
 const STORAGE_KEY = "bookmark-view-mode";
 
-export function ViewToggle({
-  onViewChange,
-}: {
-  onViewChange: (mode: ViewMode) => void;
-}) {
+export function ViewToggle({ onViewChange }: { onViewChange: (mode: ViewMode) => void }) {
   const [view, setView] = useState<ViewMode>("card");
 
   useEffect(() => {

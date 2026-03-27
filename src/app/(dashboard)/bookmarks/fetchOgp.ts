@@ -14,28 +14,19 @@ export async function fetchOgp(
 
     const getMetaContent = (property: string) =>
       html.match(
-        new RegExp(
-          `<meta[^>]+property=["']${property}["'][^>]+content=["']([^"']+)["']`,
-          "i",
-        ),
+        new RegExp(`<meta[^>]+property=["']${property}["'][^>]+content=["']([^"']+)["']`, "i"),
       )?.[1] ??
       html.match(
-        new RegExp(
-          `<meta[^>]+content=["']([^"']+)["'][^>]+property=["']${property}["']`,
-          "i",
-        ),
+        new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+property=["']${property}["']`, "i"),
       )?.[1];
 
     const title =
-      getMetaContent("og:title") ??
-      html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1]?.trim();
+      getMetaContent("og:title") ?? html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1]?.trim();
 
     const rawImage = getMetaContent("og:image");
     let image: string | undefined;
     if (rawImage) {
-      image = rawImage.startsWith("http")
-        ? rawImage
-        : new URL(rawImage, new URL(url).origin).href;
+      image = rawImage.startsWith("http") ? rawImage : new URL(rawImage, new URL(url).origin).href;
     }
 
     return { title, image };

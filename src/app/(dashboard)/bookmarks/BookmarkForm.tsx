@@ -12,7 +12,12 @@ type Props = {
     memo: string;
     ogImage?: string;
   };
-  action: (data: { url: string; title: string; memo: string; ogImage?: string }) => Promise<{ error?: string }>;
+  action: (data: {
+    url: string;
+    title: string;
+    memo: string;
+    ogImage?: string;
+  }) => Promise<{ error?: string }>;
 };
 
 export function BookmarkForm({ defaultValues, action }: Props) {
@@ -93,9 +98,7 @@ export function BookmarkForm({ defaultValues, action }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {errors.form && (
-        <p className="rounded bg-red-50 p-3 text-sm text-red-600">{errors.form}</p>
-      )}
+      {errors.form && <p className="rounded bg-red-50 p-3 text-sm text-red-600">{errors.form}</p>}
 
       <div>
         <label htmlFor="url" className="block text-sm font-medium text-gray-700">
@@ -116,9 +119,7 @@ export function BookmarkForm({ defaultValues, action }: Props) {
       <div>
         <label htmlFor="title" className="block text-sm font-medium text-gray-700">
           タイトル <span className="text-red-500">*</span>
-          {fetchingOgp && (
-            <span className="ml-2 text-xs font-normal text-gray-400">取得中...</span>
-          )}
+          {fetchingOgp && <span className="ml-2 text-xs font-normal text-gray-400">取得中...</span>}
         </label>
         <input
           id="title"

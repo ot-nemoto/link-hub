@@ -36,7 +36,12 @@ export async function updateBookmark(id: string, data: BookmarkData): Promise<{ 
 
   await prisma.bookmark.update({
     where: { id },
-    data: { url: data.url, title: data.title, memo: data.memo || null, ogImage: data.ogImage ?? null },
+    data: {
+      url: data.url,
+      title: data.title,
+      memo: data.memo || null,
+      ogImage: data.ogImage ?? null,
+    },
   });
 
   revalidatePath("/bookmarks");
@@ -55,6 +60,18 @@ export async function deleteBookmark(
   if (bookmark.userId !== session.user.id) return { error: "権限がありません" };
 
   await prisma.bookmark.delete({ where: { id } });
+  revalidatePath("/bookmarks");
+  return {};
+}
+
+export async function deleteBookmarks(ids: string[]): Promise<{ error?: string }> {
+  const session = await getSession();
+  if (!session) redirect("/sign-in");
+
+  await prisma.bookmark.deleteMany({
+    where: { id: { in: ids }, userId: session.user.id },
+  });
+
   revalidatePath("/bookmarks");
   return {};
 }
