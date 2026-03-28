@@ -317,8 +317,13 @@ export function BookmarkList({
   const handleBulkDelete = useCallback(() => {
     const targets = filteredItems.filter((b) => selectedIds.has(b.id));
     if (targets.length === 0) return;
-    setItems((prev) => prev.filter((b) => !selectedIds.has(b.id)));
-    setSelectedIds(new Set());
+    const idsToDelete = new Set(targets.map((b) => b.id));
+    setItems((prev) => prev.filter((b) => !idsToDelete.has(b.id)));
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      for (const id of idsToDelete) next.delete(id);
+      return next;
+    });
     startPending(targets);
   }, [filteredItems, selectedIds, startPending]);
 
