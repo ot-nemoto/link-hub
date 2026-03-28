@@ -319,11 +319,18 @@ export function BookmarkList({
 
     setItems(next);
 
-    await fetch("/api/bookmarks/reorder", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids: next.map((b) => b.id) }),
-    });
+    try {
+      const res = await fetch("/api/bookmarks/reorder", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: next.map((b) => b.id) }),
+      });
+      if (!res.ok) {
+        setItems(prev);
+      }
+    } catch {
+      setItems(prev);
+    }
   }, []);
 
   const itemProps = (bm: Bookmark) => ({
