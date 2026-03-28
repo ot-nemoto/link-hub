@@ -67,12 +67,16 @@ export async function updateBookmark(id: string, data: BookmarkData): Promise<{ 
       title: data.title,
       memo: data.memo || null,
       ...(data.ogImage !== undefined ? { ogImage: data.ogImage ?? null } : {}),
-      tags: {
-        deleteMany: {},
-        ...(data.tagIds?.length
-          ? { create: data.tagIds.map((tagId) => ({ tagId })) }
-          : {}),
-      },
+      ...(data.tagIds !== undefined
+        ? {
+            tags: {
+              deleteMany: {},
+              ...(data.tagIds.length
+                ? { create: data.tagIds.map((tagId) => ({ tagId })) }
+                : {}),
+            },
+          }
+        : {}),
     },
   });
 
