@@ -99,6 +99,7 @@ flowchart TD
 | 状態 | 条件 | 表示内容 |
 |------|------|---------|
 | Normal | 初期表示 | 空フォーム（編集時は既存値で初期化） |
+| FetchingOgp | OGP取得中 | タイトルラベルに「取得中...」を表示し、保存ボタンを `disabled` |
 | Submitting | フォーム送信中 | 保存ボタンを「保存中...」に変更し `disabled` |
 | ValidationError | クライアントバリデーション失敗 | 各フィールド下にエラーメッセージを表示（`text-red-500`） |
 | Error | Server Action 失敗 | フォーム上部にエラーメッセージを表示（`bg-red-50 text-red-600`） |

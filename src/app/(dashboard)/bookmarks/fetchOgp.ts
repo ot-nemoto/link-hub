@@ -26,7 +26,7 @@ export async function fetchOgp(
   if (!isAllowedUrl(url)) return { error: "取得できませんでした" };
   try {
     const res = await fetch(url, {
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(3000),
       headers: { "User-Agent": "Mozilla/5.0 (compatible; link-hub-bot/1.0)" },
     });
     if (!res.ok) return { error: "取得できませんでした" };
