@@ -24,20 +24,22 @@ export function ViewToggle({ onViewChange }: { onViewChange: (mode: ViewMode) =>
   };
 
   return (
-    <div className="flex rounded border border-gray-300 overflow-hidden">
+    <div className="flex rounded border border-gray-300 dark:border-gray-600 overflow-hidden">
       <button
         type="button"
         onClick={() => toggle("card")}
-        className={`px-3 py-1.5 text-sm ${view === "card" ? "bg-gray-200 font-medium text-gray-900" : "text-gray-500 hover:bg-gray-100"}`}
-        title="カード表示"
+        aria-label="カード表示"
+        aria-pressed={view === "card"}
+        className={`px-3 py-1.5 text-sm ${view === "card" ? "bg-gray-200 font-medium text-gray-900 dark:bg-gray-600 dark:text-white" : "text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"}`}
       >
         ⊞
       </button>
       <button
         type="button"
         onClick={() => toggle("list")}
-        className={`px-3 py-1.5 text-sm border-l border-gray-300 ${view === "list" ? "bg-gray-200 font-medium text-gray-900" : "text-gray-500 hover:bg-gray-100"}`}
-        title="リスト表示"
+        aria-label="リスト表示"
+        aria-pressed={view === "list"}
+        className={`px-3 py-1.5 text-sm border-l border-gray-300 dark:border-gray-600 ${view === "list" ? "bg-gray-200 font-medium text-gray-900 dark:bg-gray-600 dark:text-white" : "text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"}`}
       >
         ≡
       </button>

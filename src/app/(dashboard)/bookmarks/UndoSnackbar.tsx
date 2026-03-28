@@ -8,7 +8,7 @@ type Props = {
 export function UndoSnackbar({ message, onUndo }: Props) {
   return (
     <div className="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-4 rounded-lg bg-gray-800 px-5 py-3 text-sm text-white shadow-lg dark:bg-gray-700">
-      <span>{message}</span>
+      <span role="status" aria-live="polite" aria-atomic="true">{message}</span>
       <button
         type="button"
         onClick={onUndo}

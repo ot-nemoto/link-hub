@@ -341,7 +341,7 @@ test.describe("カード/リスト表示切り替え", () => {
     // デフォルトはカード表示（ul.grid が存在する）
     await expect(page.locator("ul.grid")).toBeVisible();
 
-    await page.getByTitle("リスト表示").click();
+    await page.getByLabel("リスト表示").click();
     // リスト表示では ul.grid が消えて ul.divide-y が表示される
     await expect(page.locator("ul.grid")).not.toBeVisible();
     await expect(page.locator("ul.divide-y")).toBeVisible();
@@ -349,10 +349,10 @@ test.describe("カード/リスト表示切り替え", () => {
 
   test("カード表示ボタンを押すとカード表示に戻る", async ({ page }) => {
     await page.goto("/bookmarks");
-    await page.getByTitle("リスト表示").click();
+    await page.getByLabel("リスト表示").click();
     await expect(page.locator("ul.divide-y")).toBeVisible();
 
-    await page.getByTitle("カード表示").click();
+    await page.getByLabel("カード表示").click();
     await expect(page.locator("ul.grid")).toBeVisible();
   });
 });
