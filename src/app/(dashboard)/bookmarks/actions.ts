@@ -24,6 +24,16 @@ export async function createBookmark(data: BookmarkData): Promise<{ error?: stri
   });
   const sortOrder = (agg._max.sortOrder ?? -1) + 1;
 
+  // 自ユーザーのタグのみに絞り込み（他ユーザーの tagId を除外）
+  const validTagIds = data.tagIds?.length
+    ? (
+        await prisma.tag.findMany({
+          where: { id: { in: data.tagIds }, userId: session.user.id },
+          select: { id: true },
+        })
+      ).map((t) => t.id)
+    : [];
+
   await prisma.bookmark.create({
     data: {
       userId: session.user.id,
@@ -32,8 +42,8 @@ export async function createBookmark(data: BookmarkData): Promise<{ error?: stri
       memo: data.memo || null,
       ogImage: data.ogImage ?? null,
       sortOrder,
-      ...(data.tagIds?.length
-        ? { tags: { create: data.tagIds.map((tagId) => ({ tagId })) } }
+      ...(validTagIds.length
+        ? { tags: { create: validTagIds.map((tagId) => ({ tagId })) } }
         : {}),
     },
   });
