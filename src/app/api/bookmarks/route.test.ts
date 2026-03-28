@@ -10,7 +10,7 @@ vi.mock("@clerk/nextjs/server", () => ({
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     user: { findUnique: vi.fn() },
-    bookmark: { findMany: vi.fn(), create: vi.fn() },
+    bookmark: { findMany: vi.fn(), create: vi.fn(), aggregate: vi.fn() },
   },
 }));
 
@@ -23,6 +23,7 @@ const mockCurrentUser = vi.mocked(currentUser);
 const mockUserFindUnique = vi.mocked(prisma.user.findUnique);
 const mockBookmarkFindMany = vi.mocked(prisma.bookmark.findMany);
 const mockBookmarkCreate = vi.mocked(prisma.bookmark.create);
+const mockBookmarkAggregate = vi.mocked(prisma.bookmark.aggregate);
 
 const clerkUser = { id: "clerk_123" };
 const dbUser = {
@@ -79,6 +80,7 @@ describe("POST /api/bookmarks", () => {
   it("ブックマークを作成して 201 を返す", async () => {
     mockCurrentUser.mockResolvedValue(clerkUser as never);
     mockUserFindUnique.mockResolvedValue(dbUser);
+    mockBookmarkAggregate.mockResolvedValue({ _max: { sortOrder: null } } as never);
     mockBookmarkCreate.mockResolvedValue(bookmark);
 
     const res = await POST(makeRequest({ url: "https://example.com", title: "Example" }));
@@ -86,6 +88,11 @@ describe("POST /api/bookmarks", () => {
 
     expect(res.status).toBe(201);
     expect(body.id).toBe(bookmark.id);
+    // aggregate がユーザー単位で呼ばれていること
+    expect(mockBookmarkAggregate).toHaveBeenCalledWith({
+      where: { userId: "user_1" },
+      _max: { sortOrder: true },
+    });
   });
 
   it("未認証の場合 401 を返す", async () => {
@@ -116,6 +123,30 @@ describe("POST /api/bookmarks", () => {
     mockUserFindUnique.mockResolvedValue(dbUser);
 
     const res = await POST(makeRequest({ url: "https://example.com", title: "" }));
+    expect(res.status).toBe(400);
+  });
+
+  it("タイトルが 201 字以上の場合 400 を返す", async () => {
+    mockCurrentUser.mockResolvedValue(clerkUser as never);
+    mockUserFindUnique.mockResolvedValue(dbUser);
+
+    const res = await POST(makeRequest({ url: "https://example.com", title: "a".repeat(201) }));
+    expect(res.status).toBe(400);
+  });
+
+  it("memo が 1001 字以上の場合 400 を返す", async () => {
+    mockCurrentUser.mockResolvedValue(clerkUser as never);
+    mockUserFindUnique.mockResolvedValue(dbUser);
+
+    const res = await POST(makeRequest({ url: "https://example.com", title: "Example", memo: "a".repeat(1001) }));
+    expect(res.status).toBe(400);
+  });
+
+  it("ogImage が不正な URL の場合 400 を返す", async () => {
+    mockCurrentUser.mockResolvedValue(clerkUser as never);
+    mockUserFindUnique.mockResolvedValue(dbUser);
+
+    const res = await POST(makeRequest({ url: "https://example.com", title: "Example", ogImage: "not-a-url" }));
     expect(res.status).toBe(400);
   });
 });

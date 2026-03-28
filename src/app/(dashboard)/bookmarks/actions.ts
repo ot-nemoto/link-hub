@@ -12,6 +12,12 @@ export async function createBookmark(data: BookmarkData): Promise<{ error?: stri
   const session = await getSession();
   if (!session) redirect("/sign-in");
 
+  const agg = await prisma.bookmark.aggregate({
+    where: { userId: session.user.id },
+    _max: { sortOrder: true },
+  });
+  const sortOrder = (agg._max.sortOrder ?? -1) + 1;
+
   await prisma.bookmark.create({
     data: {
       userId: session.user.id,
@@ -19,6 +25,7 @@ export async function createBookmark(data: BookmarkData): Promise<{ error?: stri
       title: data.title,
       memo: data.memo || null,
       ogImage: data.ogImage ?? null,
+      sortOrder,
     },
   });
 
