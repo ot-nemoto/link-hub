@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { fetchOgp } from "./fetchOgp";
 
@@ -28,6 +28,12 @@ export function BookmarkForm({ defaultValues, action }: Props) {
   const [ogImage, setOgImage] = useState(defaultValues?.ogImage ?? "");
   const [fetchingOgp, setFetchingOgp] = useState(false);
 
+  // fetchOgp の await 中に state が更新されても常に最新値を参照するための ref
+  const titleRef = useRef(title);
+  const ogImageRef = useRef(ogImage);
+  useEffect(() => { titleRef.current = title; }, [title]);
+  useEffect(() => { ogImageRef.current = ogImage; }, [ogImage]);
+
   async function handleUrlBlur(e: React.FocusEvent<HTMLInputElement>) {
     const url = e.currentTarget.value.trim();
     if (!url) return;
@@ -40,14 +46,15 @@ export function BookmarkForm({ defaultValues, action }: Props) {
     }
 
     // タイトルと ogImage が両方入力済みの場合は取得しない
-    if (title && ogImage) return;
+    if (titleRef.current && ogImageRef.current) return;
 
     setFetchingOgp(true);
     const result = await fetchOgp(url);
     setFetchingOgp(false);
 
-    if (!title && result.title) setTitle(result.title);
-    if (!ogImage && result.image) setOgImage(result.image);
+    // await 後は ref で最新値を確認（クロージャの stale state を避けるため）
+    if (!titleRef.current && result.title) setTitle(result.title);
+    if (!ogImageRef.current && result.image) setOgImage(result.image);
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -151,7 +158,7 @@ export function BookmarkForm({ defaultValues, action }: Props) {
       <div className="flex gap-3">
         <button
           type="submit"
-          disabled={submitting}
+          disabled={submitting || fetchingOgp}
           className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
         >
           {submitting ? "保存中..." : "保存"}

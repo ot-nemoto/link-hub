@@ -82,7 +82,7 @@
 | 戻り値 | 条件 |
 |--------|------|
 | `{ title, image }` | 正常取得（image は絶対 URL に解決済み） |
-| `{ error: "取得できませんでした" }` | URLバリデーション失敗（非 http/https・localhost・プライベートIP等）・fetch 失敗・タイムアウト・レスポンス異常 |
+| `{ error: "取得できませんでした" }` | URLバリデーション失敗（非 http/https・localhost・プライベートIP等）・fetch 失敗・タイムアウト（3秒）・レスポンス異常 |
 
 ---
 
