@@ -54,18 +54,18 @@ flowchart TD
 
 ### ブックマーク一覧（`/bookmarks`）
 
-- ログインユーザーのブックマークを指定ソート順で表示（デフォルト: 登録日時降順）
+- ログインユーザーのブックマークを sortOrder 順（昇順）で全件表示する
 - ブックマークが 0 件の場合は「まだブックマークがありません」を表示
 - 各ブックマークに編集ボタン・削除ボタンを表示
 - 削除ボタンをクリックすると即座に UI から非表示になり（楽観的更新）、5 秒後に DB から削除確定する（確認ダイアログは表示しない）
 - 5 秒以内に Undo した場合は削除を取り消す
 - ヘッダーに「新規登録」ボタンを表示
-- カード表示 / リスト表示を切り替え可能（ローカルストレージで保持）
-- カード表示時は OGP 画像を表示する
+- リスト表示のみ（カード表示廃止）
+- リスト行に OGP サムネイル（og_image）を表示する
 - キーワード検索（title / url / memo に対する部分一致）
-- ソート切り替え（作成日時・タイトル × 昇順/降順）
-- 表示件数変更（5 / 10 / 20 / 50 / 100 件、デフォルト 20 件）
-- ページネーション（前へ / 次へ）
+- 検索ワード入力中はドラッグ＆ドロップを無効化し、行の背景を薄青（`bg-blue-50` / `dark:bg-blue-950`）にしてドラッグハンドルを非表示にする
+- ドラッグ＆ドロップで並び順を変更できる（ドラッグハンドルをクリックしてドラッグ）
+- 並び替え後は `PATCH /api/bookmarks/reorder` で DB に保存する
 - チェックボックスで複数選択し一括削除可能
 - ダークモード対応（OS 設定に従い初期化、ローカルストレージで保持）
 
@@ -90,8 +90,10 @@ flowchart TD
 
 | 状態 | 条件 | 表示内容 |
 |------|------|---------|
-| Normal | ブックマークが 1 件以上 | ブックマークカードの一覧を表示 |
+| Normal | ブックマークが 1 件以上、検索なし | ブックマークリストを表示（D&D 有効） |
+| Searching | 検索ワード入力中 | ブックマークリストを表示（D&D 無効、行背景薄青） |
 | Empty | ブックマークが 0 件 | 「まだブックマークがありません」のメッセージを表示 |
+| EmptySearch | 検索結果が 0 件 | 「該当するブックマークがありません」のメッセージを表示 |
 | Error | Server Action 失敗（削除エラーなど） | 削除ボタン直上にエラーメッセージ（`bg-red-50 text-red-600`）を表示 |
 
 ### ブックマーク新規登録 / 編集（`/bookmarks/new`, `/bookmarks/[id]/edit`）
@@ -116,20 +118,18 @@ src/app/
 │   └── sign-up/            # Clerk サインアップ画面
 ├── (dashboard)/            # 認証済み画面グループ
 │   ├── layout.tsx          # ダッシュボードレイアウト（ヘッダー含む）
+│   ├── LogoutButton.tsx    # ログアウトボタン（Clerk useClerk フック使用）
 │   └── bookmarks/          # ブックマーク関連画面
 │       ├── page.tsx        # 一覧
 │       ├── new/page.tsx    # 新規登録
 │       ├── [id]/edit/page.tsx  # 編集
 │       ├── BookmarkForm.tsx    # 登録・編集共通フォーム（OGP 自動取得含む）
-│       ├── BookmarkList.tsx    # ブックマーク一覧（カード/リスト・選択・削除）
-│       ├── LimitSelect.tsx     # 表示件数セレクト
-│       ├── SortSelect.tsx      # ソート順セレクト
-│       ├── ViewToggle.tsx      # カード/リスト切り替えボタン
+│       ├── BookmarkList.tsx    # ブックマーク一覧（DnD リスト・OGP・選択・削除）
+│       ├── DeleteButton.tsx    # 削除ボタン（楽観的更新・Undo連携）
 │       ├── ThemeToggle.tsx     # ダークモード切り替えボタン
 │       ├── UndoSnackbar.tsx    # 削除 Undo スナックバー
 │       ├── actions.ts      # Server Actions（CRUD・一括削除）
-│       ├── fetchOgp.ts     # OGP 取得 Server Action
-│       └── constants.ts    # ソート・表示件数などの定数
+│       └── fetchOgp.ts     # OGP 取得 Server Action
 └── auth-error/page.tsx     # 認証エラー画面
 ```
 
@@ -138,10 +138,9 @@ src/app/
 | コンポーネント | ファイル | 種別 | 説明 |
 |--------------|---------|------|------|
 | `BookmarkForm` | `bookmarks/BookmarkForm.tsx` | Client Component | ブックマーク登録・編集フォーム。バリデーション・送信処理・OGP 自動取得を担当 |
-| `BookmarkList` | `bookmarks/BookmarkList.tsx` | Client Component | ブックマーク一覧。カード/リスト表示切り替え・チェックボックス選択・削除操作を担当 |
-| `LimitSelect` | `bookmarks/LimitSelect.tsx` | Client Component | 表示件数セレクト（5 / 10 / 20 / 50 / 100 件） |
-| `SortSelect` | `bookmarks/SortSelect.tsx` | Client Component | ソート順セレクト（作成日時・タイトル × 昇順/降順） |
-| `ViewToggle` | `bookmarks/ViewToggle.tsx` | Client Component | カード / リスト表示切り替えボタン |
+| `BookmarkList` | `bookmarks/BookmarkList.tsx` | Client Component | ブックマーク一覧。DnD リスト表示・OGP サムネイル・チェックボックス選択・削除操作・楽観的削除/Undo 管理を担当 |
+| `DeleteButton` | `bookmarks/DeleteButton.tsx` | Client Component | 削除ボタン。`useActionState` で Server Action を直接呼び出すのみ（楽観的削除/Undo は `BookmarkList` 側で実装） |
+| `LogoutButton` | `LogoutButton.tsx` | Client Component | ログアウトボタン。Clerk 7 + React 19 対応のため `useClerk` フックで実装 |
 | `ThemeToggle` | `bookmarks/ThemeToggle.tsx` | Client Component | ダークモード切り替えボタン |
 | `UndoSnackbar` | `bookmarks/UndoSnackbar.tsx` | Client Component | 削除後 5 秒間表示する Undo スナックバー |
 

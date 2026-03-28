@@ -9,6 +9,7 @@
 | ブックマーク CRUD（UI操作） | Server Actions (`actions.ts`) | フォーム送信・削除ボタン操作 |
 | OGP 取得 | Server Actions (`fetchOgp.ts`) | URL 入力時にタイトル・画像を補完 |
 | ブックマーク CRUD（REST API） | `/api/bookmarks` | 外部連携・テスト用途 |
+| ブックマーク並び替え | `/api/bookmarks/reorder` | D&D 操作後の sortOrder 更新 |
 | ユーザー同期 | `/api/users/sync` | Clerk ログイン後に DB 同期 |
 
 ---
@@ -156,7 +157,7 @@
 
 ### GET /api/bookmarks
 
-ログインユーザーのブックマーク一覧を取得する。
+ログインユーザーのブックマーク一覧を sortOrder 昇順で全件取得する。
 
 **レスポンス:**
 
@@ -168,6 +169,8 @@
     "url": "string",
     "title": "string",
     "memo": "string | null",
+    "ogImage": "string | null",
+    "sortOrder": "number",
     "createdAt": "string (ISO 8601)",
     "updatedAt": "string (ISO 8601)"
   }
@@ -199,6 +202,8 @@
   "url": "string",
   "title": "string",
   "memo": "string | null",
+  "ogImage": "string | null",
+  "sortOrder": "number",
   "createdAt": "string (ISO 8601)",
   "updatedAt": "string (ISO 8601)"
 }
@@ -210,6 +215,35 @@
 |-----------|------|
 | 400 | バリデーションエラー（URL 形式不正、タイトル未入力など） |
 | 401 | 未認証 |
+
+---
+
+### PATCH /api/bookmarks/reorder
+
+ブックマークの並び順を更新する。D&D 完了時に BookmarkList から呼ばれる。
+
+**リクエスト body:**
+
+```json
+{
+  "ids": ["string"] // 並び替え後の順序で並べた bookmark ID の配列（最小1件）
+}
+```
+
+**レスポンス:**
+
+```json
+// 200 OK
+{ "ok": true }
+```
+
+**エラー:**
+
+| ステータス | 条件 |
+|-----------|------|
+| 400 | `ids` が空配列または配列以外 |
+| 401 | 未認証 |
+| 403 | `ids` に他ユーザーのブックマーク ID が含まれる |
 
 ---
 

@@ -29,7 +29,7 @@ export async function GET() {
 
   const bookmarks = await prisma.bookmark.findMany({
     where: { userId: user.id },
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
   });
 
   return NextResponse.json(bookmarks);
@@ -52,6 +52,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: result.error.flatten() }, { status: 400 });
   }
 
+  const agg = await prisma.bookmark.aggregate({
+    where: { userId: user.id },
+    _max: { sortOrder: true },
+  });
+  const sortOrder = (agg._max.sortOrder ?? -1) + 1;
+
   const bookmark = await prisma.bookmark.create({
     data: {
       userId: user.id,
@@ -59,6 +65,7 @@ export async function POST(request: Request) {
       title: result.data.title,
       memo: result.data.memo ?? null,
       ogImage: result.data.ogImage ?? null,
+      sortOrder,
     },
   });
 

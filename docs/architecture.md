@@ -4,17 +4,17 @@
 
 | カテゴリ | 技術 | バージョン |
 |----------|------|-----------|
-| フレームワーク | Next.js (App Router) | 16.1.6 |
-| UI ライブラリ | React | 19.2.3 |
+| フレームワーク | Next.js (App Router) | 16.2.1 |
+| UI ライブラリ | React | 19.2.4 |
 | 言語 | TypeScript (strict) | latest |
 | スタイリング | Tailwind CSS | 4 |
 | ORM | Prisma | 7.5.0 |
 | DB | PostgreSQL (Neon) | - |
-| 認証 | Clerk | latest |
+| 認証 | Clerk | 7.x |
 | バリデーション | Zod | latest |
-| フォーマッタ/リンター | Biome | 2.4.6 |
+| D&D | dnd-kit | core 6.x / sortable 10.x |
+| フォーマッタ/リンター | Biome | 2.4.9 |
 | テスト（ユニット） | Vitest | 4.x |
-| テスト（E2E） | Playwright | 1.51.x |
 
 ## ディレクトリ構成
 
@@ -23,9 +23,14 @@ link-hub/
 ├── src/
 │   ├── app/
 │   │   ├── (auth)/            # 認証ページ（Clerk）
-│   │   ├── bookmarks/         # ブックマーク一覧・操作ページ
+│   │   ├── (dashboard)/       # 認証済み画面グループ
+│   │   │   ├── layout.tsx     # ヘッダー・ログアウトボタン
+│   │   │   ├── LogoutButton.tsx
+│   │   │   └── bookmarks/     # ブックマーク一覧・操作ページ
 │   │   └── api/
-│   │       └── bookmarks/     # ブックマーク API ルート
+│   │       ├── bookmarks/     # ブックマーク CRUD API
+│   │       │   └── reorder/   # D&D 並び替え API
+│   │       └── users/sync/    # Clerk ユーザー同期 API
 │   ├── lib/
 │   │   ├── prisma.ts          # Prisma クライアント
 │   │   └── validations/       # Zod スキーマ
@@ -62,8 +67,7 @@ Client (Browser)
 # ユニットテスト
 npm test
 
-# E2E テスト（初回セットアップが必要 → docs/testing.md 参照）
-npm run test:e2e
+# 手動テスト観点は docs/manual-testing.md を参照
 ```
 
 ## 実装方針
