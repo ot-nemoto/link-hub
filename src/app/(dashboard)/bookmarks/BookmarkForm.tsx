@@ -1,21 +1,61 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
+import { fetchOgp } from "./fetchOgp";
 
 type Props = {
   defaultValues?: {
     url: string;
     title: string;
     memo: string;
+    ogImage?: string;
   };
-  action: (data: { url: string; title: string; memo: string }) => Promise<{ error?: string }>;
+  action: (data: {
+    url: string;
+    title: string;
+    memo: string;
+    ogImage?: string;
+  }) => Promise<{ error?: string }>;
 };
 
 export function BookmarkForm({ defaultValues, action }: Props) {
   const router = useRouter();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [title, setTitle] = useState(defaultValues?.title ?? "");
+  const [ogImage, setOgImage] = useState(defaultValues?.ogImage ?? "");
+  const [fetchingOgp, setFetchingOgp] = useState(false);
+
+  // fetchOgp の await 中に state が更新されても常に最新値を参照するための ref
+  const titleRef = useRef(title);
+  const ogImageRef = useRef(ogImage);
+  useEffect(() => { titleRef.current = title; }, [title]);
+  useEffect(() => { ogImageRef.current = ogImage; }, [ogImage]);
+
+  async function handleUrlBlur(e: React.FocusEvent<HTMLInputElement>) {
+    const url = e.currentTarget.value.trim();
+    if (!url) return;
+
+    try {
+      const parsed = new URL(url);
+      if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return;
+    } catch {
+      return;
+    }
+
+    // タイトルと ogImage が両方入力済みの場合は取得しない
+    if (titleRef.current && ogImageRef.current) return;
+
+    setFetchingOgp(true);
+    const result = await fetchOgp(url);
+    setFetchingOgp(false);
+
+    // await 後は ref で最新値を確認（クロージャの stale state を避けるため）
+    if (!titleRef.current && result.title) setTitle(result.title);
+    if (!ogImageRef.current && result.image) setOgImage(result.image);
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -24,6 +64,7 @@ export function BookmarkForm({ defaultValues, action }: Props) {
       url: (form.elements.namedItem("url") as HTMLInputElement).value.trim(),
       title: (form.elements.namedItem("title") as HTMLInputElement).value.trim(),
       memo: (form.elements.namedItem("memo") as HTMLTextAreaElement).value.trim(),
+      ogImage: ogImage || undefined,
     };
 
     // クライアントサイドバリデーション
@@ -64,9 +105,7 @@ export function BookmarkForm({ defaultValues, action }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {errors.form && (
-        <p className="rounded bg-red-50 p-3 text-sm text-red-600">{errors.form}</p>
-      )}
+      {errors.form && <p className="rounded bg-red-50 p-3 text-sm text-red-600">{errors.form}</p>}
 
       <div>
         <label htmlFor="url" className="block text-sm font-medium text-gray-700">
@@ -77,6 +116,7 @@ export function BookmarkForm({ defaultValues, action }: Props) {
           name="url"
           type="text"
           defaultValue={defaultValues?.url}
+          onBlur={handleUrlBlur}
           className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
           placeholder="https://example.com"
         />
@@ -86,12 +126,14 @@ export function BookmarkForm({ defaultValues, action }: Props) {
       <div>
         <label htmlFor="title" className="block text-sm font-medium text-gray-700">
           タイトル <span className="text-red-500">*</span>
+          {fetchingOgp && <span className="ml-2 text-xs font-normal text-gray-400">取得中...</span>}
         </label>
         <input
           id="title"
           name="title"
           type="text"
-          defaultValue={defaultValues?.title}
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
           className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
           placeholder="ページのタイトル"
         />
@@ -116,7 +158,7 @@ export function BookmarkForm({ defaultValues, action }: Props) {
       <div className="flex gap-3">
         <button
           type="submit"
-          disabled={submitting}
+          disabled={submitting || fetchingOgp}
           className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
         >
           {submitting ? "保存中..." : "保存"}

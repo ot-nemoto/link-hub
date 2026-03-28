@@ -1,6 +1,92 @@
 # API
 
-## 共通仕様
+## 役割分担
+
+ブックマークの CRUD 操作は **Server Actions**（`actions.ts`）で実装している。REST API（`/api/bookmarks`）は現在も存在するが、UI からは Server Actions を呼び出す。
+
+| 処理 | 実装方式 | 説明 |
+|------|---------|------|
+| ブックマーク CRUD（UI操作） | Server Actions (`actions.ts`) | フォーム送信・削除ボタン操作 |
+| OGP 取得 | Server Actions (`fetchOgp.ts`) | URL 入力時にタイトル・画像を補完 |
+| ブックマーク CRUD（REST API） | `/api/bookmarks` | 外部連携・テスト用途 |
+| ユーザー同期 | `/api/users/sync` | Clerk ログイン後に DB 同期 |
+
+---
+
+## Server Actions 仕様
+
+### `createBookmark(data)`
+
+ブックマークを新規登録する。
+
+**引数:** `{ url, title, memo, ogImage? }`
+
+**戻り値:** `{}` | `{ error: string }`
+
+**未認証時:** `/sign-in` へ redirect
+
+---
+
+### `updateBookmark(id, data)`
+
+ブックマークを更新する。
+
+**引数:** `id: string`, `{ url, title, memo, ogImage? }`
+
+**戻り値:** `{}` | `{ error: string }`
+
+| エラー | 条件 |
+|--------|------|
+| 未認証 | `/sign-in` へ redirect |
+| `"ブックマークが見つかりません"` | 指定 ID が存在しない |
+| `"権限がありません"` | 他ユーザーのブックマーク |
+
+---
+
+### `deleteBookmark(id, prevState)`
+
+ブックマークを削除する。
+
+**引数:** `id: string`, `prevState: { error?: string }`
+
+**戻り値:** `{}` | `{ error: string }`
+
+| エラー | 条件 |
+|--------|------|
+| 未認証 | `/sign-in` へ redirect |
+| `"ブックマークが見つかりません"` | 指定 ID が存在しない |
+| `"権限がありません"` | 他ユーザーのブックマーク |
+
+---
+
+### `deleteBookmarks(ids)`
+
+複数ブックマークを一括削除する。自ユーザーのもの以外は削除されない。
+
+**引数:** `ids: string[]`
+
+**戻り値:** `{}` | `{ error: string }`
+
+**未認証時:** `/sign-in` へ redirect
+
+---
+
+### `fetchOgp(url)`
+
+指定 URL から OGP 情報を取得する。
+
+**引数:** `url: string`
+
+**戻り値:** `{ title?: string; image?: string }` | `{ error: string }`
+
+| 戻り値 | 条件 |
+|--------|------|
+| `{ title, image }` | 正常取得（image は絶対 URL に解決済み） |
+| `{ error: "取得できませんでした" }` | URLバリデーション失敗（非 http/https・localhost・プライベートIP等）・fetch 失敗・タイムアウト（3秒）・レスポンス異常 |
+
+---
+
+## REST API 共通仕様
 
 - ベース URL: `/api`
 - リクエスト/レスポンスは JSON 形式

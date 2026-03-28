@@ -14,6 +14,7 @@ const updateSchema = z.object({
     .optional(),
   title: z.string().min(1).max(200).optional(),
   memo: z.string().max(1000).nullable().optional(),
+  ogImage: z.string().url().nullable().optional(),
 });
 
 type Params = { params: Promise<{ id: string }> };
