@@ -87,6 +87,17 @@ describe("getSession - モックバイパス", () => {
 
     expect(session).toBeNull();
   });
+
+  it("MOCK_USER_ID と MOCK_USER_EMAIL が両方設定されている場合、MOCK_USER_ID が優先される", async () => {
+    vi.stubEnv("MOCK_USER_ID", "user_1");
+    vi.stubEnv("MOCK_USER_EMAIL", "test@example.com");
+    mockUserFindUnique.mockResolvedValue(dbUser);
+
+    await getSession();
+
+    expect(mockUserFindUnique).toHaveBeenCalledWith({ where: { id: "user_1" } });
+    expect(mockUserFindUnique).not.toHaveBeenCalledWith({ where: { email: "test@example.com" } });
+  });
 });
 
 describe("getSession", () => {

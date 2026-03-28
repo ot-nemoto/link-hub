@@ -32,6 +32,7 @@ model Bookmark {
   title     String
   memo      String?
   ogImage   String?  @map("og_image")
+  sortOrder Int      @default(0) @map("sort_order")
   userId    String   @map("user_id")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -63,6 +64,7 @@ erDiagram
         String title
         String memo "nullable"
         String ogImage "nullable"
+        Int sortOrder
         String userId FK
         DateTime createdAt
         DateTime updatedAt
@@ -95,6 +97,7 @@ erDiagram
 | title | String | タイトル（必須、最大 200 文字） |
 | memo | String? | メモ（任意、最大 1000 文字） |
 | ogImage | String? | OGP 画像 URL（URL 入力時に自動取得、任意） |
+| sortOrder | Int | 表示順（デフォルト 0、D&D による並び替えで更新） |
 | userId | String | 外部キー → User.id（User 削除時に CASCADE） |
 | createdAt | DateTime | 作成日時 |
 | updatedAt | DateTime | 更新日時 |

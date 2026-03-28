@@ -25,6 +25,7 @@ model Bookmark {
   title     String
   memo      String?
   ogImage   String?  @map("og_image")
+  sortOrder Int      @default(0) @map("sort_order")
   userId    String   @map("user_id")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

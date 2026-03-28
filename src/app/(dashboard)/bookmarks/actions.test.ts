@@ -21,6 +21,7 @@ vi.mock("@/lib/prisma", () => ({
       update: vi.fn(),
       delete: vi.fn(),
       deleteMany: vi.fn(),
+      aggregate: vi.fn(),
     },
   },
 }));
@@ -36,6 +37,7 @@ const mockRedirect = vi.mocked(redirect).mockImplementation(() => {
 });
 const mockGetSession = vi.mocked(getSession);
 const mockBookmarkCreate = vi.mocked(prisma.bookmark.create);
+const mockBookmarkAggregate = vi.mocked(prisma.bookmark.aggregate);
 const mockBookmarkFindUnique = vi.mocked(prisma.bookmark.findUnique);
 const mockBookmarkUpdate = vi.mocked(prisma.bookmark.update);
 const mockBookmarkDelete = vi.mocked(prisma.bookmark.delete);
@@ -60,13 +62,36 @@ describe("createBookmark", () => {
 
   it("正常系: ブックマークを作成して {} を返す", async () => {
     mockGetSession.mockResolvedValue(session);
+    mockBookmarkAggregate.mockResolvedValue({ _max: { sortOrder: 3 } } as never);
     mockBookmarkCreate.mockResolvedValue(bookmark);
 
     const result = await createBookmark(bookmarkData);
 
     expect(result).toEqual({});
+    // aggregate がユーザー単位で呼ばれていること
+    expect(mockBookmarkAggregate).toHaveBeenCalledWith({
+      where: { userId: "user_1" },
+      _max: { sortOrder: true },
+    });
     expect(mockBookmarkCreate).toHaveBeenCalledWith({
-      data: expect.objectContaining({ userId: "user_1", url: "https://example.com" }),
+      data: expect.objectContaining({ userId: "user_1", url: "https://example.com", sortOrder: 4 }),
+    });
+  });
+
+  it("正常系: ブックマークが0件のとき sortOrder が 0 になる", async () => {
+    mockGetSession.mockResolvedValue(session);
+    mockBookmarkAggregate.mockResolvedValue({ _max: { sortOrder: null } } as never);
+    mockBookmarkCreate.mockResolvedValue(bookmark);
+
+    await createBookmark(bookmarkData);
+
+    // aggregate がユーザー単位で呼ばれていること
+    expect(mockBookmarkAggregate).toHaveBeenCalledWith({
+      where: { userId: "user_1" },
+      _max: { sortOrder: true },
+    });
+    expect(mockBookmarkCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({ sortOrder: 0 }),
     });
   });
 

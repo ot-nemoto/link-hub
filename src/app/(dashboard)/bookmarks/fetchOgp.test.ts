@@ -162,6 +162,32 @@ describe("fetchOgp", () => {
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
+  it("og:image がない場合 image は undefined で返す", async () => {
+    mockFetch.mockResolvedValue(
+      makeHtmlResponse(`
+        <html>
+          <head>
+            <meta property="og:title" content="Title Only" />
+          </head>
+        </html>
+      `),
+    );
+
+    const result = await fetchOgp("https://example.com");
+
+    expect(result).toEqual({ title: "Title Only", image: undefined });
+  });
+
+  it("og:title も <title> タグもない場合 title は undefined で返す", async () => {
+    mockFetch.mockResolvedValue(
+      makeHtmlResponse(`<html><head></head><body></body></html>`),
+    );
+
+    const result = await fetchOgp("https://example.com");
+
+    expect(result).toEqual({ title: undefined, image: undefined });
+  });
+
   it("プライベートIPは error を返す（SSRF対策）", async () => {
     for (const url of [
       "http://10.0.0.1/secret",
