@@ -138,8 +138,8 @@ src/app/
 | コンポーネント | ファイル | 種別 | 説明 |
 |--------------|---------|------|------|
 | `BookmarkForm` | `bookmarks/BookmarkForm.tsx` | Client Component | ブックマーク登録・編集フォーム。バリデーション・送信処理・OGP 自動取得を担当 |
-| `BookmarkList` | `bookmarks/BookmarkList.tsx` | Client Component | ブックマーク一覧。DnD リスト表示・OGP サムネイル・チェックボックス選択・削除操作を担当 |
-| `DeleteButton` | `bookmarks/DeleteButton.tsx` | Client Component | 削除ボタン。楽観的更新・Undo スナックバー連携を担当 |
+| `BookmarkList` | `bookmarks/BookmarkList.tsx` | Client Component | ブックマーク一覧。DnD リスト表示・OGP サムネイル・チェックボックス選択・削除操作・楽観的削除/Undo 管理を担当 |
+| `DeleteButton` | `bookmarks/DeleteButton.tsx` | Client Component | 削除ボタン。`useActionState` で Server Action を直接呼び出すのみ（楽観的削除/Undo は `BookmarkList` 側で実装） |
 | `LogoutButton` | `LogoutButton.tsx` | Client Component | ログアウトボタン。Clerk 7 + React 19 対応のため `useClerk` フックで実装 |
 | `ThemeToggle` | `bookmarks/ThemeToggle.tsx` | Client Component | ダークモード切り替えボタン |
 | `UndoSnackbar` | `bookmarks/UndoSnackbar.tsx` | Client Component | 削除後 5 秒間表示する Undo スナックバー |
