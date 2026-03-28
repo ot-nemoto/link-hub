@@ -5,12 +5,13 @@ import { useRef, useState } from "react";
 export type Tag = { id: string; name: string };
 
 type Props = {
+  inputId?: string;
   availableTags: Tag[];
   selectedTagIds: string[];
   onChange: (tagIds: string[], newTag?: Tag) => void;
 };
 
-export function TagInput({ availableTags, selectedTagIds, onChange }: Props) {
+export function TagInput({ inputId, availableTags, selectedTagIds, onChange }: Props) {
   const [inputValue, setInputValue] = useState("");
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
@@ -113,6 +114,7 @@ export function TagInput({ availableTags, selectedTagIds, onChange }: Props) {
       <div className="relative">
         <input
           ref={inputRef}
+          id={inputId}
           type="text"
           value={inputValue}
           onChange={(e) => {

@@ -170,11 +170,12 @@ export function BookmarkForm({ availableTags, defaultValues, action }: Props) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label htmlFor="tag-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
           タグ
         </label>
         <div className="mt-1">
           <TagInput
+            inputId="tag-input"
             availableTags={localTags}
             selectedTagIds={selectedTagIds}
             onChange={handleTagChange}
