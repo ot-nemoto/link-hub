@@ -24,7 +24,7 @@ export function ViewToggle({ onViewChange }: { onViewChange: (mode: ViewMode) =>
   };
 
   return (
-    <div className="flex rounded border border-gray-300 overflow-hidden">
+    <div className="flex rounded border border-gray-300 dark:border-gray-600 overflow-hidden">
       <button
         type="button"
         onClick={() => toggle("card")}
