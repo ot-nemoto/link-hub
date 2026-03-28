@@ -49,6 +49,34 @@ describe("fetchOgp", () => {
     });
   });
 
+  it("タイトルの HTMLエンティティをデコードする", async () => {
+    mockFetch.mockResolvedValue(
+      makeHtmlResponse(
+        '<html><head><meta property="og:title" content="リリースノート &nbsp;|&nbsp; Gemini API" /></head></html>',
+      ),
+    );
+
+    const result = await fetchOgp("https://example.com");
+
+    expect(result.title).toBe("リリースノート  |  Gemini API");
+  });
+
+  it("<title> タグの HTMLエンティティもデコードする", async () => {
+    mockFetch.mockResolvedValue(
+      makeHtmlResponse(`
+        <html>
+          <head>
+            <title>A &amp; B &lt;test&gt;</title>
+          </head>
+        </html>
+      `),
+    );
+
+    const result = await fetchOgp("https://example.com");
+
+    expect(result.title).toBe("A & B <test>");
+  });
+
   it("og:title がない場合 <title> タグからフォールバック取得する", async () => {
     mockFetch.mockResolvedValue(
       makeHtmlResponse(`
