@@ -20,7 +20,7 @@
 
 ブックマークを新規登録する。
 
-**引数:** `{ url, title, memo, ogImage? }`
+**引数:** `{ url, title, memo, ogImage?, tagIds?: string[] }`
 
 **戻り値:** `{}` | `{ error: string }`
 
@@ -32,7 +32,7 @@
 
 ブックマークを更新する。
 
-**引数:** `id: string`, `{ url, title, memo, ogImage? }`
+**引数:** `id: string`, `{ url, title, memo, ogImage?, tagIds?: string[] }`
 
 **戻り値:** `{}` | `{ error: string }`
 
@@ -150,6 +150,81 @@
   "name": "string"
 }
 ```
+
+---
+
+## タグ
+
+### GET /api/tags
+
+ログインユーザーのタグ一覧を name 昇順で全件取得する。
+
+**レスポンス:**
+
+```json
+// 200 OK
+[
+  {
+    "id": "string",
+    "name": "string",
+    "createdAt": "string (ISO 8601)"
+  }
+]
+```
+
+---
+
+### POST /api/tags
+
+タグを新規作成する。同一ユーザー内で name がユニーク。
+
+**リクエスト body:**
+
+```json
+{
+  "name": "string (required, 1-50文字)"
+}
+```
+
+**レスポンス:**
+
+```json
+// 201 Created
+{
+  "id": "string",
+  "name": "string",
+  "createdAt": "string (ISO 8601)"
+}
+```
+
+**エラー:**
+
+| ステータス | 条件 |
+|-----------|------|
+| 400 | バリデーションエラー（name 未入力・50 文字超過） |
+| 401 | 未認証 |
+| 409 | 同名タグが既に存在する |
+
+---
+
+### DELETE /api/tags/[id]
+
+タグを削除する。関連する BookmarkTag も CASCADE 削除される。
+
+**レスポンス:**
+
+```json
+// 200 OK
+{ "message": "deleted" }
+```
+
+**エラー:**
+
+| ステータス | 条件 |
+|-----------|------|
+| 401 | 未認証 |
+| 403 | 他ユーザーのタグ |
+| 404 | 指定 ID のタグが存在しない |
 
 ---
 

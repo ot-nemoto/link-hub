@@ -15,6 +15,7 @@ model User {
   updatedAt DateTime   @updatedAt @map("updated_at")
 
   bookmarks Bookmark[]
+  tags      Tag[]
 
   @@map("users")
 }
@@ -30,8 +31,34 @@ model Bookmark {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tags BookmarkTag[]
 
   @@index([userId])
   @@map("bookmarks")
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  name      String
+  userId    String   @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookmarks BookmarkTag[]
+
+  @@unique([userId, name])
+  @@index([userId])
+  @@map("tags")
+}
+
+model BookmarkTag {
+  bookmarkId String @map("bookmark_id")
+  tagId      String @map("tag_id")
+
+  bookmark Bookmark @relation(fields: [bookmarkId], references: [id], onDelete: Cascade)
+  tag      Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([bookmarkId, tagId])
+  @@map("bookmark_tags")
 }

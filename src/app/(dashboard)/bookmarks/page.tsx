@@ -27,10 +27,25 @@ export default async function BookmarksPage({
     }),
   };
 
-  const bookmarks = await prisma.bookmark.findMany({
-    where,
-    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-  });
+  const [bookmarks, tags] = await Promise.all([
+    prisma.bookmark.findMany({
+      where,
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+      include: {
+        tags: {
+          select: {
+            tagId: true,
+            tag: { select: { id: true, name: true } },
+          },
+        },
+      },
+    }),
+    prisma.tag.findMany({
+      where: { userId: session.user.id },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
+    }),
+  ]);
 
   return (
     <div>
@@ -59,7 +74,7 @@ export default async function BookmarksPage({
           {query ? "該当するブックマークがありません" : "まだブックマークがありません"}
         </div>
       ) : (
-        <BookmarkList key={query} bookmarks={bookmarks} isSearching={!!query} />
+        <BookmarkList key={query} bookmarks={bookmarks} isSearching={!!query} allTags={tags} />
       )}
     </div>
   );
