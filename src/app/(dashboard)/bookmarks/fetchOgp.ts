@@ -1,5 +1,16 @@
 "use server";
 
+function decodeHtmlEntities(str: string): string {
+  return str
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCharCode(Number.parseInt(code, 16)));
+}
+
 function isAllowedUrl(url: string): boolean {
   let parsed: URL;
   try {
@@ -41,8 +52,9 @@ export async function fetchOgp(
         new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+property=["']${property}["']`, "i"),
       )?.[1];
 
-    const title =
+    const rawTitle =
       getMetaContent("og:title") ?? html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1]?.trim();
+    const title = rawTitle ? decodeHtmlEntities(rawTitle) : undefined;
 
     const rawImage = getMetaContent("og:image");
     let image: string | undefined;
