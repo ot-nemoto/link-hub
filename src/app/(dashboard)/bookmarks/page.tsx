@@ -51,12 +51,20 @@ export default async function BookmarksPage({
     <div>
       <div className="mb-6 flex items-center justify-between">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">ブックマーク一覧</h2>
-        <Link
-          href="/bookmarks/new"
-          className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-        >
-          追加
-        </Link>
+        <div className="flex gap-2">
+          <Link
+            href="/bookmarks/tags"
+            className="rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+          >
+            タグ管理
+          </Link>
+          <Link
+            href="/bookmarks/new"
+            className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          >
+            追加
+          </Link>
+        </div>
       </div>
 
       <form method="get" className="mb-4">
