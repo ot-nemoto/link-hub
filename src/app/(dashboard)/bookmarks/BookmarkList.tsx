@@ -60,6 +60,7 @@ function DragHandleIcon() {
 type ItemProps = {
   bm: Bookmark;
   isSearching: boolean;
+  isDndDisabled: boolean;
   isSelected: boolean;
   onToggleSelect: (id: string) => void;
   onDelete: (bm: Bookmark) => void;
@@ -67,15 +68,15 @@ type ItemProps = {
 };
 
 // SSR / ハイドレーション用プレーンアイテム（DndContext 不要）
-function PlainItem({ bm, isSearching, isSelected, onToggleSelect, onDelete, allTags }: ItemProps) {
+function PlainItem({ bm, isSearching, isDndDisabled, isSelected, onToggleSelect, onDelete, allTags }: ItemProps) {
   return (
     <li
       className={`flex items-center gap-3 px-4 py-3 ${
         isSearching ? "bg-blue-50 dark:bg-blue-950" : "bg-white dark:bg-gray-800"
       }`}
     >
-      {/* ハンドル分のスペース確保（検索中は非表示） */}
-      {isSearching ? null : (
+      {/* ハンドル分のスペース確保（検索中またはフィルター中は非表示） */}
+      {isDndDisabled ? null : (
         <span className="shrink-0 text-gray-400 dark:text-gray-500">
           <DragHandleIcon />
         </span>
@@ -101,10 +102,10 @@ function PlainItem({ bm, isSearching, isSelected, onToggleSelect, onDelete, allT
 }
 
 // クライアント専用 DnD アイテム
-function SortableItem({ bm, isSearching, isSelected, onToggleSelect, onDelete, allTags }: ItemProps) {
+function SortableItem({ bm, isSearching, isDndDisabled, isSelected, onToggleSelect, onDelete, allTags }: ItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: bm.id,
-    disabled: isSearching,
+    disabled: isDndDisabled,
   });
 
   const style = {
@@ -121,7 +122,7 @@ function SortableItem({ bm, isSearching, isSelected, onToggleSelect, onDelete, a
         isSearching ? "bg-blue-50 dark:bg-blue-950" : "bg-white dark:bg-gray-800"
       }`}
     >
-      {!isSearching && (
+      {!isDndDisabled && (
         <button
           type="button"
           {...attributes}
@@ -375,9 +376,12 @@ export function BookmarkList({
     }
   }, []);
 
+  const isDndDisabled = isSearching || activeTagIds.length > 0;
+
   const itemProps = (bm: Bookmark) => ({
     bm,
     isSearching,
+    isDndDisabled,
     isSelected: selectedIds.has(bm.id),
     onToggleSelect: toggleSelect,
     onDelete: handleDelete,
