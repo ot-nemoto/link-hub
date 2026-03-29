@@ -134,7 +134,8 @@ export function TagInput({ inputId, availableTags, selectedTagIds, onChange }: P
                 <button
                   type="button"
                   onClick={() => selectTag(tag)}
-                  className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+                  disabled={creating}
+                  className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 disabled:opacity-50 dark:hover:bg-gray-700"
                 >
                   {tag.name}
                 </button>
@@ -145,7 +146,8 @@ export function TagInput({ inputId, availableTags, selectedTagIds, onChange }: P
                 <button
                   type="button"
                   onClick={() => createAndSelectTag(trimmed)}
-                  className="w-full px-3 py-2 text-left text-sm text-blue-600 hover:bg-gray-100 dark:text-blue-400 dark:hover:bg-gray-700"
+                  disabled={creating}
+                  className="w-full px-3 py-2 text-left text-sm text-blue-600 hover:bg-gray-100 disabled:opacity-50 dark:text-blue-400 dark:hover:bg-gray-700"
                 >
                   「{trimmed}」を新規作成
                 </button>
