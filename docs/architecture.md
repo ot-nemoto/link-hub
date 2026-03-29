@@ -54,7 +54,10 @@ link-hub/
 ```
 Client (Browser)
   └── Next.js App Router (React Server Components / Client Components)
-        └── API Routes (src/app/api/)
+        ├── Server Actions (reads → Prisma 直接, writes → actions.ts)
+        │     └── Prisma ORM
+        │           └── PostgreSQL (Neon)
+        └── API Routes (src/app/api/) ※ユーザー同期のみ
               └── Prisma ORM
                     └── PostgreSQL (Neon)
 ```
@@ -73,9 +76,10 @@ npm test
 ## 実装方針
 
 - ページコンポーネントは Server Components を基本とし、インタラクションが必要な部分のみ Client Components を使用する
-- API ルートは `src/app/api/` 配下に配置し、ユニットテストを必須とする
+- **reads（データ取得）**: Server Components から Prisma を直接呼ぶ
+- **writes（書き込み操作）**: Server Actions（`actions.ts`）に集約する。REST API は使用しない
 - バリデーションは Zod を使用し、`src/lib/validations/` に集約する
-- ユーザー分離は全 API ルートで `auth()` による `clerkId` チェックを必須とする
+- ユーザー分離は全 Server Actions / API ルートで `getSession()` による認証チェックを必須とする
 
 ## デプロイフロー
 

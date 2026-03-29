@@ -120,6 +120,64 @@ export async function updateBookmarkTags(
   return {};
 }
 
+export async function reorderBookmarks(ids: string[]): Promise<{ error?: string }> {
+  const session = await getSession();
+  if (!session) redirect("/sign-in");
+
+  const owned = await prisma.bookmark.count({
+    where: { id: { in: ids }, userId: session.user.id },
+  });
+  if (owned !== ids.length) return { error: "権限がありません" };
+
+  await prisma.$transaction(
+    ids.map((id, index) =>
+      prisma.bookmark.update({ where: { id }, data: { sortOrder: index } }),
+    ),
+  );
+
+  revalidatePath("/bookmarks");
+  return {};
+}
+
+export async function createTag(
+  name: string,
+): Promise<{ tag?: { id: string; name: string }; conflict?: boolean; error?: string }> {
+  const session = await getSession();
+  if (!session) redirect("/sign-in");
+
+  if (!name || name.length > 50) return { error: "タグ名が不正です" };
+
+  const existing = await prisma.tag.findUnique({
+    where: { userId_name: { userId: session.user.id, name } },
+  });
+  if (existing) return { conflict: true, tag: { id: existing.id, name: existing.name } };
+
+  try {
+    const tag = await prisma.tag.create({
+      data: { userId: session.user.id, name },
+      select: { id: true, name: true },
+    });
+    revalidatePath("/bookmarks");
+    return { tag };
+  } catch {
+    return { error: "タグの作成に失敗しました" };
+  }
+}
+
+export async function deleteTag(id: string): Promise<{ error?: string }> {
+  const session = await getSession();
+  if (!session) redirect("/sign-in");
+
+  const tag = await prisma.tag.findUnique({ where: { id } });
+  if (!tag) return { error: "タグが見つかりません" };
+  if (tag.userId !== session.user.id) return { error: "権限がありません" };
+
+  await prisma.tag.delete({ where: { id } });
+
+  revalidatePath("/bookmarks");
+  return {};
+}
+
 export async function bulkAddTags(
   bookmarkIds: string[],
   tagIds: string[],

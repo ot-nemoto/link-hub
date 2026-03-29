@@ -2,6 +2,8 @@
 
 import { useRef, useState } from "react";
 
+import { createTag } from "./actions";
+
 export type Tag = { id: string; name: string };
 
 type Props = {
@@ -48,26 +50,17 @@ export function TagInput({ inputId, availableTags, selectedTagIds, onChange }: P
     setCreating(true);
     setError("");
     try {
-      const res = await fetch("/api/tags", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
-      });
-      if (res.status === 409) {
-        const existing = availableTags.find(
-          (t) => t.name.toLowerCase() === name.toLowerCase(),
-        );
-        if (existing) {
-          selectTag(existing);
-          return;
-        }
-      }
-      if (!res.ok) {
-        setError("タグの作成に失敗しました");
+      const result = await createTag(name);
+      if (result.conflict && result.tag) {
+        const existing = availableTags.find((t) => t.id === result.tag!.id) ?? result.tag;
+        selectTag(existing);
         return;
       }
-      const newTag: Tag = await res.json();
-      onChange([...selectedTagIds, newTag.id], newTag);
+      if (result.error || !result.tag) {
+        setError(result.error ?? "タグの作成に失敗しました");
+        return;
+      }
+      onChange([...selectedTagIds, result.tag.id], result.tag);
       setInputValue("");
       inputRef.current?.focus();
     } finally {

@@ -23,7 +23,7 @@ import { BulkTagPanel } from "./BulkTagPanel";
 import { InlineTagEditor } from "./InlineTagEditor";
 import { TagFilter, UNTAGGED_ID, type TagFilterItem } from "./TagFilter";
 import { UndoSnackbar } from "./UndoSnackbar";
-import { bulkAddTags, deleteBookmark, deleteBookmarks } from "./actions";
+import { bulkAddTags, deleteBookmark, deleteBookmarks, reorderBookmarks } from "./actions";
 
 type BookmarkTag = { tagId: string; tag: { id: string; name: string } };
 
@@ -462,12 +462,8 @@ export function BookmarkList({
     setItems(next);
 
     try {
-      const res = await fetch("/api/bookmarks/reorder", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: next.map((b) => b.id) }),
-      });
-      if (!res.ok) {
+      const result = await reorderBookmarks(next.map((b) => b.id));
+      if (result.error) {
         setItems(prev);
       }
     } catch {

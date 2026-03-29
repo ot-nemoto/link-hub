@@ -3,6 +3,8 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { createTag, deleteTag } from "../actions";
+
 type Tag = { id: string; name: string; bookmarkCount: number };
 
 export function TagsClient({ initialTags }: { initialTags: Tag[] }) {
@@ -22,22 +24,17 @@ export function TagsClient({ initialTags }: { initialTags: Tag[] }) {
     setCreating(true);
     setError("");
     try {
-      const res = await fetch("/api/tags", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
-      });
-      if (res.status === 409) {
+      const result = await createTag(name);
+      if (result.conflict) {
         setError("同名のタグが既に存在します");
         return;
       }
-      if (!res.ok) {
-        setError("タグの作成に失敗しました");
+      if (result.error || !result.tag) {
+        setError(result.error ?? "タグの作成に失敗しました");
         return;
       }
-      const newTag: Omit<Tag, "bookmarkCount"> = await res.json();
       setTags((prev) =>
-        [...prev, { ...newTag, bookmarkCount: 0 }].sort((a, b) =>
+        [...prev, { ...result.tag!, bookmarkCount: 0 }].sort((a, b) =>
           a.name.localeCompare(b.name),
         ),
       );
@@ -53,9 +50,9 @@ export function TagsClient({ initialTags }: { initialTags: Tag[] }) {
   async function handleDelete(id: string) {
     setDeletingIds((prev) => new Set(prev).add(id));
     try {
-      const res = await fetch(`/api/tags/${id}`, { method: "DELETE" });
-      if (!res.ok) {
-        setError("タグの削除に失敗しました");
+      const result = await deleteTag(id);
+      if (result.error) {
+        setError(result.error);
         return;
       }
       setTags((prev) => prev.filter((t) => t.id !== id));
