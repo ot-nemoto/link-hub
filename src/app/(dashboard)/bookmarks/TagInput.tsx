@@ -15,6 +15,7 @@ export function TagInput({ inputId, availableTags, selectedTagIds, onChange }: P
   const [inputValue, setInputValue] = useState("");
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
+  const [focused, setFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const selectedTags = availableTags.filter((t) => selectedTagIds.includes(t.id));
@@ -25,7 +26,7 @@ export function TagInput({ inputId, availableTags, selectedTagIds, onChange }: P
           t.name.toLowerCase().includes(trimmed.toLowerCase()) &&
           !selectedTagIds.includes(t.id),
       )
-    : [];
+    : availableTags.filter((t) => !selectedTagIds.includes(t.id));
   const exactMatch = availableTags.find(
     (t) => t.name.toLowerCase() === trimmed.toLowerCase(),
   );
@@ -87,8 +88,7 @@ export function TagInput({ inputId, availableTags, selectedTagIds, onChange }: P
     }
   }
 
-  const showDropdown =
-    (suggestions.length > 0 || canCreate) && trimmed.length > 0;
+  const showDropdown = focused && (suggestions.length > 0 || canCreate);
 
   return (
     <div>
@@ -121,6 +121,8 @@ export function TagInput({ inputId, availableTags, selectedTagIds, onChange }: P
             setInputValue(e.target.value);
             setError("");
           }}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
           onKeyDown={handleKeyDown}
           disabled={creating}
           placeholder="タグを入力（Enter で追加）"
@@ -128,7 +130,11 @@ export function TagInput({ inputId, availableTags, selectedTagIds, onChange }: P
         />
 
         {showDropdown && (
-          <ul className="absolute z-10 mt-1 w-full rounded border border-gray-200 bg-white shadow dark:border-gray-700 dark:bg-gray-800">
+          // onMouseDown で preventDefault することで、候補クリック時に input の blur を防ぐ
+          <ul
+            className="absolute z-10 mt-1 w-full rounded border border-gray-200 bg-white shadow dark:border-gray-700 dark:bg-gray-800"
+            onMouseDown={(e) => e.preventDefault()}
+          >
             {suggestions.map((tag) => (
               <li key={tag.id}>
                 <button
