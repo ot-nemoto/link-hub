@@ -27,21 +27,44 @@ export default async function BookmarksPage({
     }),
   };
 
-  const bookmarks = await prisma.bookmark.findMany({
-    where,
-    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-  });
+  const [bookmarks, tags] = await Promise.all([
+    prisma.bookmark.findMany({
+      where,
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+      include: {
+        tags: {
+          select: {
+            tagId: true,
+            tag: { select: { id: true, name: true } },
+          },
+        },
+      },
+    }),
+    prisma.tag.findMany({
+      where: { userId: session.user.id },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
+    }),
+  ]);
 
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">ブックマーク一覧</h2>
-        <Link
-          href="/bookmarks/new"
-          className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-        >
-          追加
-        </Link>
+        <div className="flex gap-2">
+          <Link
+            href="/bookmarks/tags"
+            className="rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+          >
+            タグ管理
+          </Link>
+          <Link
+            href="/bookmarks/new"
+            className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          >
+            追加
+          </Link>
+        </div>
       </div>
 
       <form method="get" className="mb-4">
@@ -59,7 +82,7 @@ export default async function BookmarksPage({
           {query ? "該当するブックマークがありません" : "まだブックマークがありません"}
         </div>
       ) : (
-        <BookmarkList key={query} bookmarks={bookmarks} isSearching={!!query} />
+        <BookmarkList key={query} bookmarks={bookmarks} isSearching={!!query} allTags={tags} />
       )}
     </div>
   );

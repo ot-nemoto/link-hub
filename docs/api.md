@@ -2,14 +2,13 @@
 
 ## 役割分担
 
-ブックマークの CRUD 操作は **Server Actions**（`actions.ts`）で実装している。REST API（`/api/bookmarks`）は現在も存在するが、UI からは Server Actions を呼び出す。
+書き込み操作はすべて **Server Actions**（`actions.ts`）で実装する。REST API は Clerk ユーザー同期のみ残存。
 
 | 処理 | 実装方式 | 説明 |
 |------|---------|------|
-| ブックマーク CRUD（UI操作） | Server Actions (`actions.ts`) | フォーム送信・削除ボタン操作 |
+| ブックマーク CRUD | Server Actions (`actions.ts`) | 作成・更新・削除・並び替え・タグ更新 |
+| タグ CRUD | Server Actions (`actions.ts`) | 作成・削除・一括付与 |
 | OGP 取得 | Server Actions (`fetchOgp.ts`) | URL 入力時にタイトル・画像を補完 |
-| ブックマーク CRUD（REST API） | `/api/bookmarks` | 外部連携・テスト用途 |
-| ブックマーク並び替え | `/api/bookmarks/reorder` | D&D 操作後の sortOrder 更新 |
 | ユーザー同期 | `/api/users/sync` | Clerk ログイン後に DB 同期 |
 
 ---
@@ -20,7 +19,7 @@
 
 ブックマークを新規登録する。
 
-**引数:** `{ url, title, memo, ogImage? }`
+**引数:** `{ url, title, memo, ogImage?, tagIds?: string[] }`
 
 **戻り値:** `{}` | `{ error: string }`
 
@@ -32,7 +31,7 @@
 
 ブックマークを更新する。
 
-**引数:** `id: string`, `{ url, title, memo, ogImage? }`
+**引数:** `id: string`, `{ url, title, memo, ogImage?, tagIds?: string[] }`
 
 **戻り値:** `{}` | `{ error: string }`
 
@@ -41,6 +40,26 @@
 | 未認証 | `/sign-in` へ redirect |
 | `"ブックマークが見つかりません"` | 指定 ID が存在しない |
 | `"権限がありません"` | 他ユーザーのブックマーク |
+
+---
+
+### `updateBookmarkTags(id, tagIds)`
+
+ブックマークのタグを上書き更新する。
+
+**引数:** `id: string`, `tagIds: string[]`
+
+**戻り値:** `{}` | `{ error: string }`
+
+---
+
+### `reorderBookmarks(ids)`
+
+ブックマークの並び順を更新する。D&D 完了時に呼ばれる。
+
+**引数:** `ids: string[]`（並び替え後の順序で並べた bookmark ID の配列）
+
+**戻り値:** `{}` | `{ error: string }`
 
 ---
 
@@ -72,6 +91,47 @@
 
 ---
 
+### `createTag(name)`
+
+タグを新規作成する。同一ユーザー内で name がユニーク。
+
+**引数:** `name: string`
+
+**戻り値:** `{ tag: { id, name } }` | `{ conflict: true, tag: { id, name } }` | `{ error: string }`
+
+| 戻り値 | 条件 |
+|--------|------|
+| `{ tag }` | 正常作成 |
+| `{ conflict: true, tag }` | 同名タグが既に存在する（既存タグを返す） |
+| `{ error }` | バリデーションエラー・作成失敗 |
+
+---
+
+### `deleteTag(id)`
+
+タグを削除する。関連する BookmarkTag も CASCADE 削除される。
+
+**引数:** `id: string`
+
+**戻り値:** `{}` | `{ error: string }`
+
+| エラー | 条件 |
+|--------|------|
+| `"タグが見つかりません"` | 指定 ID が存在しない |
+| `"権限がありません"` | 他ユーザーのタグ |
+
+---
+
+### `bulkAddTags(bookmarkIds, tagIds)`
+
+複数ブックマークにタグを一括付与する。既存タグは維持される。
+
+**引数:** `bookmarkIds: string[]`, `tagIds: string[]`
+
+**戻り値:** `{}` | `{ error: string }`
+
+---
+
 ### `fetchOgp(url)`
 
 指定 URL から OGP 情報を取得する。
@@ -83,55 +143,11 @@
 | 戻り値 | 条件 |
 |--------|------|
 | `{ title, image }` | 正常取得（image は絶対 URL に解決済み） |
-| `{ error: "取得できませんでした" }` | URLバリデーション失敗（非 http/https・localhost・プライベートIP等）・fetch 失敗・タイムアウト（3秒）・レスポンス異常 |
+| `{ error: "取得できませんでした" }` | URLバリデーション失敗・fetch 失敗・タイムアウト（3秒）・レスポンス異常 |
 
 ---
 
-## REST API 共通仕様
-
-- ベース URL: `/api`
-- リクエスト/レスポンスは JSON 形式
-- 全エンドポイントは Clerk 認証必須（未認証時は `401` を返す）
-- ユーザーは自分のリソースのみ操作可能（他ユーザーのリソースへのアクセスは `403`）
-
----
-
-## エラーレスポンス定義
-
-### 形式
-
-すべてのエラーレスポンスは以下の JSON 形式で返す。
-
-```json
-{ "error": "<メッセージ文字列 または バリデーションエラーオブジェクト>" }
-```
-
-バリデーションエラー（400）の場合は Zod の `flatten()` 形式を返す。
-
-```json
-{
-  "error": {
-    "formErrors": [],
-    "fieldErrors": {
-      "url": ["Invalid url"],
-      "title": ["String must contain at least 1 character(s)"]
-    }
-  }
-}
-```
-
-### 共通ステータスコード
-
-| ステータス | 意味 | 使用条件 |
-|-----------|------|---------|
-| 400 | Bad Request | バリデーションエラー（URL 形式不正、必須項目未入力など） |
-| 401 | Unauthorized | 未認証（Clerk セッションなし） |
-| 403 | Forbidden | 他ユーザーのリソースへのアクセス |
-| 404 | Not Found | 指定 ID のリソースが存在しない |
-
----
-
-## ユーザー
+## REST API
 
 ### POST /api/users/sync
 
@@ -150,157 +166,3 @@
   "name": "string"
 }
 ```
-
----
-
-## ブックマーク
-
-### GET /api/bookmarks
-
-ログインユーザーのブックマーク一覧を sortOrder 昇順で全件取得する。
-
-**レスポンス:**
-
-```json
-// 200 OK
-[
-  {
-    "id": "string",
-    "url": "string",
-    "title": "string",
-    "memo": "string | null",
-    "ogImage": "string | null",
-    "sortOrder": "number",
-    "createdAt": "string (ISO 8601)",
-    "updatedAt": "string (ISO 8601)"
-  }
-]
-```
-
----
-
-### POST /api/bookmarks
-
-ブックマークを新規登録する。
-
-**リクエスト body:**
-
-```json
-{
-  "url": "string (required, URL形式)",
-  "title": "string (required, 1-200文字)",
-  "memo": "string (optional, 最大1000文字)"
-}
-```
-
-**レスポンス:**
-
-```json
-// 201 Created
-{
-  "id": "string",
-  "url": "string",
-  "title": "string",
-  "memo": "string | null",
-  "ogImage": "string | null",
-  "sortOrder": "number",
-  "createdAt": "string (ISO 8601)",
-  "updatedAt": "string (ISO 8601)"
-}
-```
-
-**エラー:**
-
-| ステータス | 条件 |
-|-----------|------|
-| 400 | バリデーションエラー（URL 形式不正、タイトル未入力など） |
-| 401 | 未認証 |
-
----
-
-### PATCH /api/bookmarks/reorder
-
-ブックマークの並び順を更新する。D&D 完了時に BookmarkList から呼ばれる。
-
-**リクエスト body:**
-
-```json
-{
-  "ids": ["string"] // 並び替え後の順序で並べた bookmark ID の配列（最小1件）
-}
-```
-
-**レスポンス:**
-
-```json
-// 200 OK
-{ "ok": true }
-```
-
-**エラー:**
-
-| ステータス | 条件 |
-|-----------|------|
-| 400 | `ids` が空配列または配列以外 |
-| 401 | 未認証 |
-| 403 | `ids` に他ユーザーのブックマーク ID が含まれる |
-
----
-
-### PUT /api/bookmarks/[id]
-
-ブックマークを更新する。
-
-**リクエスト body:**
-
-```json
-{
-  "url": "string (optional)",
-  "title": "string (optional)",
-  "memo": "string | null (optional)"
-}
-```
-
-**レスポンス:**
-
-```json
-// 200 OK
-{
-  "id": "string",
-  "url": "string",
-  "title": "string",
-  "memo": "string | null",
-  "createdAt": "string (ISO 8601)",
-  "updatedAt": "string (ISO 8601)"
-}
-```
-
-**エラー:**
-
-| ステータス | 条件 |
-|-----------|------|
-| 400 | バリデーションエラー |
-| 401 | 未認証 |
-| 403 | 他ユーザーのブックマークへのアクセス |
-| 404 | 指定 ID のブックマークが存在しない |
-
----
-
-### DELETE /api/bookmarks/[id]
-
-ブックマークを削除する。
-
-**レスポンス:**
-
-```json
-// 200 OK
-{ "message": "deleted" }
-```
-
-**エラー:**
-
-| ステータス | 条件 |
-|-----------|------|
-| 401 | 未認証 |
-| 403 | 他ユーザーのブックマークへのアクセス |
-| 404 | 指定 ID のブックマークが存在しない |

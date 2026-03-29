@@ -26,11 +26,25 @@ link-hub/
 │   │   ├── (dashboard)/       # 認証済み画面グループ
 │   │   │   ├── layout.tsx     # ヘッダー・ログアウトボタン
 │   │   │   ├── LogoutButton.tsx
-│   │   │   └── bookmarks/     # ブックマーク一覧・操作ページ
+│   │   │   └── bookmarks/          # ブックマーク関連画面
+│   │   │       ├── page.tsx        # 一覧
+│   │   │       ├── new/page.tsx    # 新規登録
+│   │   │       ├── [id]/edit/page.tsx  # 編集
+│   │   │       ├── tags/page.tsx       # タグ管理
+│   │   │       ├── tags/TagsClient.tsx # タグ管理 Client Component
+│   │   │       ├── actions.ts          # Server Actions（書き込み操作を集約）
+│   │   │       ├── BookmarkForm.tsx
+│   │   │       ├── BookmarkList.tsx
+│   │   │       ├── BulkTagPanel.tsx    # 一括タグ付与パネル
+│   │   │       ├── DeleteButton.tsx
+│   │   │       ├── InlineTagEditor.tsx # インラインタグ編集
+│   │   │       ├── TagFilter.tsx       # タグフィルターバー
+│   │   │       ├── TagInput.tsx        # タグ入力・新規作成
+│   │   │       ├── ThemeToggle.tsx
+│   │   │       ├── UndoSnackbar.tsx
+│   │   │       └── fetchOgp.ts
 │   │   └── api/
-│   │       ├── bookmarks/     # ブックマーク CRUD API
-│   │       │   └── reorder/   # D&D 並び替え API
-│   │       └── users/sync/    # Clerk ユーザー同期 API
+│   │       └── users/sync/    # Clerk ユーザー同期（唯一の REST API）
 │   ├── lib/
 │   │   ├── prisma.ts          # Prisma クライアント
 │   │   └── validations/       # Zod スキーマ
@@ -54,7 +68,10 @@ link-hub/
 ```
 Client (Browser)
   └── Next.js App Router (React Server Components / Client Components)
-        └── API Routes (src/app/api/)
+        ├── Server Actions (reads → Prisma 直接, writes → actions.ts)
+        │     └── Prisma ORM
+        │           └── PostgreSQL (Neon)
+        └── API Routes (src/app/api/) ※ユーザー同期のみ
               └── Prisma ORM
                     └── PostgreSQL (Neon)
 ```
@@ -73,9 +90,19 @@ npm test
 ## 実装方針
 
 - ページコンポーネントは Server Components を基本とし、インタラクションが必要な部分のみ Client Components を使用する
-- API ルートは `src/app/api/` 配下に配置し、ユニットテストを必須とする
+- **reads（データ取得）**: Server Components から Prisma を直接呼ぶ
+- **writes（書き込み操作）**: Server Actions（`actions.ts`）に集約する。REST API は使用しない
 - バリデーションは Zod を使用し、`src/lib/validations/` に集約する
-- ユーザー分離は全 API ルートで `auth()` による `clerkId` チェックを必須とする
+- ユーザー分離は全 Server Actions / API ルートで `getSession()` による認証チェックを必須とする
+
+### 機能追加時のガイドライン
+
+| 判断 | 方針 |
+|------|------|
+| 新しい書き込み操作を追加する | `src/app/(dashboard)/bookmarks/actions.ts` に Server Action を追加する。機能領域が大きい場合は同ディレクトリに `xxxActions.ts` を作成して分割してよい |
+| 新しい REST API が必要になった | 外部クライアントからの利用が明確に必要な場合のみ `src/app/api/` に追加する。UI 操作は必ず Server Actions を経由する |
+| 新しい画面・コンポーネントを追加する | 認証済み画面は `src/app/(dashboard)/` 配下に配置する。インタラクションが不要なものは Server Component、状態管理・イベント処理が必要なものは Client Component とする |
+| タグ以外の新機能（フォルダ等）を追加する | `actions.ts` への追記 or 新規 `xxxActions.ts` の作成どちらでも可。テストは `actions.test.ts` または `xxxActions.test.ts` に作成する |
 
 ## デプロイフロー
 

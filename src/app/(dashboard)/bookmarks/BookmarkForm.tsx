@@ -4,29 +4,42 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { fetchOgp } from "./fetchOgp";
+import { TagInput, type Tag } from "./TagInput";
 
 type Props = {
+  availableTags: Tag[];
   defaultValues?: {
     url: string;
     title: string;
     memo: string;
     ogImage?: string;
+    tagIds?: string[];
   };
   action: (data: {
     url: string;
     title: string;
     memo: string;
     ogImage?: string;
+    tagIds?: string[];
   }) => Promise<{ error?: string }>;
 };
 
-export function BookmarkForm({ defaultValues, action }: Props) {
+export function BookmarkForm({ availableTags, defaultValues, action }: Props) {
   const router = useRouter();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [title, setTitle] = useState(defaultValues?.title ?? "");
   const [ogImage, setOgImage] = useState(defaultValues?.ogImage ?? "");
   const [fetchingOgp, setFetchingOgp] = useState(false);
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>(defaultValues?.tagIds ?? []);
+  const [localTags, setLocalTags] = useState<Tag[]>(availableTags);
+
+  function handleTagChange(ids: string[], newTag?: Tag) {
+    setSelectedTagIds(ids);
+    if (newTag && !localTags.some((t) => t.id === newTag.id)) {
+      setLocalTags((prev) => [...prev, newTag]);
+    }
+  }
 
   // fetchOgp の await 中に state が更新されても常に最新値を参照するための ref
   const titleRef = useRef(title);
@@ -65,6 +78,7 @@ export function BookmarkForm({ defaultValues, action }: Props) {
       title: (form.elements.namedItem("title") as HTMLInputElement).value.trim(),
       memo: (form.elements.namedItem("memo") as HTMLTextAreaElement).value.trim(),
       ogImage: ogImage || undefined,
+      tagIds: selectedTagIds,
     };
 
     // クライアントサイドバリデーション
@@ -153,6 +167,20 @@ export function BookmarkForm({ defaultValues, action }: Props) {
           placeholder="メモ（任意）"
         />
         {errors.memo && <p className="mt-1 text-xs text-red-500">{errors.memo}</p>}
+      </div>
+
+      <div>
+        <label htmlFor="tag-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          タグ
+        </label>
+        <div className="mt-1">
+          <TagInput
+            inputId="tag-input"
+            availableTags={localTags}
+            selectedTagIds={selectedTagIds}
+            onChange={handleTagChange}
+          />
+        </div>
       </div>
 
       <div className="flex gap-3">
