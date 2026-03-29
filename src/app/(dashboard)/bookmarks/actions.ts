@@ -84,6 +84,42 @@ export async function updateBookmark(id: string, data: BookmarkData): Promise<{ 
   return {};
 }
 
+export async function updateBookmarkTags(
+  id: string,
+  tagIds: string[],
+): Promise<{ error?: string }> {
+  const session = await getSession();
+  if (!session) redirect("/sign-in");
+
+  const bookmark = await prisma.bookmark.findUnique({ where: { id } });
+  if (!bookmark) return { error: "ブックマークが見つかりません" };
+  if (bookmark.userId !== session.user.id) return { error: "権限がありません" };
+
+  const validTagIds = tagIds.length
+    ? (
+        await prisma.tag.findMany({
+          where: { id: { in: tagIds }, userId: session.user.id },
+          select: { id: true },
+        })
+      ).map((t) => t.id)
+    : [];
+
+  await prisma.bookmark.update({
+    where: { id },
+    data: {
+      tags: {
+        deleteMany: {},
+        ...(validTagIds.length
+          ? { create: validTagIds.map((tagId) => ({ tagId })) }
+          : {}),
+      },
+    },
+  });
+
+  revalidatePath("/bookmarks");
+  return {};
+}
+
 export async function deleteBookmark(
   id: string,
   _prevState: { error?: string },
