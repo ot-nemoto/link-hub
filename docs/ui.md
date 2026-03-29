@@ -10,6 +10,7 @@
 | ブックマーク一覧 | `/bookmarks` | 必要 | 自分のブックマーク一覧。新規登録ボタンあり |
 | ブックマーク新規登録 | `/bookmarks/new` | 必要 | URL・タイトル・メモを入力して登録 |
 | ブックマーク編集 | `/bookmarks/[id]/edit` | 必要 | 既存ブックマークの編集 |
+| タグ管理 | `/bookmarks/tags` | 必要 | タグの作成・削除・一覧表示 |
 | 認証エラー | `/auth-error` | 不要 | 認証失敗時のエラー表示 |
 
 ## 画面遷移図
@@ -25,6 +26,7 @@ flowchart TD
     LIST[ブックマーク一覧]:::screen
     NEW[ブックマーク新規登録]:::screen
     EDIT[ブックマーク編集]:::screen
+    TAGS[タグ管理]:::screen
 
     UNAUTH -->|Clerk Middleware| LOGIN
     LOGIN -->|ログイン成功| LIST
@@ -33,12 +35,15 @@ flowchart TD
 
     LIST -->|新規登録ボタン| NEW
     LIST -->|編集ボタン| EDIT
+    LIST -->|タグ管理リンク| TAGS
 
     NEW -->|保存成功| LIST
     NEW -->|キャンセル| LIST
 
     EDIT -->|保存成功| LIST
     EDIT -->|キャンセル| LIST
+
+    TAGS -->|一覧リンク| LIST
 
     subgraph Header ["Header（全画面共通）"]
         direction LR
@@ -65,11 +70,24 @@ flowchart TD
 - キーワード検索（title / url / memo に対する部分一致）
 - 検索ワード入力中はドラッグ＆ドロップを無効化し、行の背景を薄青（`bg-blue-50` / `dark:bg-blue-950`）にしてドラッグハンドルを非表示にする
 - ドラッグ＆ドロップで並び順を変更できる（ドラッグハンドルをクリックしてドラッグ）
-- 並び替え後は `PATCH /api/bookmarks/reorder` で DB に保存する
+- 並び替え後は `reorderBookmarks()` Server Action で DB に保存する
 - チェックボックスで複数選択し一括削除可能
+- チェックボックスで複数選択後「タグを追加」ボタンで一括タグ付与パネルを表示できる
 - ダークモード対応（OS 設定に従い初期化、ローカルストレージで保持）
-- タグによるフィルタリング: 画面上部にタグフィルターを表示。タグをクリックして絞り込む（複数選択可）。「タグなし」フィルターも選択可
+- タグによるフィルタリング: 画面上部にタグフィルターを表示。タグをクリックして絞り込む（複数選択可）。「タグなし」フィルターも選択可。複数選択中は「全解除」ボタンを表示
 - 各ブックマーク行にタグバッジを表示
+- 各ブックマーク行の「タグ編集」ボタンでインラインタグ編集が可能（編集画面への遷移不要）
+- タグ管理ページ（`/bookmarks/tags`）へのリンクをタグフィルターバーに表示
+
+### タグ管理（`/bookmarks/tags`）
+
+- ログインユーザーが所有するタグを一覧表示する
+- 各タグに紐づくブックマーク件数を表示する（例: `3件`）
+- タグ名を入力して「追加」で新規タグを作成できる
+- 同一ユーザー内で同名タグは作成できない（重複時は既存タグを使用）
+- 削除ボタンで対象タグを削除できる（関連する BookmarkTag も CASCADE 削除）
+- タグが 0 件の場合は「タグがありません」を表示
+- 「← ブックマーク一覧」リンクで `/bookmarks` に戻れる
 
 ### ブックマーク新規登録（`/bookmarks/new`）
 
@@ -97,6 +115,15 @@ flowchart TD
 | Empty | ブックマークが 0 件 | 「まだブックマークがありません」のメッセージを表示 |
 | EmptySearch | 検索結果が 0 件 | 「該当するブックマークがありません」のメッセージを表示 |
 | Error | Server Action 失敗（削除エラーなど） | 削除ボタン直上にエラーメッセージ（`bg-red-50 text-red-600`）を表示 |
+
+### タグ管理（`/bookmarks/tags`）
+
+| 状態 | 条件 | 表示内容 |
+|------|------|---------|
+| Normal | タグが 1 件以上 | タグ一覧（名前・ブックマーク件数・削除ボタン）を表示 |
+| Empty | タグが 0 件 | 「タグがありません」のメッセージを表示 |
+| Creating | タグ作成中（送信中） | 「追加」ボタンを `disabled`・入力欄も `disabled` |
+| Error | 作成・削除失敗 | タグ一覧上部にエラーメッセージを表示 |
 
 ### ブックマーク新規登録 / 編集（`/bookmarks/new`, `/bookmarks/[id]/edit`）
 
@@ -126,12 +153,19 @@ src/app/
 │       ├── new/page.tsx    # 新規登録
 │       ├── [id]/edit/page.tsx  # 編集
 │       ├── BookmarkForm.tsx    # 登録・編集共通フォーム（OGP 自動取得含む）
-│       ├── BookmarkList.tsx    # ブックマーク一覧（DnD リスト・OGP・選択・削除）
+│       ├── BookmarkList.tsx    # ブックマーク一覧（DnD リスト・OGP・選択・削除・タグ編集）
+│       ├── BulkTagPanel.tsx    # 一括タグ付与パネル
 │       ├── DeleteButton.tsx    # 削除ボタン（楽観的更新・Undo連携）
+│       ├── InlineTagEditor.tsx # インラインタグ編集
+│       ├── TagFilter.tsx       # タグフィルターバー
+│       ├── TagInput.tsx        # タグ入力・新規作成
 │       ├── ThemeToggle.tsx     # ダークモード切り替えボタン
 │       ├── UndoSnackbar.tsx    # 削除 Undo スナックバー
-│       ├── actions.ts      # Server Actions（CRUD・一括削除）
-│       └── fetchOgp.ts     # OGP 取得 Server Action
+│       ├── actions.ts      # Server Actions（ブックマーク CRUD・タグ CRUD・一括操作）
+│       ├── fetchOgp.ts     # OGP 取得 Server Action
+│       └── tags/           # タグ管理画面
+│           ├── page.tsx        # タグ管理（Server Component）
+│           └── TagsClient.tsx  # タグ管理 UI（Client Component）
 └── auth-error/page.tsx     # 認証エラー画面
 ```
 
@@ -146,7 +180,10 @@ src/app/
 | `ThemeToggle` | `bookmarks/ThemeToggle.tsx` | Client Component | ダークモード切り替えボタン |
 | `UndoSnackbar` | `bookmarks/UndoSnackbar.tsx` | Client Component | 削除後 5 秒間表示する Undo スナックバー |
 | `TagInput` | `bookmarks/TagInput.tsx` | Client Component | タグの選択・新規入力コンポーネント。既存タグをドロップダウンで候補表示し、Enter で新規作成 |
-| `TagFilter` | `bookmarks/TagFilter.tsx` | Client Component | タグフィルターバー。タグをクリックして絞り込み（複数選択可）、「タグなし」フィルターも提供 |
+| `TagFilter` | `bookmarks/TagFilter.tsx` | Client Component | タグフィルターバー。タグをクリックして絞り込み（複数選択可）、「タグなし」フィルター・「全解除」ボタンも提供 |
+| `InlineTagEditor` | `bookmarks/InlineTagEditor.tsx` | Client Component | ブックマーク行内でのインラインタグ編集。`updateBookmarkTags()` を呼び出して保存 |
+| `BulkTagPanel` | `bookmarks/BulkTagPanel.tsx` | Client Component | 複数選択したブックマークへの一括タグ付与パネル。`bulkAddTags()` を呼び出して保存 |
+| `TagsClient` | `bookmarks/tags/TagsClient.tsx` | Client Component | タグ管理画面の UI。`createTag()` / `deleteTag()` を呼び出してタグの作成・削除を行う |
 
 ## UI 規約
 

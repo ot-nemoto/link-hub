@@ -19,9 +19,11 @@ import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useCallback, useRef, useEffect } from "react";
+import { BulkTagPanel } from "./BulkTagPanel";
+import { InlineTagEditor } from "./InlineTagEditor";
 import { TagFilter, UNTAGGED_ID, type TagFilterItem } from "./TagFilter";
 import { UndoSnackbar } from "./UndoSnackbar";
-import { deleteBookmark, deleteBookmarks } from "./actions";
+import { bulkAddTags, deleteBookmark, deleteBookmarks, reorderBookmarks } from "./actions";
 
 type BookmarkTag = { tagId: string; tag: { id: string; name: string } };
 
@@ -65,10 +67,14 @@ type ItemProps = {
   onToggleSelect: (id: string) => void;
   onDelete: (bm: Bookmark) => void;
   allTags: TagFilterItem[];
+  editingTags: boolean;
+  onEditTagsStart: () => void;
+  onEditTagsSave: (tagIds: string[], newTags: TagFilterItem[]) => void;
+  onEditTagsCancel: () => void;
 };
 
 // SSR / ハイドレーション用プレーンアイテム（DndContext 不要）
-function PlainItem({ bm, isSearching, isDndDisabled, isSelected, onToggleSelect, onDelete, allTags }: ItemProps) {
+function PlainItem({ bm, isSearching, isDndDisabled, isSelected, onToggleSelect, onDelete, allTags, editingTags, onEditTagsStart, onEditTagsSave, onEditTagsCancel }: ItemProps) {
   return (
     <li
       className={`flex items-center gap-3 px-4 py-3 ${
@@ -96,13 +102,13 @@ function PlainItem({ bm, isSearching, isDndDisabled, isSelected, onToggleSelect,
           referrerPolicy="no-referrer"
         />
       )}
-      <ItemContent bm={bm} onDelete={onDelete} allTags={allTags} />
+      <ItemContent bm={bm} onDelete={onDelete} allTags={allTags} editingTags={editingTags} onEditTagsStart={onEditTagsStart} onEditTagsSave={onEditTagsSave} onEditTagsCancel={onEditTagsCancel} />
     </li>
   );
 }
 
 // クライアント専用 DnD アイテム
-function SortableItem({ bm, isSearching, isDndDisabled, isSelected, onToggleSelect, onDelete, allTags }: ItemProps) {
+function SortableItem({ bm, isSearching, isDndDisabled, isSelected, onToggleSelect, onDelete, allTags, editingTags, onEditTagsStart, onEditTagsSave, onEditTagsCancel }: ItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: bm.id,
     disabled: isDndDisabled,
@@ -148,7 +154,7 @@ function SortableItem({ bm, isSearching, isDndDisabled, isSelected, onToggleSele
           referrerPolicy="no-referrer"
         />
       )}
-      <ItemContent bm={bm} onDelete={onDelete} allTags={allTags} />
+      <ItemContent bm={bm} onDelete={onDelete} allTags={allTags} editingTags={editingTags} onEditTagsStart={onEditTagsStart} onEditTagsSave={onEditTagsSave} onEditTagsCancel={onEditTagsCancel} />
     </li>
   );
 }
@@ -158,7 +164,19 @@ function ItemContent({
   bm,
   onDelete,
   allTags,
-}: { bm: Bookmark; onDelete: (bm: Bookmark) => void; allTags: TagFilterItem[] }) {
+  editingTags,
+  onEditTagsStart,
+  onEditTagsSave,
+  onEditTagsCancel,
+}: {
+  bm: Bookmark;
+  onDelete: (bm: Bookmark) => void;
+  allTags: TagFilterItem[];
+  editingTags: boolean;
+  onEditTagsStart: () => void;
+  onEditTagsSave: (tagIds: string[], newTags: TagFilterItem[]) => void;
+  onEditTagsCancel: () => void;
+}) {
   return (
     <>
       <div className="min-w-0 flex-1">
@@ -174,20 +192,34 @@ function ItemContent({
         {bm.memo && (
           <p className="truncate text-sm text-gray-700 dark:text-gray-300">{bm.memo}</p>
         )}
-        {bm.tags.length > 0 && (
-          <div className="mt-1 flex flex-wrap gap-1">
-            {bm.tags.map((bt) => {
-              const tagName = allTags.find((t) => t.id === bt.tagId)?.name ?? bt.tag.name;
-              return (
-                <span
-                  key={bt.tagId}
-                  className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700 dark:bg-blue-900 dark:text-blue-300"
-                >
-                  {tagName}
-                </span>
-              );
-            })}
-          </div>
+        <div className="mt-1 flex flex-wrap items-center gap-1">
+          {bm.tags.map((bt) => {
+            const tagName = allTags.find((t) => t.id === bt.tagId)?.name ?? bt.tag.name;
+            return (
+              <span
+                key={bt.tagId}
+                className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+              >
+                {tagName}
+              </span>
+            );
+          })}
+          <button
+            type="button"
+            onClick={onEditTagsStart}
+            className="rounded px-1.5 py-0.5 text-xs text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+          >
+            タグ編集
+          </button>
+        </div>
+        {editingTags && (
+          <InlineTagEditor
+            bookmarkId={bm.id}
+            allTags={allTags}
+            currentTagIds={bm.tags.map((bt) => bt.tagId)}
+            onSave={onEditTagsSave}
+            onCancel={onEditTagsCancel}
+          />
         )}
       </div>
       <div className="flex shrink-0 gap-2">
@@ -221,7 +253,12 @@ export function BookmarkList({
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [items, setItems] = useState<Bookmark[]>(initial);
+  const [allTagsState, setAllTagsState] = useState<TagFilterItem[]>(allTags);
   const [activeTagIds, setActiveTagIds] = useState<string[]>([]);
+  const [editingTagsId, setEditingTagsId] = useState<string | null>(null);
+  const [isBulkTagging, setIsBulkTagging] = useState(false);
+  const [bulkTagSaving, setBulkTagSaving] = useState(false);
+  const [bulkTagError, setBulkTagError] = useState("");
   const [pending, setPending] = useState<PendingDelete | null>(null);
   const pendingRef = useRef<PendingDelete | null>(null);
 
@@ -230,10 +267,14 @@ export function BookmarkList({
     setMounted(true);
   }, []);
 
-  // router.refresh() 後にサーバーから新しい initial が来たら items を同期
+  // router.refresh() 後にサーバーから新しいデータが来たら同期
   useEffect(() => {
     setItems(initial);
   }, [initial]);
+
+  useEffect(() => {
+    setAllTagsState(allTags);
+  }, [allTags]);
 
   // アンマウント時に未確定のタイマーをクリア
   useEffect(() => {
@@ -337,6 +378,74 @@ export function BookmarkList({
     setItems((prev) => [...prev, ...bookmarks]);
   }, []);
 
+  const handleEditTagsSave = useCallback(
+    (bookmarkId: string, tagIds: string[], newTags: TagFilterItem[]) => {
+      // 新規作成タグを allTagsState に反映
+      const nextAllTags =
+        newTags.length > 0
+          ? [...allTagsState, ...newTags.filter((t) => !allTagsState.find((a) => a.id === t.id))].sort(
+              (a, b) => a.name.localeCompare(b.name),
+            )
+          : allTagsState;
+      if (newTags.length > 0) setAllTagsState(nextAllTags);
+
+      // ブックマークのタグを楽観的に更新
+      setItems((prev) =>
+        prev.map((bm) => {
+          if (bm.id !== bookmarkId) return bm;
+          return {
+            ...bm,
+            tags: tagIds.map((tid) => {
+              const tag = nextAllTags.find((t) => t.id === tid) ?? { id: tid, name: tid };
+              return { tagId: tid, tag: { id: tid, name: tag.name } };
+            }),
+          };
+        }),
+      );
+      setEditingTagsId(null);
+      router.refresh();
+    },
+    [allTagsState, router],
+  );
+
+  const handleBulkTagsSave = useCallback(
+    async (tagIds: string[]) => {
+      if (tagIds.length === 0) return;
+      setBulkTagSaving(true);
+      setBulkTagError("");
+      const bookmarkIds = Array.from(selectedIds);
+      try {
+        const result = await bulkAddTags(bookmarkIds, tagIds);
+        if (result.error) {
+          setBulkTagError(result.error);
+          return;
+        }
+
+        // 選択中ブックマークに対して楽観的にタグを追加
+        setItems((prev) =>
+          prev.map((bm) => {
+            if (!selectedIds.has(bm.id)) return bm;
+            const existingTagIds = new Set(bm.tags.map((bt) => bt.tagId));
+            const newTags = tagIds
+              .filter((tid) => !existingTagIds.has(tid))
+              .map((tid) => {
+                const tag = allTagsState.find((t) => t.id === tid) ?? { id: tid, name: tid };
+                return { tagId: tid, tag: { id: tid, name: tag.name } };
+              });
+            return { ...bm, tags: [...bm.tags, ...newTags] };
+          }),
+        );
+        setIsBulkTagging(false);
+        router.refresh();
+      } catch {
+        setBulkTagError("タグの一括更新中にエラーが発生しました");
+      } finally {
+        setBulkTagSaving(false);
+      }
+    },
+    [selectedIds, allTagsState, router],
+  );
+
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -363,12 +472,8 @@ export function BookmarkList({
     setItems(next);
 
     try {
-      const res = await fetch("/api/bookmarks/reorder", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: next.map((b) => b.id) }),
-      });
-      if (!res.ok) {
+      const result = await reorderBookmarks(next.map((b) => b.id));
+      if (result.error) {
         setItems(prev);
       }
     } catch {
@@ -385,13 +490,18 @@ export function BookmarkList({
     isSelected: selectedIds.has(bm.id),
     onToggleSelect: toggleSelect,
     onDelete: handleDelete,
-    allTags,
+    allTags: allTagsState,
+    editingTags: editingTagsId === bm.id,
+    onEditTagsStart: () => setEditingTagsId(bm.id),
+    onEditTagsSave: (tagIds: string[], newTags: TagFilterItem[]) =>
+      handleEditTagsSave(bm.id, tagIds, newTags),
+    onEditTagsCancel: () => setEditingTagsId(null),
   });
 
   return (
     <div>
       <TagFilter
-        tags={allTags}
+        tags={allTagsState}
         selectedTagIds={activeTagIds}
         onChange={setActiveTagIds}
       />
@@ -405,15 +515,37 @@ export function BookmarkList({
           {allSelected ? "全解除" : "全選択"}
         </button>
         {selectedIds.size > 0 && (
-          <button
-            type="button"
-            onClick={handleBulkDelete}
-            className="cursor-pointer rounded border border-red-300 px-3 py-1 text-sm text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950"
-          >
-            選択削除（{selectedIds.size}件）
-          </button>
+          <>
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              {selectedIds.size}件選択中
+            </span>
+            <button
+              type="button"
+              onClick={() => setIsBulkTagging((prev) => !prev)}
+              className="cursor-pointer rounded border border-blue-300 px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-400 dark:hover:bg-blue-950"
+            >
+              タグを追加
+            </button>
+            <button
+              type="button"
+              onClick={handleBulkDelete}
+              className="cursor-pointer rounded border border-red-300 px-3 py-1 text-sm text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950"
+            >
+              削除
+            </button>
+          </>
         )}
       </div>
+
+      {isBulkTagging && (
+        <BulkTagPanel
+          allTags={allTagsState}
+          saving={bulkTagSaving}
+          error={bulkTagError}
+          onSave={handleBulkTagsSave}
+          onCancel={() => { setIsBulkTagging(false); setBulkTagError(""); }}
+        />
+      )}
 
       {filteredItems.length === 0 && activeTagIds.length > 0 ? (
         <div className="rounded-lg border border-dashed border-gray-300 py-12 text-center text-sm text-gray-500 dark:border-gray-600 dark:text-gray-400">
