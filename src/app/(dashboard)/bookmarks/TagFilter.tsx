@@ -51,6 +51,15 @@ export function TagFilter({ tags, selectedTagIds, onChange }: Props) {
       >
         タグなし
       </button>
+      {selectedTagIds.length > 0 && (
+        <button
+          type="button"
+          onClick={() => onChange([])}
+          className="rounded-full border border-red-300 bg-white px-3 py-1 text-xs font-medium text-red-500 transition-colors hover:border-red-500 hover:bg-red-50 dark:border-red-700 dark:bg-gray-800 dark:text-red-400 dark:hover:border-red-500 dark:hover:bg-red-900/20"
+        >
+          全解除
+        </button>
+      )}
     </div>
   );
 }
