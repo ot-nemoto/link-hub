@@ -68,10 +68,12 @@ flowchart TD
 - 並び替え後は `PATCH /api/bookmarks/reorder` で DB に保存する
 - チェックボックスで複数選択し一括削除可能
 - ダークモード対応（OS 設定に従い初期化、ローカルストレージで保持）
+- タグによるフィルタリング: 画面上部にタグフィルターを表示。タグをクリックして絞り込む（複数選択可）。「タグなし」フィルターも選択可
+- 各ブックマーク行にタグバッジを表示
 
 ### ブックマーク新規登録（`/bookmarks/new`）
 
-- URL（必須）・タイトル（必須）・メモ（任意）を入力
+- URL（必須）・タイトル（必須）・メモ（任意）・タグ（任意、複数）を入力
 - URL 入力時に OGP を自動取得し、タイトル・OGP 画像 URL を補完する
 - クライアント側でバリデーションを実行（空チェック・URL 形式・http/https スキーム）
 - 保存後は一覧画面へリダイレクト
@@ -79,7 +81,7 @@ flowchart TD
 
 ### ブックマーク編集（`/bookmarks/[id]/edit`）
 
-- 既存の URL・タイトル・メモを初期値として表示
+- 既存の URL・タイトル・メモ・タグを初期値として表示
 - バリデーションは新規登録と同様
 - 保存後は一覧画面へリダイレクト
 - キャンセルボタンで一覧画面へ戻る
@@ -143,6 +145,8 @@ src/app/
 | `LogoutButton` | `LogoutButton.tsx` | Client Component | ログアウトボタン。Clerk 7 + React 19 対応のため `useClerk` フックで実装 |
 | `ThemeToggle` | `bookmarks/ThemeToggle.tsx` | Client Component | ダークモード切り替えボタン |
 | `UndoSnackbar` | `bookmarks/UndoSnackbar.tsx` | Client Component | 削除後 5 秒間表示する Undo スナックバー |
+| `TagInput` | `bookmarks/TagInput.tsx` | Client Component | タグの選択・新規入力コンポーネント。既存タグをドロップダウンで候補表示し、Enter で新規作成 |
+| `TagFilter` | `bookmarks/TagFilter.tsx` | Client Component | タグフィルターバー。タグをクリックして絞り込み（複数選択可）、「タグなし」フィルターも提供 |
 
 ## UI 規約
 

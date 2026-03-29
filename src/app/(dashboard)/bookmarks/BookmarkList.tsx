@@ -19,8 +19,11 @@ import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useCallback, useRef, useEffect } from "react";
+import { TagFilter, UNTAGGED_ID, type TagFilterItem } from "./TagFilter";
 import { UndoSnackbar } from "./UndoSnackbar";
 import { deleteBookmark, deleteBookmarks } from "./actions";
+
+type BookmarkTag = { tagId: string; tag: { id: string; name: string } };
 
 type Bookmark = {
   id: string;
@@ -28,6 +31,7 @@ type Bookmark = {
   title: string;
   memo: string | null;
   ogImage: string | null;
+  tags: BookmarkTag[];
 };
 
 type PendingDelete = {
@@ -56,21 +60,23 @@ function DragHandleIcon() {
 type ItemProps = {
   bm: Bookmark;
   isSearching: boolean;
+  isDndDisabled: boolean;
   isSelected: boolean;
   onToggleSelect: (id: string) => void;
   onDelete: (bm: Bookmark) => void;
+  allTags: TagFilterItem[];
 };
 
 // SSR / ハイドレーション用プレーンアイテム（DndContext 不要）
-function PlainItem({ bm, isSearching, isSelected, onToggleSelect, onDelete }: ItemProps) {
+function PlainItem({ bm, isSearching, isDndDisabled, isSelected, onToggleSelect, onDelete, allTags }: ItemProps) {
   return (
     <li
       className={`flex items-center gap-3 px-4 py-3 ${
         isSearching ? "bg-blue-50 dark:bg-blue-950" : "bg-white dark:bg-gray-800"
       }`}
     >
-      {/* ハンドル分のスペース確保（検索中は非表示） */}
-      {isSearching ? null : (
+      {/* ハンドル分のスペース確保（検索中またはフィルター中は非表示） */}
+      {isDndDisabled ? null : (
         <span className="shrink-0 text-gray-400 dark:text-gray-500">
           <DragHandleIcon />
         </span>
@@ -90,16 +96,16 @@ function PlainItem({ bm, isSearching, isSelected, onToggleSelect, onDelete }: It
           referrerPolicy="no-referrer"
         />
       )}
-      <ItemContent bm={bm} onDelete={onDelete} />
+      <ItemContent bm={bm} onDelete={onDelete} allTags={allTags} />
     </li>
   );
 }
 
 // クライアント専用 DnD アイテム
-function SortableItem({ bm, isSearching, isSelected, onToggleSelect, onDelete }: ItemProps) {
+function SortableItem({ bm, isSearching, isDndDisabled, isSelected, onToggleSelect, onDelete, allTags }: ItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: bm.id,
-    disabled: isSearching,
+    disabled: isDndDisabled,
   });
 
   const style = {
@@ -116,7 +122,7 @@ function SortableItem({ bm, isSearching, isSelected, onToggleSelect, onDelete }:
         isSearching ? "bg-blue-50 dark:bg-blue-950" : "bg-white dark:bg-gray-800"
       }`}
     >
-      {!isSearching && (
+      {!isDndDisabled && (
         <button
           type="button"
           {...attributes}
@@ -142,7 +148,7 @@ function SortableItem({ bm, isSearching, isSelected, onToggleSelect, onDelete }:
           referrerPolicy="no-referrer"
         />
       )}
-      <ItemContent bm={bm} onDelete={onDelete} />
+      <ItemContent bm={bm} onDelete={onDelete} allTags={allTags} />
     </li>
   );
 }
@@ -151,7 +157,8 @@ function SortableItem({ bm, isSearching, isSelected, onToggleSelect, onDelete }:
 function ItemContent({
   bm,
   onDelete,
-}: { bm: Bookmark; onDelete: (bm: Bookmark) => void }) {
+  allTags,
+}: { bm: Bookmark; onDelete: (bm: Bookmark) => void; allTags: TagFilterItem[] }) {
   return (
     <>
       <div className="min-w-0 flex-1">
@@ -166,6 +173,21 @@ function ItemContent({
         <p className="truncate text-xs text-gray-500 dark:text-gray-400">{bm.url}</p>
         {bm.memo && (
           <p className="truncate text-sm text-gray-700 dark:text-gray-300">{bm.memo}</p>
+        )}
+        {bm.tags.length > 0 && (
+          <div className="mt-1 flex flex-wrap gap-1">
+            {bm.tags.map((bt) => {
+              const tagName = allTags.find((t) => t.id === bt.tagId)?.name ?? bt.tag.name;
+              return (
+                <span
+                  key={bt.tagId}
+                  className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+                >
+                  {tagName}
+                </span>
+              );
+            })}
+          </div>
         )}
       </div>
       <div className="flex shrink-0 gap-2">
@@ -190,13 +212,16 @@ function ItemContent({
 export function BookmarkList({
   bookmarks: initial,
   isSearching,
+  allTags,
 }: {
   bookmarks: Bookmark[];
   isSearching: boolean;
+  allTags: TagFilterItem[];
 }) {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [items, setItems] = useState<Bookmark[]>(initial);
+  const [activeTagIds, setActiveTagIds] = useState<string[]>([]);
   const [pending, setPending] = useState<PendingDelete | null>(null);
   const pendingRef = useRef<PendingDelete | null>(null);
 
@@ -218,7 +243,18 @@ export function BookmarkList({
   }, []);
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const allSelected = items.length > 0 && selectedIds.size === items.length;
+
+  const filteredItems =
+    activeTagIds.length === 0
+      ? items
+      : items.filter((bm) => {
+          if (activeTagIds.includes(UNTAGGED_ID) && bm.tags.length === 0) return true;
+          return activeTagIds.some(
+            (tid) => tid !== UNTAGGED_ID && bm.tags.some((bt) => bt.tagId === tid),
+          );
+        });
+
+  const allSelected = filteredItems.length > 0 && selectedIds.size === filteredItems.length;
 
   const toggleSelect = useCallback((id: string) => {
     setSelectedIds((prev) => {
@@ -231,9 +267,11 @@ export function BookmarkList({
 
   const toggleAll = useCallback(() => {
     setSelectedIds((prev) =>
-      prev.size === items.length ? new Set() : new Set(items.map((b) => b.id)),
+      prev.size === filteredItems.length
+        ? new Set()
+        : new Set(filteredItems.map((b) => b.id)),
     );
-  }, [items]);
+  }, [filteredItems]);
 
   // 共通: pending を確定削除してリフレッシュ
   const commitPending = useCallback(
@@ -278,12 +316,17 @@ export function BookmarkList({
   );
 
   const handleBulkDelete = useCallback(() => {
-    const targets = items.filter((b) => selectedIds.has(b.id));
+    const targets = filteredItems.filter((b) => selectedIds.has(b.id));
     if (targets.length === 0) return;
-    setItems((prev) => prev.filter((b) => !selectedIds.has(b.id)));
-    setSelectedIds(new Set());
+    const idsToDelete = new Set(targets.map((b) => b.id));
+    setItems((prev) => prev.filter((b) => !idsToDelete.has(b.id)));
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      for (const id of idsToDelete) next.delete(id);
+      return next;
+    });
     startPending(targets);
-  }, [items, selectedIds, startPending]);
+  }, [filteredItems, selectedIds, startPending]);
 
   const handleUndo = useCallback(() => {
     if (!pendingRef.current) return;
@@ -333,16 +376,26 @@ export function BookmarkList({
     }
   }, []);
 
+  const isDndDisabled = isSearching || activeTagIds.length > 0;
+
   const itemProps = (bm: Bookmark) => ({
     bm,
     isSearching,
+    isDndDisabled,
     isSelected: selectedIds.has(bm.id),
     onToggleSelect: toggleSelect,
     onDelete: handleDelete,
+    allTags,
   });
 
   return (
     <div>
+      <TagFilter
+        tags={allTags}
+        selectedTagIds={activeTagIds}
+        onChange={setActiveTagIds}
+      />
+
       <div className="mb-3 flex items-center gap-2">
         <button
           type="button"
@@ -362,16 +415,20 @@ export function BookmarkList({
         )}
       </div>
 
-      {mounted ? (
+      {filteredItems.length === 0 && activeTagIds.length > 0 ? (
+        <div className="rounded-lg border border-dashed border-gray-300 py-12 text-center text-sm text-gray-500 dark:border-gray-600 dark:text-gray-400">
+          該当するブックマークがありません
+        </div>
+      ) : mounted ? (
         // クライアントマウント後: DnD 有効
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragEnd={handleDragEndWithSave}
         >
-          <SortableContext items={items.map((b) => b.id)} strategy={verticalListSortingStrategy}>
+          <SortableContext items={filteredItems.map((b) => b.id)} strategy={verticalListSortingStrategy}>
             <ul className="divide-y divide-gray-200 rounded-lg border dark:divide-gray-700 dark:border-gray-700">
-              {items.map((bm) => (
+              {filteredItems.map((bm) => (
                 <SortableItem key={bm.id} {...itemProps(bm)} />
               ))}
             </ul>
@@ -380,7 +437,7 @@ export function BookmarkList({
       ) : (
         // SSR / ハイドレーション: DndContext なしでプレーンリスト
         <ul className="divide-y divide-gray-200 rounded-lg border dark:divide-gray-700 dark:border-gray-700">
-          {items.map((bm) => (
+          {filteredItems.map((bm) => (
             <PlainItem key={bm.id} {...itemProps(bm)} />
           ))}
         </ul>

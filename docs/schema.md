@@ -37,10 +37,36 @@ model Bookmark {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tags BookmarkTag[]
 
   @@index([userId])
   @@map("bookmarks")
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  name      String
+  userId    String   @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookmarks BookmarkTag[]
+
+  @@unique([userId, name])
+  @@index([userId])
+  @@map("tags")
+}
+
+model BookmarkTag {
+  bookmarkId String @map("bookmark_id")
+  tagId      String @map("tag_id")
+
+  bookmark Bookmark @relation(fields: [bookmarkId], references: [id], onDelete: Cascade)
+  tag      Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([bookmarkId, tagId])
+  @@map("bookmark_tags")
 }
 ```
 
@@ -71,6 +97,8 @@ erDiagram
     }
 
     User ||--o{ Bookmark : "所有"
+    User ||--o{ Tag : "所有"
+    Bookmark }o--o{ Tag : "BookmarkTag"
 ```
 
 ---
@@ -104,6 +132,26 @@ erDiagram
 
 ---
 
+## テーブル定義（追加分）
+
+### Tag
+
+| カラム | 型 | 説明 |
+|--------|-----|------|
+| id | String (CUID) | 主キー |
+| name | String | タグ名（ユーザー内でユニーク、最大 50 文字） |
+| userId | String | 外部キー → User.id（User 削除時に CASCADE） |
+| createdAt | DateTime | 作成日時 |
+
+### BookmarkTag
+
+| カラム | 型 | 説明 |
+|--------|-----|------|
+| bookmarkId | String | 複合主キー。外部キー → Bookmark.id（Bookmark 削除時に CASCADE） |
+| tagId | String | 複合主キー。外部キー → Tag.id（Tag 削除時に CASCADE） |
+
+---
+
 ## インデックス設計
 
 | テーブル | インデックス | 用途 |
@@ -111,3 +159,5 @@ erDiagram
 | users | `clerk_id` | Clerk ID による高速ルックアップ（UNIQUE） |
 | users | `email` | メールアドレス重複防止（UNIQUE） |
 | bookmarks | `user_id` | ユーザー別ブックマーク取得の高速化 |
+| tags | `(user_id, name)` | ユーザー内タグ名のユニーク制約・高速ルックアップ |
+| tags | `user_id` | ユーザー別タグ取得の高速化 |

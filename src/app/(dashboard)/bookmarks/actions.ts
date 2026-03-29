@@ -6,7 +6,13 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-type BookmarkData = { url: string; title: string; memo: string; ogImage?: string };
+type BookmarkData = {
+  url: string;
+  title: string;
+  memo: string;
+  ogImage?: string;
+  tagIds?: string[];
+};
 
 export async function createBookmark(data: BookmarkData): Promise<{ error?: string }> {
   const session = await getSession();
@@ -18,6 +24,16 @@ export async function createBookmark(data: BookmarkData): Promise<{ error?: stri
   });
   const sortOrder = (agg._max.sortOrder ?? -1) + 1;
 
+  // 自ユーザーのタグのみに絞り込み（他ユーザーの tagId を除外）
+  const validTagIds = data.tagIds?.length
+    ? (
+        await prisma.tag.findMany({
+          where: { id: { in: data.tagIds }, userId: session.user.id },
+          select: { id: true },
+        })
+      ).map((t) => t.id)
+    : [];
+
   await prisma.bookmark.create({
     data: {
       userId: session.user.id,
@@ -26,6 +42,9 @@ export async function createBookmark(data: BookmarkData): Promise<{ error?: stri
       memo: data.memo || null,
       ogImage: data.ogImage ?? null,
       sortOrder,
+      ...(validTagIds.length
+        ? { tags: { create: validTagIds.map((tagId) => ({ tagId })) } }
+        : {}),
     },
   });
 
@@ -48,6 +67,16 @@ export async function updateBookmark(id: string, data: BookmarkData): Promise<{ 
       title: data.title,
       memo: data.memo || null,
       ...(data.ogImage !== undefined ? { ogImage: data.ogImage ?? null } : {}),
+      ...(data.tagIds !== undefined
+        ? {
+            tags: {
+              deleteMany: {},
+              ...(data.tagIds.length
+                ? { create: data.tagIds.map((tagId) => ({ tagId })) }
+                : {}),
+            },
+          }
+        : {}),
     },
   });
 
