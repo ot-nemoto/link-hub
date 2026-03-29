@@ -14,6 +14,17 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
+vi.mock("@prisma/client", () => {
+  class PrismaClientKnownRequestError extends Error {
+    code: string;
+    constructor(message: string, { code }: { code: string }) {
+      super(message);
+      this.code = code;
+    }
+  }
+  return { Prisma: { PrismaClientKnownRequestError } };
+});
+
 vi.stubEnv("DATABASE_URL", "postgresql://test");
 
 import { currentUser } from "@clerk/nextjs/server";
@@ -138,5 +149,18 @@ describe("POST /api/tags", () => {
     expect(mockTagFindUnique).toHaveBeenCalledWith({
       where: { userId_name: { userId: dbUser.id, name: "TypeScript" } },
     });
+  });
+
+  it("競合によりDB一意制約エラー(P2002)が発生した場合 409 を返す", async () => {
+    const { Prisma } = await import("@prisma/client");
+    mockCurrentUser.mockResolvedValue(clerkUser as never);
+    mockUserFindUnique.mockResolvedValue(dbUser);
+    mockTagFindUnique.mockResolvedValue(null);
+    mockTagCreate.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError("Unique constraint failed", { code: "P2002" }),
+    );
+
+    const res = await POST(makeRequest({ name: "TypeScript" }));
+    expect(res.status).toBe(409);
   });
 });

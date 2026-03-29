@@ -1,4 +1,5 @@
 import { currentUser } from "@clerk/nextjs/server";
+import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -52,10 +53,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "同名のタグが既に存在します" }, { status: 409 });
   }
 
-  const tag = await prisma.tag.create({
-    data: { userId: user.id, name: result.data.name },
-    select: { id: true, name: true, createdAt: true },
-  });
-
-  return NextResponse.json(tag, { status: 201 });
+  try {
+    const tag = await prisma.tag.create({
+      data: { userId: user.id, name: result.data.name },
+      select: { id: true, name: true, createdAt: true },
+    });
+    return NextResponse.json(tag, { status: 201 });
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+      return NextResponse.json({ error: "同名のタグが既に存在します" }, { status: 409 });
+    }
+    throw e;
+  }
 }
