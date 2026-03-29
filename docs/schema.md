@@ -22,6 +22,7 @@ model User {
   updatedAt DateTime   @updatedAt @map("updated_at")
 
   bookmarks Bookmark[]
+  tags      Tag[]
 
   @@map("users")
 }
