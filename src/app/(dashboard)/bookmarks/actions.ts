@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { Prisma } from "@prisma/client";
 
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -159,7 +160,15 @@ export async function createTag(
     });
     revalidatePath("/bookmarks");
     return { tag };
-  } catch {
+  } catch (e) {
+    // findUnique → create の間に別リクエストが同名タグを作成した場合（P2002）は conflict として扱う
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+      const conflicted = await prisma.tag.findUnique({
+        where: { userId_name: { userId: session.user.id, name } },
+        select: { id: true, name: true },
+      });
+      if (conflicted) return { conflict: true, tag: { id: conflicted.id, name: conflicted.name } };
+    }
     return { error: "タグの作成に失敗しました" };
   }
 }
