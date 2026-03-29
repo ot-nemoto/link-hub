@@ -258,6 +258,7 @@ export function BookmarkList({
   const [editingTagsId, setEditingTagsId] = useState<string | null>(null);
   const [isBulkTagging, setIsBulkTagging] = useState(false);
   const [bulkTagSaving, setBulkTagSaving] = useState(false);
+  const [bulkTagError, setBulkTagError] = useState("");
   const [pending, setPending] = useState<PendingDelete | null>(null);
   const pendingRef = useRef<PendingDelete | null>(null);
 
@@ -411,27 +412,36 @@ export function BookmarkList({
     async (tagIds: string[]) => {
       if (tagIds.length === 0) return;
       setBulkTagSaving(true);
+      setBulkTagError("");
       const bookmarkIds = Array.from(selectedIds);
-      const result = await bulkAddTags(bookmarkIds, tagIds);
-      setBulkTagSaving(false);
-      if (result.error) return;
+      try {
+        const result = await bulkAddTags(bookmarkIds, tagIds);
+        if (result.error) {
+          setBulkTagError(result.error);
+          return;
+        }
 
-      // 選択中ブックマークに対して楽観的にタグを追加
-      setItems((prev) =>
-        prev.map((bm) => {
-          if (!selectedIds.has(bm.id)) return bm;
-          const existingTagIds = new Set(bm.tags.map((bt) => bt.tagId));
-          const newTags = tagIds
-            .filter((tid) => !existingTagIds.has(tid))
-            .map((tid) => {
-              const tag = allTagsState.find((t) => t.id === tid) ?? { id: tid, name: tid };
-              return { tagId: tid, tag: { id: tid, name: tag.name } };
-            });
-          return { ...bm, tags: [...bm.tags, ...newTags] };
-        }),
-      );
-      setIsBulkTagging(false);
-      router.refresh();
+        // 選択中ブックマークに対して楽観的にタグを追加
+        setItems((prev) =>
+          prev.map((bm) => {
+            if (!selectedIds.has(bm.id)) return bm;
+            const existingTagIds = new Set(bm.tags.map((bt) => bt.tagId));
+            const newTags = tagIds
+              .filter((tid) => !existingTagIds.has(tid))
+              .map((tid) => {
+                const tag = allTagsState.find((t) => t.id === tid) ?? { id: tid, name: tid };
+                return { tagId: tid, tag: { id: tid, name: tag.name } };
+              });
+            return { ...bm, tags: [...bm.tags, ...newTags] };
+          }),
+        );
+        setIsBulkTagging(false);
+        router.refresh();
+      } catch {
+        setBulkTagError("タグの一括更新中にエラーが発生しました");
+      } finally {
+        setBulkTagSaving(false);
+      }
     },
     [selectedIds, allTagsState, router],
   );
@@ -531,8 +541,9 @@ export function BookmarkList({
         <BulkTagPanel
           allTags={allTagsState}
           saving={bulkTagSaving}
+          error={bulkTagError}
           onSave={handleBulkTagsSave}
-          onCancel={() => setIsBulkTagging(false)}
+          onCancel={() => { setIsBulkTagging(false); setBulkTagError(""); }}
         />
       )}
 

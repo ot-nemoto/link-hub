@@ -7,11 +7,12 @@ import { type TagFilterItem } from "./TagFilter";
 type Props = {
   allTags: TagFilterItem[];
   saving: boolean;
+  error?: string;
   onSave: (tagIds: string[]) => void;
   onCancel: () => void;
 };
 
-export function BulkTagPanel({ allTags, saving, onSave, onCancel }: Props) {
+export function BulkTagPanel({ allTags, saving, error, onSave, onCancel }: Props) {
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
 
   function toggle(id: string) {
@@ -50,6 +51,7 @@ export function BulkTagPanel({ allTags, saving, onSave, onCancel }: Props) {
           })}
         </div>
       )}
+      {error && <p className="mb-2 text-xs text-red-500">{error}</p>}
       <div className="flex gap-2">
         <button
           type="button"
