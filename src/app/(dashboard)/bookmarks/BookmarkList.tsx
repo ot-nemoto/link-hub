@@ -19,10 +19,11 @@ import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useCallback, useRef, useEffect } from "react";
+import { BulkTagPanel } from "./BulkTagPanel";
 import { InlineTagEditor } from "./InlineTagEditor";
 import { TagFilter, UNTAGGED_ID, type TagFilterItem } from "./TagFilter";
 import { UndoSnackbar } from "./UndoSnackbar";
-import { deleteBookmark, deleteBookmarks } from "./actions";
+import { bulkAddTags, deleteBookmark, deleteBookmarks } from "./actions";
 
 type BookmarkTag = { tagId: string; tag: { id: string; name: string } };
 
@@ -255,6 +256,8 @@ export function BookmarkList({
   const [allTagsState, setAllTagsState] = useState<TagFilterItem[]>(allTags);
   const [activeTagIds, setActiveTagIds] = useState<string[]>([]);
   const [editingTagsId, setEditingTagsId] = useState<string | null>(null);
+  const [isBulkTagging, setIsBulkTagging] = useState(false);
+  const [bulkTagSaving, setBulkTagSaving] = useState(false);
   const [pending, setPending] = useState<PendingDelete | null>(null);
   const pendingRef = useRef<PendingDelete | null>(null);
 
@@ -404,6 +407,35 @@ export function BookmarkList({
     [allTagsState, router],
   );
 
+  const handleBulkTagsSave = useCallback(
+    async (tagIds: string[]) => {
+      if (tagIds.length === 0) return;
+      setBulkTagSaving(true);
+      const bookmarkIds = Array.from(selectedIds);
+      const result = await bulkAddTags(bookmarkIds, tagIds);
+      setBulkTagSaving(false);
+      if (result.error) return;
+
+      // 選択中ブックマークに対して楽観的にタグを追加
+      setItems((prev) =>
+        prev.map((bm) => {
+          if (!selectedIds.has(bm.id)) return bm;
+          const existingTagIds = new Set(bm.tags.map((bt) => bt.tagId));
+          const newTags = tagIds
+            .filter((tid) => !existingTagIds.has(tid))
+            .map((tid) => {
+              const tag = allTagsState.find((t) => t.id === tid) ?? { id: tid, name: tid };
+              return { tagId: tid, tag: { id: tid, name: tag.name } };
+            });
+          return { ...bm, tags: [...bm.tags, ...newTags] };
+        }),
+      );
+      setIsBulkTagging(false);
+      router.refresh();
+    },
+    [selectedIds, allTagsState, router],
+  );
+
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -477,15 +509,36 @@ export function BookmarkList({
           {allSelected ? "全解除" : "全選択"}
         </button>
         {selectedIds.size > 0 && (
-          <button
-            type="button"
-            onClick={handleBulkDelete}
-            className="cursor-pointer rounded border border-red-300 px-3 py-1 text-sm text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950"
-          >
-            選択削除（{selectedIds.size}件）
-          </button>
+          <>
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              {selectedIds.size}件選択中
+            </span>
+            <button
+              type="button"
+              onClick={() => setIsBulkTagging((prev) => !prev)}
+              className="cursor-pointer rounded border border-blue-300 px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-400 dark:hover:bg-blue-950"
+            >
+              タグを追加
+            </button>
+            <button
+              type="button"
+              onClick={handleBulkDelete}
+              className="cursor-pointer rounded border border-red-300 px-3 py-1 text-sm text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950"
+            >
+              削除
+            </button>
+          </>
         )}
       </div>
+
+      {isBulkTagging && (
+        <BulkTagPanel
+          allTags={allTagsState}
+          saving={bulkTagSaving}
+          onSave={handleBulkTagsSave}
+          onCancel={() => setIsBulkTagging(false)}
+        />
+      )}
 
       {filteredItems.length === 0 && activeTagIds.length > 0 ? (
         <div className="rounded-lg border border-dashed border-gray-300 py-12 text-center text-sm text-gray-500 dark:border-gray-600 dark:text-gray-400">

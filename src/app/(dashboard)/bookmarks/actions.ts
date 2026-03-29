@@ -120,6 +120,42 @@ export async function updateBookmarkTags(
   return {};
 }
 
+export async function bulkAddTags(
+  bookmarkIds: string[],
+  tagIds: string[],
+): Promise<{ error?: string }> {
+  const session = await getSession();
+  if (!session) redirect("/sign-in");
+
+  if (bookmarkIds.length === 0 || tagIds.length === 0) return {};
+
+  const validBookmarkIds = (
+    await prisma.bookmark.findMany({
+      where: { id: { in: bookmarkIds }, userId: session.user.id },
+      select: { id: true },
+    })
+  ).map((b) => b.id);
+
+  const validTagIds = (
+    await prisma.tag.findMany({
+      where: { id: { in: tagIds }, userId: session.user.id },
+      select: { id: true },
+    })
+  ).map((t) => t.id);
+
+  if (validBookmarkIds.length === 0 || validTagIds.length === 0) return {};
+
+  await prisma.bookmarkTag.createMany({
+    data: validBookmarkIds.flatMap((bookmarkId) =>
+      validTagIds.map((tagId) => ({ bookmarkId, tagId })),
+    ),
+    skipDuplicates: true,
+  });
+
+  revalidatePath("/bookmarks");
+  return {};
+}
+
 export async function deleteBookmark(
   id: string,
   _prevState: { error?: string },
