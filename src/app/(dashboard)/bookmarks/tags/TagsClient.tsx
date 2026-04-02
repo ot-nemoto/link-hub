@@ -34,7 +34,7 @@ export function TagsClient({ initialTags }: { initialTags: Tag[] }) {
         return;
       }
       setTags((prev) =>
-        [...prev, { ...result.tag!, bookmarkCount: 0 }].sort((a, b) =>
+        [...prev, { ...result.tag, bookmarkCount: 0 }].sort((a, b) =>
           a.name.localeCompare(b.name),
         ),
       );
