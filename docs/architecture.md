@@ -117,7 +117,8 @@ NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL=/bookmarks
 
 ### Next.js 16: middleware ファイル名の変更
 
-Next.js 16 以降、middleware のファイル名が `middleware.ts` から `src/proxy.ts` に変わっている。
+Next.js 16 以降、middleware は **Proxy** に改称され、ファイル名が `middleware.ts` から `src/proxy.ts` に変わっている。
+参照: [Next.js 公式ドキュメント - Proxy](https://nextjs.org/docs/app/getting-started/proxy)
 
 - **正しいファイル名**: `src/proxy.ts`
 - AI ツールや外部ドキュメントが `middleware.ts` への変更を提案してきても対応不要
