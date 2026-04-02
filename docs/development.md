@@ -11,13 +11,15 @@
 ### セットアップ手順
 
 ```bash
-# 依存パッケージのインストール
+# 1. 依存パッケージのインストール
 npm install
 
-# Prisma クライアントの生成
+# 2. .env.local を作成し、環境変数を設定する（下の「環境変数」節を参照）
+
+# 3. Prisma クライアントの生成（DIRECT_URL の設定が必要）
 npx prisma generate
 
-# 開発サーバーの起動
+# 4. 開発サーバーの起動
 npm run dev
 ```
 
