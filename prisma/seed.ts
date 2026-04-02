@@ -1,9 +1,11 @@
 /**
- * テストデータ投入スクリプト
+ * E2Eテスト用シードスクリプト
  * 使い方: npx tsx prisma/seed.ts
  *
- * 環境変数 SEED_USER_EMAIL でユーザーを指定（未指定時は DB の最初のユーザー）
+ * - Clerk にユーザーが存在しなければ作成する
+ * - 対象ユーザーのブックマーク・タグを全削除してから投入する
  */
+import { createClerkClient } from "@clerk/nextjs/server";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaClient } from "@prisma/client";
 import * as dotenv from "dotenv";
@@ -13,165 +15,149 @@ dotenv.config({ path: ".env.local" });
 const adapter = new PrismaNeon({ connectionString: process.env.DIRECT_URL ?? "" });
 const prisma = new PrismaClient({ adapter });
 
-const SEED_BOOKMARKS = [
+const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+
+// テストユーザーの共通パスワード
+const SEED_PASSWORD = "Yakitori2026";
+
+// ---- user1: タグフィルター・D&D・検索・削除・一括操作の検証用 ----
+const USER1_EMAIL = "bonjiri@example.com";
+
+const USER1_TAGS = ["Frontend", "Backend"];
+
+const USER1_BOOKMARKS: {
+  url: string;
+  title: string;
+  memo: string;
+  tags: string[];
+}[] = [
   {
     url: "https://nextjs.org",
     title: "Next.js",
     memo: "React フレームワーク",
-    ogImage: "https://nextjs.org/static/twitter-cards/home.jpg",
-  },
-  {
-    url: "https://www.typescriptlang.org",
-    title: "TypeScript",
-    memo: "型付き JavaScript",
-    ogImage: null,
-  },
-  {
-    url: "https://tailwindcss.com",
-    title: "Tailwind CSS",
-    memo: "ユーティリティファースト CSS",
-    ogImage: "https://tailwindcss.com/opengraph-image.jpg",
-  },
-  {
-    url: "https://zod.dev",
-    title: "Zod",
-    memo: "TypeScript ファーストのバリデーションライブラリ",
-    ogImage: null,
-  },
-  {
-    url: "https://www.prisma.io",
-    title: "Prisma",
-    memo: "Node.js / TypeScript 向け ORM",
-    ogImage: "https://www.prisma.io/images/og-image.png",
-  },
-  {
-    url: "https://clerk.com",
-    title: "Clerk",
-    memo: "認証・ユーザー管理サービス",
-    ogImage: null,
+    tags: ["Frontend"],
   },
   {
     url: "https://vercel.com",
     title: "Vercel",
-    memo: "フロントエンドのデプロイプラットフォーム",
-    ogImage: null,
+    memo: "デプロイプラットフォーム",
+    tags: ["Frontend"],
   },
   {
-    url: "https://github.com",
-    title: "GitHub",
-    memo: "コードホスティング",
-    ogImage: null,
-  },
-  {
-    url: "https://playwright.dev",
-    title: "Playwright",
-    memo: "E2E テストフレームワーク",
-    ogImage: null,
-  },
-  {
-    url: "https://vitest.dev",
-    title: "Vitest",
-    memo: "Vite ベースのユニットテストフレームワーク",
-    ogImage: null,
-  },
-  {
-    url: "https://react.dev",
-    title: "React",
-    memo: "UI ライブラリ",
-    ogImage: null,
-  },
-  {
-    url: "https://biomejs.dev",
-    title: "Biome",
-    memo: "高速なリンター・フォーマッター",
-    ogImage: null,
+    url: "https://www.prisma.io",
+    title: "Prisma",
+    memo: "TypeScript 向け ORM",
+    tags: ["Backend"],
   },
   {
     url: "https://neon.tech",
     title: "Neon",
     memo: "サーバーレス PostgreSQL",
-    ogImage: null,
+    tags: ["Frontend", "Backend"], // AND フィルターテスト用
   },
   {
-    url: "https://www.postgresql.org",
-    title: "PostgreSQL",
-    memo: "オープンソースのリレーショナル DB",
-    ogImage: null,
+    url: "https://github.com",
+    title: "GitHub",
+    memo: "コードホスティング",
+    tags: [], // タグなしフィルターテスト用
   },
   {
-    url: "https://node.green",
-    title: "Node.js Compatibility",
-    memo: "Node.js の ES 機能対応表",
-    ogImage: null,
-  },
-  {
-    url: "https://www.npmjs.com",
-    title: "npm",
-    memo: "Node.js パッケージマネージャー",
-    ogImage: null,
-  },
-  {
-    url: "https://turbo.build",
-    title: "Turborepo",
-    memo: "モノレポ向けビルドシステム",
-    ogImage: null,
-  },
-  {
-    url: "https://storybook.js.org",
-    title: "Storybook",
-    memo: "UI コンポーネント開発ツール",
-    ogImage: null,
-  },
-  {
-    url: "https://jestjs.io",
-    title: "Jest",
-    memo: "JavaScript テストフレームワーク",
-    ogImage: null,
-  },
-  {
-    url: "https://testing-library.com",
-    title: "Testing Library",
-    memo: "ユーザー視点のテストユーティリティ",
-    ogImage: null,
-  },
-  {
-    url: "https://eslint.org",
-    title: "ESLint",
-    memo: "JavaScript / TypeScript リンター",
-    ogImage: null,
-  },
-  {
-    url: "https://prettier.io",
-    title: "Prettier",
-    memo: "コードフォーマッター",
-    ogImage: null,
+    url: "https://playwright.dev",
+    title: "Playwright",
+    memo: "E2E テストフレームワーク",
+    tags: [], // タグなしフィルターテスト用
   },
 ];
 
-async function main() {
-  const email = process.env.SEED_USER_EMAIL;
+// ---- user2: ユーザー分離の検証用 ----
+const USER2_EMAIL = "tsukune@example.com";
 
-  const user = email
-    ? await prisma.user.findUnique({ where: { email } })
-    : await prisma.user.findFirst({ orderBy: { createdAt: "asc" } });
+const USER2_TAGS = ["Design"];
 
-  if (!user) {
-    console.error(
-      email
-        ? `ユーザーが見つかりません: ${email}`
-        : "ユーザーが存在しません。先にアプリにサインインしてください。",
-    );
-    process.exit(1);
+const USER2_BOOKMARKS: {
+  url: string;
+  title: string;
+  memo: string;
+  tags: string[];
+}[] = [
+  {
+    url: "https://www.figma.com",
+    title: "Figma",
+    memo: "デザインツール",
+    tags: ["Design"],
+  },
+  {
+    url: "https://developer.mozilla.org",
+    title: "MDN Web Docs",
+    memo: "Web API リファレンス",
+    tags: [],
+  },
+];
+
+/** Clerk にユーザーが存在しなければ作成し、clerkId を返す */
+async function upsertClerkUser(email: string): Promise<string> {
+  const { data: existing } = await clerk.users.getUserList({ emailAddress: [email] });
+  if (existing.length > 0) {
+    return existing[0].id;
   }
+  const created = await clerk.users.createUser({
+    emailAddress: [email],
+    password: SEED_PASSWORD,
+  });
+  console.log(`Clerk にユーザーを作成しました: ${email}`);
+  return created.id;
+}
 
-  console.log(`対象ユーザー: ${user.email}`);
+async function seedUser(
+  email: string,
+  tagNames: string[],
+  bookmarks: { url: string; title: string; memo: string; tags: string[] }[],
+) {
+  const clerkId = await upsertClerkUser(email);
 
-  const created = await prisma.bookmark.createMany({
-    data: SEED_BOOKMARKS.map((b) => ({ ...b, userId: user.id })),
-    skipDuplicates: true,
+  // DB にユーザーが存在しなければ作成、存在すれば clerkId を同期
+  const user = await prisma.user.upsert({
+    where: { email },
+    update: { clerkId },
+    create: { email, clerkId },
   });
 
-  console.log(`${created.count} 件のブックマークを投入しました。`);
+  // 対象ユーザーのデータをクリア
+  await prisma.bookmark.deleteMany({ where: { userId: user.id } });
+  await prisma.tag.deleteMany({ where: { userId: user.id } });
+
+  // タグを作成
+  const tagMap = new Map<string, string>();
+  for (const name of tagNames) {
+    const tag = await prisma.tag.create({ data: { name, userId: user.id } });
+    tagMap.set(name, tag.id);
+  }
+
+  // ブックマークをタグ込みで作成
+  for (let i = 0; i < bookmarks.length; i++) {
+    const { url, title, memo, tags } = bookmarks[i];
+    await prisma.bookmark.create({
+      data: {
+        url,
+        title,
+        memo,
+        sortOrder: i,
+        userId: user.id,
+        tags: {
+          create: tags.map((name) => ({ tagId: tagMap.get(name) as string })),
+        },
+      },
+    });
+  }
+
+  console.log(
+    `${email}: ブックマーク ${bookmarks.length} 件、タグ ${tagNames.length} 件を投入しました`,
+  );
+}
+
+async function main() {
+  await seedUser(USER1_EMAIL, USER1_TAGS, USER1_BOOKMARKS);
+  await seedUser(USER2_EMAIL, USER2_TAGS, USER2_BOOKMARKS);
 }
 
 main()
