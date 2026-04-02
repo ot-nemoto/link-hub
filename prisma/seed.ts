@@ -144,7 +144,15 @@ async function seedUser(
         sortOrder: i,
         userId: user.id,
         tags: {
-          create: tags.map((name) => ({ tagId: tagMap.get(name) as string })),
+          create: tags.map((name) => {
+            const tagId = tagMap.get(name);
+            if (tagId === undefined) {
+              throw new Error(
+                `Unknown tag "${name}" for bookmark "${title}" (${url}) of user ${email}`,
+              );
+            }
+            return { tagId };
+          }),
         },
       },
     });
