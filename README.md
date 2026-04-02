@@ -23,7 +23,7 @@
 | [docs/ui.md](./docs/ui.md) | 画面一覧・画面遷移図・コンポーネント一覧・UI 規約 |
 | [docs/tasks.md](./docs/tasks.md) | フェーズ構成・マイルストーンリンク |
 | [docs/testing.md](./docs/testing.md) | テスト方針・完了条件・実行手順 |
-| [docs/manual-testing.md](./docs/manual-testing.md) | 手動テスト観点チェックリスト |
+| [docs/e2e-scenarios.md](./docs/e2e-scenarios.md) | E2E テストシナリオ一覧 |
 | [docs/development.md](./docs/development.md) | ローカルセットアップ・環境変数・DB操作・デプロイ手順 |
 | [docs/operations.md](./docs/operations.md) | リリースフロー・バージョニングルール・CI 構成 |
 

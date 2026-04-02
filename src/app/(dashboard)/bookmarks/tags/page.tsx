@@ -2,23 +2,14 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { getSession } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { getTagsWithCount } from "@/lib/tags";
 import { TagsClient } from "./TagsClient";
 
 export default async function TagsPage() {
   const session = await getSession();
   if (!session) redirect("/sign-in");
 
-  const rawTags = await prisma.tag.findMany({
-    where: { userId: session.user.id },
-    orderBy: { name: "asc" },
-    select: { id: true, name: true, _count: { select: { bookmarks: true } } },
-  });
-
-  const tags = rawTags.map(({ _count, ...tag }) => ({
-    ...tag,
-    bookmarkCount: _count.bookmarks,
-  }));
+  const tags = await getTagsWithCount(session.user.id);
 
   return (
     <div>

@@ -2,7 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { getSession } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { getBookmarks } from "@/lib/bookmarks";
+import { getTags } from "@/lib/tags";
 import { BookmarkList } from "./BookmarkList";
 
 export default async function BookmarksPage({
@@ -16,35 +17,9 @@ export default async function BookmarksPage({
   const { q } = await searchParams;
   const query = q?.trim() ?? "";
 
-  const where = {
-    userId: session.user.id,
-    ...(query && {
-      OR: [
-        { title: { contains: query, mode: "insensitive" as const } },
-        { url: { contains: query, mode: "insensitive" as const } },
-        { memo: { contains: query, mode: "insensitive" as const } },
-      ],
-    }),
-  };
-
   const [bookmarks, tags] = await Promise.all([
-    prisma.bookmark.findMany({
-      where,
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-      include: {
-        tags: {
-          select: {
-            tagId: true,
-            tag: { select: { id: true, name: true } },
-          },
-        },
-      },
-    }),
-    prisma.tag.findMany({
-      where: { userId: session.user.id },
-      orderBy: { name: "asc" },
-      select: { id: true, name: true },
-    }),
+    getBookmarks(session.user.id, query || undefined),
+    getTags(session.user.id),
   ]);
 
   return (

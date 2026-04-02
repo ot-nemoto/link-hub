@@ -52,7 +52,7 @@ export function TagInput({ inputId, availableTags, selectedTagIds, onChange }: P
     try {
       const result = await createTag(name);
       if (result.conflict && result.tag) {
-        const existsLocally = availableTags.find((t) => t.id === result.tag!.id);
+        const existsLocally = availableTags.find((t) => t.id === result.tag?.id);
         if (existsLocally) {
           selectTag(existsLocally);
         } else {

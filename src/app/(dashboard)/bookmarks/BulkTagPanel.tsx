@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { type TagFilterItem } from "./TagFilter";
+import type { TagFilterItem } from "./TagFilter";
 
 type Props = {
   allTags: TagFilterItem[];
