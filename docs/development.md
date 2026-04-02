@@ -15,11 +15,12 @@
 npm install
 
 # 2. .env.local を作成し、環境変数を設定する（下の「環境変数」節を参照）
+#    ※ DATABASE_URL・DIRECT_URL の設定が必須
 
 # 3. Prisma クライアントの生成（DIRECT_URL の設定が必要）
 npx prisma generate
 
-# 4. 開発サーバーの起動
+# 4. 開発サーバーの起動（DATABASE_URL の設定が必要）
 npm run dev
 ```
 
