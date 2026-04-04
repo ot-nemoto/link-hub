@@ -2,14 +2,13 @@
 
 ## 役割分担
 
-書き込み操作はすべて **Server Actions**（`actions.ts`）で実装する。REST API は Clerk ユーザー同期のみ残存。
+書き込み操作はすべて **Server Actions**（`actions.ts`）で実装する。REST API は存在しない。
 
 | 処理 | 実装方式 | 説明 |
 |------|---------|------|
 | ブックマーク CRUD | Server Actions (`actions.ts`) | 作成・更新・削除・並び替え・タグ更新 |
 | タグ CRUD | Server Actions (`actions.ts`) | 作成・削除・一括付与 |
 | OGP 取得 | Server Actions (`fetchOgp.ts`) | URL 入力時にタイトル・画像を補完 |
-| ユーザー同期 | `/api/users/sync` | Clerk ログイン後に DB 同期 |
 
 ---
 
@@ -145,24 +144,3 @@
 | `{ title, image }` | 正常取得（image は絶対 URL に解決済み） |
 | `{ error: "取得できませんでした" }` | URLバリデーション失敗・fetch 失敗・タイムアウト（3秒）・レスポンス異常 |
 
----
-
-## REST API
-
-### POST /api/users/sync
-
-ログイン後に Clerk ユーザー情報を DB に同期する（upsert）。
-
-**リクエスト body:** なし（Clerk の `currentUser()` からサーバーサイドで取得）
-
-**レスポンス:**
-
-```json
-// 201 Created（新規作成）または 200 OK（更新）
-{
-  "id": "string",
-  "clerkId": "string",
-  "email": "string",
-  "name": "string"
-}
-```
