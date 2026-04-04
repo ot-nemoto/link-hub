@@ -33,8 +33,9 @@ export function TagsClient({ initialTags }: { initialTags: Tag[] }) {
         setError(result.error ?? "タグの作成に失敗しました");
         return;
       }
+      const newTag = result.tag;
       setTags((prev) =>
-        [...prev, { ...result.tag!, bookmarkCount: 0 }].sort((a, b) =>
+        [...prev, { ...newTag, bookmarkCount: 0 }].sort((a, b) =>
           a.name.localeCompare(b.name),
         ),
       );

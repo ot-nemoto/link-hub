@@ -76,17 +76,6 @@ Client (Browser)
                     └── PostgreSQL (Neon)
 ```
 
-## テスト実行
-
-詳細は `docs/testing.md` を参照。
-
-```bash
-# ユニットテスト
-npm test
-
-# 手動テスト観点は docs/manual-testing.md を参照
-```
-
 ## 実装方針
 
 - ページコンポーネントは Server Components を基本とし、インタラクションが必要な部分のみ Client Components を使用する
@@ -103,37 +92,6 @@ npm test
 | 新しい REST API が必要になった | 外部クライアントからの利用が明確に必要な場合のみ `src/app/api/` に追加する。UI 操作は必ず Server Actions を経由する |
 | 新しい画面・コンポーネントを追加する | 認証済み画面は `src/app/(dashboard)/` 配下に配置する。インタラクションが不要なものは Server Component、状態管理・イベント処理が必要なものは Client Component とする |
 | タグ以外の新機能（フォルダ等）を追加する | `actions.ts` への追記 or 新規 `xxxActions.ts` の作成どちらでも可。テストは `actions.test.ts` または `xxxActions.test.ts` に作成する |
-
-## デプロイフロー
-
-```
-git push origin develop
-  → Vercel が自動検知
-    → ビルド（next build）
-      → Vercel にデプロイ
-```
-
-マイグレーションはビルドから分離し、手動で実施する（下記参照）。
-
-## DB マイグレーション（手動運用）
-
-### ローカル開発
-
-```bash
-# マイグレーションファイルを作成して適用
-npx prisma migrate dev --name <migration-name>
-```
-
-### 本番環境
-
-Vercel ダッシュボードの「Functions」>「Shell」、または devcontainer から本番の `DATABASE_URL` を設定した上で実行する。
-
-```bash
-npm run migrate
-# 実行内容: prisma migrate deploy
-```
-
-> **注意**: 本番マイグレーションはデプロイ前に実施すること。アプリのデプロイと migrate deploy の順序は「migrate → deploy」が原則。
 
 ## 環境変数
 
@@ -153,21 +111,14 @@ NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL=/bookmarks
 # MOCK_USER_EMAIL="your@example.com"
 ```
 
-`DATABASE_URL` と `DIRECT_URL` の使い分けは Prisma 7 の要件に基づく。`DATABASE_URL` は接続プール URL（ランタイムクエリ用）、`DIRECT_URL` は直接接続 URL（`prisma migrate` 用）。
+セットアップ手順・DB 操作・デプロイ手順の詳細は [`docs/development.md`](./development.md) を参照。
 
-## ローカル開発用認証バイパス
+## バージョン固有仕様・既知のパターン
 
-Clerk 認証なしで動作確認するため、`MOCK_USER_ID` または `MOCK_USER_EMAIL` を `.env.local` に設定する。
+### Next.js 16: middleware ファイル名の変更
 
-```env
-# DB の users.id を指定する場合
-MOCK_USER_ID="<DB の users.id>"
+Next.js 16 以降、middleware は **Proxy** に改称され、ファイル名が `middleware.ts` から `src/proxy.ts` に変わっている。
+参照: [Next.js 公式ドキュメント - Proxy](https://nextjs.org/docs/app/getting-started/proxy)
 
-# メールアドレスを指定する場合
-MOCK_USER_EMAIL="your@example.com"
-```
-
-- 設定すると `src/proxy.ts`（middleware）が Clerk 認証をスキップし、`src/lib/auth.ts` の `getSession()` が DB から直接ユーザーを返す
-- **優先順位**: `MOCK_USER_ID` > `MOCK_USER_EMAIL`（両方設定した場合は `MOCK_USER_ID` が使われる）
-- **本番環境（`NODE_ENV=production`）では設定しても無効**
-- どちらも設定されていない場合は通常の Clerk 認証フローが動作する
+- **正しいファイル名**: `src/proxy.ts`
+- AI ツールや外部ドキュメントが `middleware.ts` への変更を提案してきても対応不要
