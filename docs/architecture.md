@@ -43,8 +43,6 @@ link-hub/
 │   │   │       ├── ThemeToggle.tsx
 │   │   │       ├── UndoSnackbar.tsx
 │   │   │       └── fetchOgp.ts
-│   │   └── api/
-│   │       └── users/sync/    # Clerk ユーザー同期（唯一の REST API）
 │   ├── lib/
 │   │   ├── prisma.ts          # Prisma クライアント
 │   │   └── validations/       # Zod スキーマ
@@ -68,10 +66,7 @@ link-hub/
 ```
 Client (Browser)
   └── Next.js App Router (React Server Components / Client Components)
-        ├── Server Actions (reads → Prisma 直接, writes → actions.ts)
-        │     └── Prisma ORM
-        │           └── PostgreSQL (Neon)
-        └── API Routes (src/app/api/) ※ユーザー同期のみ
+        └── Server Actions (reads → Prisma 直接, writes → actions.ts)
               └── Prisma ORM
                     └── PostgreSQL (Neon)
 ```
@@ -82,7 +77,7 @@ Client (Browser)
 - **reads（データ取得）**: Server Components から Prisma を直接呼ぶ
 - **writes（書き込み操作）**: Server Actions（`actions.ts`）に集約する。REST API は使用しない
 - バリデーションは Zod を使用し、`src/lib/validations/` に集約する
-- ユーザー分離は全 Server Actions / API ルートで `getSession()` による認証チェックを必須とする
+- ユーザー分離は全 Server Actions で `getSession()` による認証チェックを必須とする
 
 ### 機能追加時のガイドライン
 
