@@ -90,7 +90,7 @@ applyTo: "**"
 | 違反内容 | 重大度 |
 |---|---|
 | `src/app/api/**/route.ts` が追加・変更されているのに対応するテストファイルがない | **BLOCKER** |
-| `src/lib/*.ts` が追加・変更されているのに対応する `*.test.ts` がない | **BLOCKER** |
+| `src/lib/**/*.ts` が追加・変更されているのに対応する `*.test.ts` がない | **BLOCKER** |
 
 ---
 
