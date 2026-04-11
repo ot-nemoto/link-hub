@@ -147,7 +147,7 @@ applyTo: "**"
 
 | 違反内容 | 重大度 |
 |---|---|
-| ユーザー入力を Prisma クエリの `where` に無加工で渡している | **BLOCKER** |
+| Prisma で `$queryRaw`/`$executeRaw` を不安全に使用している（文字列連結・未サニタイズ入力の埋め込み）、または未検証の入力を `orderBy` / 動的キー / フィールド名にそのまま使っている | **BLOCKER** |
 | `dangerouslySetInnerHTML` を使用している | **BLOCKER** |
 | セッション情報を使わずリクエストパラメータのユーザー ID を信頼している | **BLOCKER** |
 
