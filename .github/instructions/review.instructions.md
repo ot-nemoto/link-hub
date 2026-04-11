@@ -36,7 +36,7 @@ applyTo: "**"
 - 各 Server Action の先頭で `getSession()` を呼び出して認証チェックをする
   - 未認証: `redirect("/sign-in")`
 - 処理成功後は `revalidatePath()` でキャッシュを更新する
-- `src/lib/` から throw されたエラーは catch して `{ error: message }` を返す。それ以外は再 throw する
+- `src/lib/` の関数が返す `{ error }` を Server Action 側でチェックしてそのまま返す。予期しないエラー（throw）は再 throw する
 
 ### 違反チェック
 
@@ -45,7 +45,7 @@ applyTo: "**"
 | Server Action の先頭に `getSession()` 呼び出しがない | **BLOCKER** |
 | 戻り値に `error?: string` が含まれていない | **MAJOR** |
 | `revalidatePath()` が呼ばれていない（DB 変更がある場合） | **MAJOR** |
-| 全例外を握りつぶして再 throw していない（`catch { return { error } }` のみ） | **MAJOR** |
+| 予期しない例外を握りつぶして再 throw していない（`catch { return { error } }` のみ） | **MAJOR** |
 
 ---
 
