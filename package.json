@@ -1,6 +1,6 @@
 {
   "name": "link-hub",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -15,30 +15,30 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@clerk/nextjs": "^7.0.7",
+    "@clerk/nextjs": "^7.0.12",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@neondatabase/serverless": "^1.0.2",
-    "@prisma/adapter-neon": "^7.6.0",
-    "@prisma/client": "^7.6.0",
-    "next": "16.2.1",
-    "prisma": "^7.6.0",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
+    "@prisma/adapter-neon": "^7.7.0",
+    "@prisma/client": "^7.7.0",
+    "next": "16.2.3",
+    "prisma": "^7.7.0",
+    "react": "19.2.5",
+    "react-dom": "19.2.5",
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.9",
+    "@biomejs/biome": "2.4.11",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^25",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6.0.0",
-    "dotenv": "^17.3.1",
+    "dotenv": "^17.4.1",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
     "typescript": "^6",
-    "vitest": "^4.1.2"
+    "vitest": "^4.1.4"
   }
 }
