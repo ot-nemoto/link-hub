@@ -78,16 +78,36 @@ npx prisma migrate dev --name <migration-name>
 
 ### テストデータ投入（Seed）
 
-```bash
-# DB の最初のユーザーにデータを投入（開発環境では通常これでOK）
-npx tsx prisma/seed.ts
+`prisma/seed.ts` を使って E2E テスト用のデータを投入できる。
+実行のたびに対象ユーザーのブックマーク・タグを全削除してからデータを投入するため、テスト前に実行することでクリーンな状態を保証できる。
 
-# 特定ユーザーに投入する場合
-SEED_USER_EMAIL=your@email.com npx tsx prisma/seed.ts
+```bash
+npx tsx prisma/seed.ts
 ```
 
-- 実行するたびにデータが追加される（重複チェックなし）
-- データが増えすぎた場合は手動で削除する
+#### 対象ユーザーと投入データ
+
+| ユーザー | タグ | ブックマーク |
+|---------|------|------------|
+| `bonjiri@example.com` | Frontend, Backend | 6件（タグあり・タグなし・複数タグ混在） |
+| `tsukune@example.com` | Design | 2件（ユーザー分離確認用） |
+
+bonjiri のブックマークとタグの対応：
+
+| タイトル | タグ | テスト観点 |
+|---------|------|----------|
+| Next.js | Frontend | タグフィルター |
+| Vercel | Frontend | タグフィルター |
+| Prisma | Backend | タグフィルター |
+| Neon | Frontend + Backend | AND フィルター |
+| GitHub | なし | タグなしフィルター |
+| Playwright | なし | タグなしフィルター |
+
+#### 注意事項
+
+- Clerk にユーザーが存在しない場合は自動作成される（パスワード: `Yakitori2026`）
+- 既存のブックマーク・タグは全削除されるため、手動で追加したデータは失われる
+- `CLERK_SECRET_KEY` が `.env.local` に設定されていること
 
 ---
 
