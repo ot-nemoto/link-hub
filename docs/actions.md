@@ -19,8 +19,9 @@
 
 ## 共通仕様
 
-- すべての Server Action は先頭で `getSession()` を呼び出して認証チェックをする
+- Server Action は原則として先頭で `getSession()` を呼び出して認証チェックをする
 - 未認証時は `/sign-in` へ redirect する
+- ただし `fetchOgp(url)`（`bookmarks/fetchOgp.ts`）はユーザーデータを操作しない外部フェッチのため、この認証チェックの対象外とする
 - 戻り値は少なくとも `error?: string` を含む型にする
 - DB 変更後は `revalidatePath()` でキャッシュを更新する
 - `src/lib/` の関数が返す `{ error }` はそのまま返す。予期しないエラーは再 throw する
