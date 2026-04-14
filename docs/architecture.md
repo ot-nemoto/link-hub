@@ -57,9 +57,7 @@ link-hub/
 
 ## 認証フロー
 
-1. `src/proxy.ts`（middleware）で未認証リクエストを `/sign-in` にリダイレクト
-2. Clerk の `currentUser()` / `auth()` でサーバーサイドのユーザー情報を取得
-3. DB の `User` テーブルは Clerk の `clerkId` をキーに同期（初回ログイン時に upsert）
+[`docs/auth.md`](auth.md) を参照。
 
 ## データフロー
 
