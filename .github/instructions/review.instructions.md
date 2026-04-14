@@ -120,12 +120,17 @@ applyTo: "**"
    - 必須更新: `docs/e2e-scenarios.md`
    - 指摘条件: 上記コード変更があるのに `docs/e2e-scenarios.md` の差分がない
 
-2. **API 仕様変更**
-   - 対象例: `src/app/api/**/route.ts`、APIレスポンス/リクエスト型、エンドポイント追加・削除・挙動変更
+2. **外部 REST API 仕様変更**
+   - 対象例: `src/app/api/**/route.ts` の新規追加・エンドポイント変更
    - 必須更新: `docs/api.md`
    - 指摘条件: 上記変更があるのに `docs/api.md` の差分がない
 
-3. **スキーマ変更**
+3. **Server Actions 仕様変更**
+   - 対象例: `src/app/**/actions.ts` の引数・戻り値・認可ロジックの変更
+   - 必須更新: `docs/actions.md`
+   - 指摘条件: 上記変更があるのに `docs/actions.md` の差分がない
+
+4. **スキーマ変更**
    - 対象例: Prisma schema / migration / DB カラム変更
    - 必須更新: `docs/schema.md`
    - 指摘条件: 上記変更があるのに `docs/schema.md` の差分がない
@@ -192,10 +197,35 @@ applyTo: "**"
 
 ---
 
+## フォーム実装パターン
+
+### 複雑なフォーム（複数 state を持つ場合）
+
+- `useState` で `submitting`（送信中）・エラーメッセージの state を管理する
+- Server Action の戻り値 `{ error }` が存在する場合は、エラー state にセットしてインライン表示する
+- 通信エラー（catch）もエラー state にセットする（例: `"予期しないエラーが発生しました"`）
+- 成功後は `router.push()` で遷移するか、フォームの state をリセットして閉じる
+
+### シンプルな単一操作ボタン（`DeleteButton` など）
+
+- `useActionState` を使っても良い（`<form action={formAction}>` パターンで送信するシンプルな操作に限る）
+- それ以外の用途では `useState` + 非同期ハンドラのパターンを使う
+
+### 違反チェック
+
+| 違反内容 | 重大度 |
+|---|---|
+| 複雑なフォームで `useActionState` を使用している（状態管理が必要な場面） | **MAJOR** |
+| Server Action の `{ error }` を無視・握りつぶしている | **MAJOR** |
+| 成功後にフォーム state をリセットしていない | **NIT** |
+
+---
+
 ## テストの書き方
 
 - ファイル先頭に `// @vitest-environment node` を付ける
 - `vi.mock("@/lib/prisma", ...)` で Prisma クライアントをモックする
+- Server Action など Prisma を直接参照しない場合は、必要な `@/lib/*` をモックするパターンも許容する
 - `beforeEach` で `vi.clearAllMocks()` を呼び出す
 - `vi.mocked()` でモック関数を型付きで参照する
 - トップレベルの `describe()` は関数名、`it()` は日本語でテストケースを説明する
@@ -218,6 +248,7 @@ applyTo: "**"
 | 正常系 | 期待するステータスコードとレスポンス |
 | バリデーションエラー | 400 を返す |
 | 認証エラー | 401 を返す |
+| 認可エラー | 403 を返す（認可チェックがある場合） |
 | リソース未存在 | 404 を返す（該当する場合） |
 | リソース重複 | 409 を返す（該当する場合） |
 
