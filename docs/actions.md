@@ -4,16 +4,16 @@
 
 | Action | 概要 | ファイル |
 |--------|------|---------|
-| `createBookmark(data)` | ブックマーク新規登録 | `bookmarks/actions.ts` |
-| `updateBookmark(id, data)` | ブックマーク更新 | `bookmarks/actions.ts` |
-| `updateBookmarkTags(id, tagIds)` | ブックマークのタグ上書き更新 | `bookmarks/actions.ts` |
-| `reorderBookmarks(ids)` | ブックマークの並び順更新 | `bookmarks/actions.ts` |
-| `deleteBookmark(id, prevState)` | ブックマーク削除 | `bookmarks/actions.ts` |
-| `deleteBookmarks(ids)` | ブックマーク一括削除 | `bookmarks/actions.ts` |
-| `createTag(name)` | タグ新規作成 | `bookmarks/actions.ts` |
-| `deleteTag(id)` | タグ削除 | `bookmarks/actions.ts` |
-| `bulkAddTags(bookmarkIds, tagIds)` | 複数ブックマークへのタグ一括付与 | `bookmarks/actions.ts` |
-| `fetchOgp(url)` | URL から OGP 情報を取得 | `bookmarks/fetchOgp.ts` |
+| `createBookmark(data)` | ブックマーク新規登録 | `src/app/(dashboard)/bookmarks/actions.ts` |
+| `updateBookmark(id, data)` | ブックマーク更新 | `src/app/(dashboard)/bookmarks/actions.ts` |
+| `updateBookmarkTags(id, tagIds)` | ブックマークのタグ上書き更新 | `src/app/(dashboard)/bookmarks/actions.ts` |
+| `reorderBookmarks(ids)` | ブックマークの並び順更新 | `src/app/(dashboard)/bookmarks/actions.ts` |
+| `deleteBookmark(id, prevState)` | ブックマーク削除 | `src/app/(dashboard)/bookmarks/actions.ts` |
+| `deleteBookmarks(ids)` | ブックマーク一括削除 | `src/app/(dashboard)/bookmarks/actions.ts` |
+| `createTag(name)` | タグ新規作成 | `src/app/(dashboard)/bookmarks/actions.ts` |
+| `deleteTag(id)` | タグ削除 | `src/app/(dashboard)/bookmarks/actions.ts` |
+| `bulkAddTags(bookmarkIds, tagIds)` | 複数ブックマークへのタグ一括付与 | `src/app/(dashboard)/bookmarks/actions.ts` |
+| `fetchOgp(url)` | URL から OGP 情報を取得 | `src/app/(dashboard)/bookmarks/fetchOgp.ts` |
 
 ---
 
