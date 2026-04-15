@@ -59,12 +59,6 @@ npm run test:coverage             # カバレッジレポート出力
 | User1 | `bonjiri@example.com` | `Yakitori2026` | 機能テスト全般 |
 | User2 | `tsukune@example.com` | `Yakitori2026` | ユーザー分離確認 |
 
-### 認証について
-
-link-hub はロールなしのユーザー認証のため、**MOCK モードは使用せず実 Clerk 認証でログインして E2E テストを実施する**。
-
-> `MOCK_USER_EMAIL` / `MOCK_USER_ID` が `.env.local` に設定されている場合は、コメントアウトしてからサーバーを起動すること。
-
 ### Playwright MCP への指示例
 
 #### 機能テスト（User1 でログイン）
@@ -74,8 +68,9 @@ link-hub はロールなしのユーザー認証のため、**MOCK モードは�
 
 ## 事前準備
 1. `npx tsx prisma/seed.ts` を実行してテストデータを初期化する
-2. `.env.local` の `MOCK_USER_EMAIL` / `MOCK_USER_ID` がコメントアウトされていることを確認する
-3. `npm run dev` でサーバーを起動する（ポート: 3000）
+
+## テスト対象 URL
+<テスト対象の URL を指定する（例: https://your-app.vercel.app）>
 
 ## 使用ユーザー
 - メールアドレス: bonjiri@example.com
@@ -92,8 +87,9 @@ docs/e2e-scenarios.md の [テストしたいセクション名] を参照して
 
 ## 事前準備
 1. `npx tsx prisma/seed.ts` を実行してテストデータを初期化する
-2. `.env.local` の `MOCK_USER_EMAIL` / `MOCK_USER_ID` がコメントアウトされていることを確認する
-3. `npm run dev` でサーバーを起動する（ポート: 3000）
+
+## テスト対象 URL
+<テスト対象の URL を指定する（例: https://your-app.vercel.app）>
 
 ## テスト手順
 1. bonjiri@example.com（パスワード: Yakitori2026）でログインし、ブックマーク一覧を確認する
