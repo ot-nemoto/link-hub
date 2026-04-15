@@ -59,59 +59,18 @@ npm run test:coverage             # カバレッジレポート出力
 | User1 | `bonjiri@example.com` | `Yakitori2026` | 機能テスト全般 |
 | User2 | `tsukune@example.com` | `Yakitori2026` | ユーザー分離確認 |
 
-### Playwright MCP への指示例
+### 実施方法
 
-#### 機能テスト（User1 でログイン）
-
-```text
-以下の手順で E2E テストを実施してください。
-
-## 事前準備
-1. `npx tsx prisma/seed.ts` を実行してテストデータを初期化する
-
-## テスト対象 URL
-<テスト対象の URL を指定する（例: https://your-app.vercel.app）>
-
-## 使用ユーザー
-- メールアドレス: bonjiri@example.com
-- パスワード: Yakitori2026
-
-## テスト対象
-docs/e2e-scenarios.md の [テストしたいセクション名] を参照してテストを実施してください。
-```
-
-#### ユーザー分離テスト（User1 → User2 に切り替え）
-
-```text
-以下の手順で E2E テスト（ユーザー分離確認）を実施してください。
-
-## 事前準備
-1. `npx tsx prisma/seed.ts` を実行してテストデータを初期化する
-
-## テスト対象 URL
-<テスト対象の URL を指定する（例: https://your-app.vercel.app）>
-
-## テスト手順
-1. bonjiri@example.com（パスワード: Yakitori2026）でログインし、ブックマーク一覧を確認する
-2. ログアウトする
-3. tsukune@example.com（パスワード: Yakitori2026）でログインし、bonjiri のブックマーク・タグが見えないことを確認する
-
-## テスト対象
-docs/e2e-scenarios.md の「ユーザー分離」を参照してテストを実施してください。
-```
+テスト対象の URL と [`docs/e2e-scenarios.md`](e2e-scenarios.md) のシナリオをモデルに渡して実施する。
 
 ---
 
 ## テストデータ投入（Seed）
 
-E2E テスト前にシードを実行してデータを初期化すること。詳細は [`docs/development.md` — テストデータ投入](development.md#テストデータ投入seed) を参照。
+**E2E テストはシード実行済みであることを前提とする。** テスト前に手動で実行してデータを初期化すること。
+
+詳細は [`docs/development.md` — テストデータ投入](development.md#テストデータ投入seed) を参照。
 
 ```bash
 npx tsx prisma/seed.ts
 ```
-
-### 注意事項
-
-- Clerk にユーザーが存在しない場合は自動作成される（パスワード: `Yakitori2026`）
-- 既存のブックマーク・タグは全削除されるため、手動で追加したデータは失われる
-- `CLERK_SECRET_KEY` が `.env.local` に設定されていること
