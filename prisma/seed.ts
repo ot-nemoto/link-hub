@@ -97,7 +97,7 @@ const USER2_BOOKMARKS: {
 // ---- user3: 破壊的操作テスト用 ----
 const USER3_EMAIL = "tebasaki@example.com";
 
-const USER3_TAGS = ["Tools"];
+const USER3_TAGS = ["Tools", "Docs"];
 
 const USER3_BOOKMARKS: {
   url: string;
@@ -112,6 +112,12 @@ const USER3_BOOKMARKS: {
     tags: ["Tools"],
   },
   {
+    url: "https://nodejs.org",
+    title: "Node.js",
+    memo: "JavaScript ランタイム",
+    tags: ["Docs"],
+  },
+  {
     url: "https://vitejs.dev",
     title: "Vite",
     memo: "ビルドツール",
@@ -121,6 +127,12 @@ const USER3_BOOKMARKS: {
     url: "https://biome.dev",
     title: "Biome",
     memo: "リンター・フォーマッタ",
+    tags: [],
+  },
+  {
+    url: "https://www.npmjs.com",
+    title: "npm",
+    memo: "パッケージマネージャ",
     tags: [],
   },
 ];
