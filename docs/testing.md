@@ -18,6 +18,7 @@
 npm test                          # 1回実行
 npm run test:watch                # ウォッチモード（開発中）
 npx vitest run --reporter=verbose # テストケース名を全て表示
+npm run test:ui                   # UI モード（ブラウザで結果確認）
 npm run test:coverage             # カバレッジレポート出力
 ```
 
