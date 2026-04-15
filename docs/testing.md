@@ -52,7 +52,7 @@ npm run test:coverage             # カバレッジレポート出力
 
 ### テストユーザー
 
-シードデータの詳細は [`docs/development.md` — テストデータ投入](development.md#テストデータ投入seed) を参照。
+**E2E テストはシード実行済みであることを前提とする。** シードの実行方法は [`docs/development.md` — テストデータ投入](development.md#テストデータ投入seed) を参照。
 
 | ユーザー | メールアドレス | パスワード | 用途 |
 |---------|-------------|---------|------|
@@ -62,15 +62,3 @@ npm run test:coverage             # カバレッジレポート出力
 ### 実施方法
 
 テスト対象の URL と [`docs/e2e-scenarios.md`](e2e-scenarios.md) のシナリオをモデルに渡して実施する。
-
----
-
-## テストデータ投入（Seed）
-
-**E2E テストはシード実行済みであることを前提とする。** テスト前に手動で実行してデータを初期化すること。
-
-詳細は [`docs/development.md` — テストデータ投入](development.md#テストデータ投入seed) を参照。
-
-```bash
-npx tsx prisma/seed.ts
-```
