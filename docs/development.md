@@ -91,6 +91,7 @@ npx tsx prisma/seed.ts
 |---------|------|------------|
 | `bonjiri@example.com` | Frontend, Backend | 6件（タグあり・タグなし・複数タグ混在） |
 | `tsukune@example.com` | Design | 2件（ユーザー分離確認用） |
+| `tebasaki@example.com` | Tools | 3件（破壊的操作テスト用） |
 
 bonjiri のブックマークとタグの対応：
 

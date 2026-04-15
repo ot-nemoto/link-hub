@@ -58,6 +58,7 @@ npm run test:coverage             # カバレッジレポート出力
 |---------|-------------|---------|------|
 | User1 | `bonjiri@example.com` | `Yakitori2026` | 機能テスト全般 |
 | User2 | `tsukune@example.com` | `Yakitori2026` | ユーザー分離確認 |
+| User3 | `tebasaki@example.com` | `Yakitori2026` | 破壊的操作テスト（削除・一括削除・空状態確認） |
 
 ### 実施方法
 
