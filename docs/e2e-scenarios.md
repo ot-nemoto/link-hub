@@ -1,7 +1,6 @@
 # E2E テストシナリオ
 
 各機能の E2E テストシナリオ。Playwright MCP を使って実施する。
-実施手順は [`docs/testing.md` — E2E テスト](testing.md#e2e-テストplaywright-mcp) を参照。
 
 ---
 
