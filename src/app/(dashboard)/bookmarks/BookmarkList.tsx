@@ -284,7 +284,7 @@ export function BookmarkList({
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  const isSearching = searchQuery.length > 0;
+  const isSearching = searchQuery.trim().length > 0;
 
   const searchedItems = isSearching
     ? items.filter((bm) => {
