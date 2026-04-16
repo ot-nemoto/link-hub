@@ -518,6 +518,7 @@ export function BookmarkList({
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
         placeholder="タイトル・URL・メモで検索"
+        aria-label="ブックマークを検索"
         className="mb-4 w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-400"
       />
 
