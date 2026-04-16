@@ -120,8 +120,8 @@
 |---|---------|------|---------|-------|
 | 1 | `bonjiri@example.com` | シード後にログインして `/bookmarks` にアクセスする | タグフィルターバー表示 | 一覧上部に「Frontend」「Backend」タグが表示される |
 | 2 | `bonjiri@example.com` | 「Frontend」タグをクリックする | 単一タグフィルター | Frontend タグを持つブックマーク（Next.js・Vercel・Neon）のみ表示される |
-| 3 | `bonjiri@example.com` | 「Frontend」と「Backend」を両方クリックする | 複数タグ AND フィルター | 両タグを持つ「Neon」のみ表示される |
-| 4 | `bonjiri@example.com` | 「タグなし」フィルターをクリックする | タグなしフィルター | タグのない「GitHub」「Playwright」のみ表示される |
+| 3 | `bonjiri@example.com` | 「Frontend」と「Backend」を両方クリックする | 複数タグ OR フィルター | Frontend または Backend タグを持つブックマーク（Next.js・Vercel・Prisma・Neon）が表示される |
+| 4 | `bonjiri@example.com` | 「全解除」ボタンで選択を解除してから「タグなし」フィルターをクリックする | タグなしフィルター | タグのない「GitHub」「Playwright」のみ表示される |
 | 5 | `bonjiri@example.com` | 複数タグ選択中に「全解除」ボタンをクリックする | フィルター全解除 | 全件表示に戻る |
 
 ---
