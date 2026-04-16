@@ -6,19 +6,12 @@ import { getBookmarks } from "@/lib/bookmarks";
 import { getTags } from "@/lib/tags";
 import { BookmarkList } from "./BookmarkList";
 
-export default async function BookmarksPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ q?: string }>;
-}) {
+export default async function BookmarksPage() {
   const session = await getSession();
   if (!session) redirect("/sign-in");
 
-  const { q } = await searchParams;
-  const query = q?.trim() ?? "";
-
   const [bookmarks, tags] = await Promise.all([
-    getBookmarks(session.user.id, query || undefined),
+    getBookmarks(session.user.id),
     getTags(session.user.id),
   ]);
 
@@ -42,22 +35,12 @@ export default async function BookmarksPage({
         </div>
       </div>
 
-      <form method="get" className="mb-4">
-        <input
-          type="search"
-          name="q"
-          defaultValue={query}
-          placeholder="タイトル・URL・メモで検索"
-          className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-400"
-        />
-      </form>
-
       {bookmarks.length === 0 ? (
         <div className="rounded-lg border border-dashed border-gray-300 py-16 text-center text-gray-500 dark:border-gray-600 dark:text-gray-400">
-          {query ? "該当するブックマークがありません" : "まだブックマークがありません"}
+          まだブックマークがありません
         </div>
       ) : (
-        <BookmarkList key={query} bookmarks={bookmarks} isSearching={!!query} allTags={tags} />
+        <BookmarkList bookmarks={bookmarks} allTags={tags} />
       )}
     </div>
   );

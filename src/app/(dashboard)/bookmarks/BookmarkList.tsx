@@ -243,15 +243,14 @@ function ItemContent({
 
 export function BookmarkList({
   bookmarks: initial,
-  isSearching,
   allTags,
 }: {
   bookmarks: Bookmark[];
-  isSearching: boolean;
   allTags: TagFilterItem[];
 }) {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [items, setItems] = useState<Bookmark[]>(initial);
   const [allTagsState, setAllTagsState] = useState<TagFilterItem[]>(allTags);
   const [activeTagIds, setActiveTagIds] = useState<string[]>([]);
@@ -285,10 +284,24 @@ export function BookmarkList({
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
+  const isSearching = searchQuery.trim().length > 0;
+
+  const searchedItems = isSearching
+    ? (() => {
+        const q = searchQuery.toLowerCase();
+        return items.filter(
+          (bm) =>
+            bm.title.toLowerCase().includes(q) ||
+            bm.url.toLowerCase().includes(q) ||
+            (bm.memo?.toLowerCase().includes(q) ?? false),
+        );
+      })()
+    : items;
+
   const filteredItems =
     activeTagIds.length === 0
-      ? items
-      : items.filter((bm) => {
+      ? searchedItems
+      : searchedItems.filter((bm) => {
           if (activeTagIds.includes(UNTAGGED_ID) && bm.tags.length === 0) return true;
           return activeTagIds.some(
             (tid) => tid !== UNTAGGED_ID && bm.tags.some((bt) => bt.tagId === tid),
@@ -500,6 +513,15 @@ export function BookmarkList({
 
   return (
     <div>
+      <input
+        type="search"
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        placeholder="タイトル・URL・メモで検索"
+        aria-label="ブックマークを検索"
+        className="mb-4 w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-400"
+      />
+
       <TagFilter
         tags={allTagsState}
         selectedTagIds={activeTagIds}
@@ -547,9 +569,9 @@ export function BookmarkList({
         />
       )}
 
-      {filteredItems.length === 0 && activeTagIds.length > 0 ? (
+      {filteredItems.length === 0 ? (
         <div className="rounded-lg border border-dashed border-gray-300 py-12 text-center text-sm text-gray-500 dark:border-gray-600 dark:text-gray-400">
-          該当するブックマークがありません
+          {items.length === 0 ? "まだブックマークがありません" : "該当するブックマークがありません"}
         </div>
       ) : mounted ? (
         // クライアントマウント後: DnD 有効
