@@ -570,7 +570,7 @@ export function BookmarkList({
 
       {filteredItems.length === 0 ? (
         <div className="rounded-lg border border-dashed border-gray-300 py-12 text-center text-sm text-gray-500 dark:border-gray-600 dark:text-gray-400">
-          該当するブックマークがありません
+          {items.length === 0 ? "まだブックマークがありません" : "該当するブックマークがありません"}
         </div>
       ) : mounted ? (
         // クライアントマウント後: DnD 有効
