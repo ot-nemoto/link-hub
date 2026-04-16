@@ -287,14 +287,15 @@ export function BookmarkList({
   const isSearching = searchQuery.trim().length > 0;
 
   const searchedItems = isSearching
-    ? items.filter((bm) => {
+    ? (() => {
         const q = searchQuery.toLowerCase();
-        return (
-          bm.title.toLowerCase().includes(q) ||
-          bm.url.toLowerCase().includes(q) ||
-          (bm.memo?.toLowerCase().includes(q) ?? false)
+        return items.filter(
+          (bm) =>
+            bm.title.toLowerCase().includes(q) ||
+            bm.url.toLowerCase().includes(q) ||
+            (bm.memo?.toLowerCase().includes(q) ?? false),
         );
-      })
+      })()
     : items;
 
   const filteredItems =
