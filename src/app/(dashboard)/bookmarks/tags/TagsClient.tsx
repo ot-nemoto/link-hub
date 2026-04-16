@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { useRouter } from "next/navigation";
 
 import { createTag, deleteTag } from "../actions";
@@ -40,11 +41,9 @@ export function TagsClient({ initialTags }: { initialTags: Tag[] }) {
         ),
       );
       setInputValue("");
-      router.refresh();
     } finally {
-      setCreating(false);
-      // setCreating(false) による再レンダリング後にフォーカスを当てる
-      setTimeout(() => inputRef.current?.focus(), 0);
+      flushSync(() => setCreating(false));
+      inputRef.current?.focus();
     }
   }
 
