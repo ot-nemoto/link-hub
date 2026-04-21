@@ -1,5 +1,13 @@
 # link-hub
 
+![CI](https://github.com/ot-nemoto/link-hub/actions/workflows/ci.yml/badge.svg)
+![Version](https://img.shields.io/github/package-json/v/ot-nemoto/link-hub)
+![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)
+![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white)
+![Prisma](https://img.shields.io/badge/Prisma-7-2D3748?logo=prisma&logoColor=white)
+![Clerk](https://img.shields.io/badge/Clerk-Auth-6C47FF?logo=clerk&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white)
+
 アカウントごとにブックマークを管理するシンプルな Web アプリケーションです。
 
 ## 機能
