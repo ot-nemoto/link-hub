@@ -9,6 +9,7 @@
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white)
 
 アカウントごとにブックマークを管理するシンプルな Web アプリケーションです。
+<!-- ci-check -->
 
 ## 機能
 
