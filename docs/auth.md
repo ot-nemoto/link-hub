@@ -23,7 +23,7 @@ Clerk によるメール/パスワード認証を使用する。
 
 ### 開発環境のモックバイパス
 
-`.env.local` に `MOCK_USER_ID` または `MOCK_USER_EMAIL` が設定されている場合、middleware の認証チェックをスキップする（本番環境では無効）。
+`.env` に `MOCK_USER_ID` または `MOCK_USER_EMAIL` が設定されている場合、middleware の認証チェックをスキップする（本番環境では無効）。
 
 ---
 

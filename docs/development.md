@@ -14,7 +14,7 @@
 # 1. 依存パッケージのインストール
 npm install
 
-# 2. .env.local を作成し、環境変数を設定する（下の「環境変数」節を参照）
+# 2. .env を作成し、環境変数を設定する（下の「環境変数」節を参照）
 #    ※ DATABASE_URL・DIRECT_URL の設定が必須
 
 # 3. Prisma クライアントの生成（DIRECT_URL の設定が必要）
@@ -28,7 +28,7 @@ npm run dev
 
 ## 環境変数
 
-`.env.local` をプロジェクトルートに作成し、以下の変数を設定する。
+`.env` をプロジェクトルートに作成し、以下の変数を設定する。
 
 ```env
 # Database（Neon）
@@ -50,7 +50,7 @@ NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL=/bookmarks
 
 ### ローカル開発用認証バイパス
 
-Clerk 認証なしで動作確認するため、`MOCK_USER_ID` または `MOCK_USER_EMAIL` を `.env.local` に設定する。
+Clerk 認証なしで動作確認するため、`MOCK_USER_ID` または `MOCK_USER_EMAIL` を `.env` に設定する。
 
 ```env
 # DB の users.id を指定する場合
@@ -108,7 +108,7 @@ bonjiri のブックマークとタグの対応：
 
 - Clerk にユーザーが存在しない場合は自動作成される（パスワード: `Yakitori2026`）
 - 既存のブックマーク・タグは全削除されるため、手動で追加したデータは失われる
-- `CLERK_SECRET_KEY` が `.env.local` に設定されていること
+- `CLERK_SECRET_KEY` が `.env` に設定されていること
 
 ---
 
