@@ -10,7 +10,7 @@ import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaClient } from "@prisma/client";
 import * as dotenv from "dotenv";
 
-dotenv.config({ path: ".env.local" });
+dotenv.config({ path: ".env" });
 
 const adapter = new PrismaNeon({ connectionString: process.env.DIRECT_URL ?? "" });
 const prisma = new PrismaClient({ adapter });
