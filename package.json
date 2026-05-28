@@ -1,6 +1,6 @@
 {
   "name": "link-hub",
-  "version": "0.12.5",
+  "version": "0.12.6",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -39,8 +39,8 @@
     "@vitejs/plugin-react": "^6.0.2",
     "dotenv": "^17.4.2",
     "tailwindcss": "^4",
-    "tsx": "^4.22.1",
+    "tsx": "^4.22.3",
     "typescript": "^6",
-    "vitest": "^4.1.6"
+    "vitest": "^4.1.7"
   }
 }
