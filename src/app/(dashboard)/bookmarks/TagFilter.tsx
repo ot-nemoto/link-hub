@@ -43,7 +43,7 @@ export function TagFilter({ tags, selectedTagIds, onChange }: Props) {
       <button
         type="button"
         onClick={() => toggle(UNTAGGED_ID)}
-        className={`cursor-pointer rounded-md px-3 py-1 text-sm font-medium ${
+        className={`cursor-pointer rounded-full px-3 py-1 text-sm font-medium ${
           selectedTagIds.includes(UNTAGGED_ID)
             ? "bg-zinc-900 text-white"
             : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
