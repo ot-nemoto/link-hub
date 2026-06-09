@@ -5,7 +5,7 @@ import "./globals.css";
 
 const mPlus1Code = M_PLUS_1_Code({
   variable: "--font-mplus1code-base",
-  subsets: ["latin", "japanese"],
+  subsets: ["latin"],
   weight: ["400", "500", "700"],
 });
 
