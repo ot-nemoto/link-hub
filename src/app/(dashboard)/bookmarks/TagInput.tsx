@@ -56,7 +56,6 @@ export function TagInput({ inputId, availableTags, selectedTagIds, onChange }: P
         if (existsLocally) {
           selectTag(existsLocally);
         } else {
-          // ローカルの availableTags にない場合（別タブで作成済み等）は親にタグオブジェクトも通知する
           onChange([...selectedTagIds, result.tag.id], result.tag);
           setInputValue("");
           inputRef.current?.focus();
@@ -92,17 +91,17 @@ export function TagInput({ inputId, availableTags, selectedTagIds, onChange }: P
 
   return (
     <div>
-      <div className="flex flex-wrap gap-1 mb-2">
+      <div className="mb-2 flex flex-wrap gap-1">
         {selectedTags.map((tag) => (
           <span
             key={tag.id}
-            className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+            className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-500"
           >
             {tag.name}
             <button
               type="button"
               onClick={() => removeTag(tag.id)}
-              className="leading-none text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-200"
+              className="cursor-pointer leading-none text-zinc-400 hover:text-zinc-600"
               aria-label={`${tag.name}を削除`}
             >
               ×
@@ -126,13 +125,12 @@ export function TagInput({ inputId, availableTags, selectedTagIds, onChange }: P
           onKeyDown={handleKeyDown}
           disabled={creating}
           placeholder="タグを入力（Enter で追加）"
-          className="block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-400 disabled:opacity-50"
+          className="block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 disabled:opacity-50"
         />
 
         {showDropdown && (
-          // onMouseDown で preventDefault することで、候補クリック時に input の blur を防ぐ
           <ul
-            className="absolute z-10 mt-1 w-full rounded border border-gray-200 bg-white shadow dark:border-gray-700 dark:bg-gray-800"
+            className="absolute z-10 mt-1 w-full rounded-md border border-zinc-200 bg-white shadow-sm"
             onMouseDown={(e) => e.preventDefault()}
           >
             {suggestions.map((tag) => (
@@ -141,7 +139,7 @@ export function TagInput({ inputId, availableTags, selectedTagIds, onChange }: P
                   type="button"
                   onClick={() => selectTag(tag)}
                   disabled={creating}
-                  className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 disabled:opacity-50 dark:hover:bg-gray-700"
+                  className="w-full cursor-pointer px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
                 >
                   {tag.name}
                 </button>
@@ -153,7 +151,7 @@ export function TagInput({ inputId, availableTags, selectedTagIds, onChange }: P
                   type="button"
                   onClick={() => createAndSelectTag(trimmed)}
                   disabled={creating}
-                  className="w-full px-3 py-2 text-left text-sm text-blue-600 hover:bg-gray-100 disabled:opacity-50 dark:text-blue-400 dark:hover:bg-gray-700"
+                  className="w-full cursor-pointer px-3 py-2 text-left text-sm font-medium text-zinc-900 hover:bg-zinc-50 disabled:opacity-50"
                 >
                   「{trimmed}」を新規作成
                 </button>

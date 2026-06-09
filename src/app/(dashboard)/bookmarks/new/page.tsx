@@ -17,7 +17,7 @@ export default async function NewBookmarkPage() {
 
   return (
     <div>
-      <h2 className="mb-6 text-xl font-semibold text-gray-900 dark:text-gray-100">
+      <h2 className="mb-6 text-lg font-bold text-zinc-900">
         ブックマークを追加
       </h2>
       <BookmarkForm availableTags={tags} action={createBookmark} />

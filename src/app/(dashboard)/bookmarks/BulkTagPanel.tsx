@@ -22,12 +22,12 @@ export function BulkTagPanel({ allTags, saving, error, onSave, onCancel }: Props
   }
 
   return (
-    <div className="mb-3 rounded border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-950">
-      <p className="mb-2 text-xs font-medium text-gray-600 dark:text-gray-400">
+    <div className="mb-3 rounded-lg bg-white p-4 shadow-sm border border-zinc-200">
+      <p className="mb-2 text-sm font-medium text-zinc-700">
         追加するタグを選択
       </p>
       {allTags.length === 0 ? (
-        <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">
+        <p className="mb-3 text-sm text-zinc-500">
           タグがありません。先にタグを作成してください。
         </p>
       ) : (
@@ -39,10 +39,10 @@ export function BulkTagPanel({ allTags, saving, error, onSave, onCancel }: Props
                 key={tag.id}
                 type="button"
                 onClick={() => toggle(tag.id)}
-                className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                className={`cursor-pointer rounded-full px-3 py-1 text-sm font-medium ${
                   active
-                    ? "border-blue-600 bg-blue-600 text-white"
-                    : "border-gray-300 bg-white text-gray-600 hover:border-blue-400 hover:text-blue-600 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-blue-400 dark:hover:text-blue-400"
+                    ? "bg-zinc-900 text-white"
+                    : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
                 }`}
               >
                 {tag.name}
@@ -51,13 +51,13 @@ export function BulkTagPanel({ allTags, saving, error, onSave, onCancel }: Props
           })}
         </div>
       )}
-      {error && <p className="mb-2 text-xs text-red-500">{error}</p>}
+      {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
       <div className="flex gap-2">
         <button
           type="button"
           onClick={() => onSave(selectedTagIds)}
           disabled={saving || selectedTagIds.length === 0}
-          className="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          className="cursor-pointer rounded px-3 py-1 text-xs font-medium bg-zinc-900 text-white hover:bg-zinc-700 disabled:opacity-50"
         >
           {saving ? "追加中..." : "追加"}
         </button>
@@ -65,7 +65,7 @@ export function BulkTagPanel({ allTags, saving, error, onSave, onCancel }: Props
           type="button"
           onClick={onCancel}
           disabled={saving}
-          className="rounded border border-gray-300 px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 disabled:opacity-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+          className="cursor-pointer rounded px-3 py-1 text-xs font-medium bg-zinc-100 text-zinc-700 hover:bg-zinc-200 disabled:opacity-50"
         >
           キャンセル
         </button>

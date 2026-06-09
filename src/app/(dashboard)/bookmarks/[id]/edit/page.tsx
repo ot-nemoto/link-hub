@@ -25,7 +25,7 @@ export default async function EditBookmarkPage({ params }: { params: Promise<{ i
 
   return (
     <div>
-      <h2 className="mb-6 text-xl font-semibold text-gray-900 dark:text-gray-100">
+      <h2 className="mb-6 text-lg font-bold text-zinc-900">
         ブックマークを編集
       </h2>
       <BookmarkForm

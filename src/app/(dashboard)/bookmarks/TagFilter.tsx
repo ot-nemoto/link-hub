@@ -30,10 +30,10 @@ export function TagFilter({ tags, selectedTagIds, onChange }: Props) {
             key={tag.id}
             type="button"
             onClick={() => toggle(tag.id)}
-            className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+            className={`cursor-pointer rounded-full px-3 py-1 text-sm font-medium ${
               active
-                ? "border-blue-600 bg-blue-600 text-white"
-                : "border-gray-300 bg-white text-gray-600 hover:border-blue-400 hover:text-blue-600 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-blue-400 dark:hover:text-blue-400"
+                ? "bg-zinc-900 text-white"
+                : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
             }`}
           >
             {tag.name}
@@ -43,10 +43,10 @@ export function TagFilter({ tags, selectedTagIds, onChange }: Props) {
       <button
         type="button"
         onClick={() => toggle(UNTAGGED_ID)}
-        className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+        className={`cursor-pointer rounded-full px-3 py-1 text-sm font-medium ${
           selectedTagIds.includes(UNTAGGED_ID)
-            ? "border-gray-600 bg-gray-600 text-white"
-            : "border-gray-300 bg-white text-gray-600 hover:border-gray-500 hover:text-gray-800 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-gray-400 dark:hover:text-gray-200"
+            ? "bg-zinc-900 text-white"
+            : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
         }`}
       >
         タグなし
@@ -55,7 +55,7 @@ export function TagFilter({ tags, selectedTagIds, onChange }: Props) {
         <button
           type="button"
           onClick={() => onChange([])}
-          className="rounded-full border border-red-300 bg-white px-3 py-1 text-xs font-medium text-red-500 transition-colors hover:border-red-500 hover:bg-red-50 dark:border-red-700 dark:bg-gray-800 dark:text-red-400 dark:hover:border-red-500 dark:hover:bg-red-900/20"
+          className="cursor-pointer rounded-md border border-red-300 px-3 py-1 text-sm font-medium text-red-600 hover:bg-red-50"
         >
           全解除
         </button>

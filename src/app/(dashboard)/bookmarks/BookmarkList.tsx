@@ -43,7 +43,6 @@ type PendingDelete = {
 
 const UNDO_TIMEOUT_MS = 5000;
 
-// ドラッグハンドルアイコン（共通）
 function DragHandleIcon() {
   return (
     <svg
@@ -73,17 +72,11 @@ type ItemProps = {
   onEditTagsCancel: () => void;
 };
 
-// SSR / ハイドレーション用プレーンアイテム（DndContext 不要）
-function PlainItem({ bm, isSearching, isDndDisabled, isSelected, onToggleSelect, onDelete, allTags, editingTags, onEditTagsStart, onEditTagsSave, onEditTagsCancel }: ItemProps) {
+function PlainItem({ bm, isDndDisabled, isSelected, onToggleSelect, onDelete, allTags, editingTags, onEditTagsStart, onEditTagsSave, onEditTagsCancel }: ItemProps) {
   return (
-    <li
-      className={`flex items-center gap-3 px-4 py-3 ${
-        isSearching ? "bg-blue-50 dark:bg-blue-950" : "bg-white dark:bg-gray-800"
-      }`}
-    >
-      {/* ハンドル分のスペース確保（検索中またはフィルター中は非表示） */}
+    <li className="flex items-center gap-3 px-4 py-3 bg-white">
       {isDndDisabled ? null : (
-        <span className="shrink-0 text-gray-400 dark:text-gray-500">
+        <span className="shrink-0 text-zinc-400">
           <DragHandleIcon />
         </span>
       )}
@@ -91,24 +84,15 @@ function PlainItem({ bm, isSearching, isDndDisabled, isSelected, onToggleSelect,
         type="checkbox"
         checked={isSelected}
         onChange={() => onToggleSelect(bm.id)}
-        className="h-4 w-4 shrink-0 cursor-pointer accent-blue-600"
+        className="h-4 w-4 shrink-0 cursor-pointer"
         aria-label={`${bm.title}を選択`}
       />
-      {bm.ogImage && (
-        <img
-          src={bm.ogImage}
-          alt=""
-          className="h-10 w-16 shrink-0 rounded object-cover"
-          referrerPolicy="no-referrer"
-        />
-      )}
       <ItemContent bm={bm} onDelete={onDelete} allTags={allTags} editingTags={editingTags} onEditTagsStart={onEditTagsStart} onEditTagsSave={onEditTagsSave} onEditTagsCancel={onEditTagsCancel} />
     </li>
   );
 }
 
-// クライアント専用 DnD アイテム
-function SortableItem({ bm, isSearching, isDndDisabled, isSelected, onToggleSelect, onDelete, allTags, editingTags, onEditTagsStart, onEditTagsSave, onEditTagsCancel }: ItemProps) {
+function SortableItem({ bm, isDndDisabled, isSelected, onToggleSelect, onDelete, allTags, editingTags, onEditTagsStart, onEditTagsSave, onEditTagsCancel }: ItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: bm.id,
     disabled: isDndDisabled,
@@ -124,16 +108,14 @@ function SortableItem({ bm, isSearching, isDndDisabled, isSelected, onToggleSele
     <li
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-3 px-4 py-3 ${
-        isSearching ? "bg-blue-50 dark:bg-blue-950" : "bg-white dark:bg-gray-800"
-      }`}
+      className="flex items-center gap-3 px-4 py-3 bg-white"
     >
       {!isDndDisabled && (
         <button
           type="button"
           {...attributes}
           {...listeners}
-          className="shrink-0 cursor-grab text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 active:cursor-grabbing"
+          className="shrink-0 cursor-grab text-zinc-400 hover:text-zinc-600 active:cursor-grabbing"
           aria-label="ドラッグして並び替え"
         >
           <DragHandleIcon />
@@ -143,23 +125,14 @@ function SortableItem({ bm, isSearching, isDndDisabled, isSelected, onToggleSele
         type="checkbox"
         checked={isSelected}
         onChange={() => onToggleSelect(bm.id)}
-        className="h-4 w-4 shrink-0 cursor-pointer accent-blue-600"
+        className="h-4 w-4 shrink-0 cursor-pointer"
         aria-label={`${bm.title}を選択`}
       />
-      {bm.ogImage && (
-        <img
-          src={bm.ogImage}
-          alt=""
-          className="h-10 w-16 shrink-0 rounded object-cover"
-          referrerPolicy="no-referrer"
-        />
-      )}
       <ItemContent bm={bm} onDelete={onDelete} allTags={allTags} editingTags={editingTags} onEditTagsStart={onEditTagsStart} onEditTagsSave={onEditTagsSave} onEditTagsCancel={onEditTagsCancel} />
     </li>
   );
 }
 
-// テキスト・ボタン部分（共通）
 function ItemContent({
   bm,
   onDelete,
@@ -184,13 +157,13 @@ function ItemContent({
           href={bm.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="block truncate font-medium text-blue-600 hover:underline dark:text-blue-400"
+          className="block truncate text-sm font-medium text-zinc-900 hover:underline"
         >
           {bm.title}
         </a>
-        <p className="truncate text-xs text-gray-500 dark:text-gray-400">{bm.url}</p>
+        <p className="truncate text-xs text-zinc-400">{bm.url}</p>
         {bm.memo && (
-          <p className="truncate text-sm text-gray-700 dark:text-gray-300">{bm.memo}</p>
+          <p className="truncate text-sm text-zinc-600">{bm.memo}</p>
         )}
         <div className="mt-1 flex flex-wrap items-center gap-1">
           {bm.tags.map((bt) => {
@@ -198,7 +171,7 @@ function ItemContent({
             return (
               <span
                 key={bt.tagId}
-                className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+                className="inline-flex rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-500"
               >
                 {tagName}
               </span>
@@ -207,7 +180,7 @@ function ItemContent({
           <button
             type="button"
             onClick={onEditTagsStart}
-            className="rounded px-1.5 py-0.5 text-xs text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+            className="cursor-pointer rounded px-1.5 py-0.5 text-xs text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600"
           >
             タグ編集
           </button>
@@ -222,17 +195,25 @@ function ItemContent({
           />
         )}
       </div>
+      {bm.ogImage && (
+        <img
+          src={bm.ogImage}
+          alt=""
+          className="h-20 w-36 shrink-0 rounded object-contain"
+          referrerPolicy="no-referrer"
+        />
+      )}
       <div className="flex shrink-0 gap-2">
         <Link
           href={`/bookmarks/${bm.id}/edit`}
-          className="rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+          className="cursor-pointer rounded px-3 py-1 text-xs font-medium bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
         >
           編集
         </Link>
         <button
           type="button"
           onClick={() => onDelete(bm)}
-          className="cursor-pointer rounded border border-red-300 px-3 py-1 text-sm text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950"
+          className="cursor-pointer rounded border border-red-300 px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
         >
           削除
         </button>
@@ -261,25 +242,11 @@ export function BookmarkList({
   const [pending, setPending] = useState<PendingDelete | null>(null);
   const pendingRef = useRef<PendingDelete | null>(null);
 
-  // ハイドレーション完了後に DnD を有効化
+  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => { setItems(initial); }, [initial]);
+  useEffect(() => { setAllTagsState(allTags); }, [allTags]);
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // router.refresh() 後にサーバーから新しいデータが来たら同期
-  useEffect(() => {
-    setItems(initial);
-  }, [initial]);
-
-  useEffect(() => {
-    setAllTagsState(allTags);
-  }, [allTags]);
-
-  // アンマウント時に未確定のタイマーをクリア
-  useEffect(() => {
-    return () => {
-      if (pendingRef.current) clearTimeout(pendingRef.current.timerId);
-    };
+    return () => { if (pendingRef.current) clearTimeout(pendingRef.current.timerId); };
   }, []);
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -327,7 +294,6 @@ export function BookmarkList({
     );
   }, [filteredItems]);
 
-  // 共通: pending を確定削除してリフレッシュ
   const commitPending = useCallback(
     async (p: PendingDelete) => {
       const ids = p.bookmarks.map((b) => b.id);
@@ -349,11 +315,9 @@ export function BookmarkList({
         clearTimeout(pendingRef.current.timerId);
         void commitPending(pendingRef.current);
       }
-
       const timerId = setTimeout(() => {
         if (pendingRef.current) void commitPending(pendingRef.current);
       }, UNDO_TIMEOUT_MS);
-
       const next = { bookmarks, timerId };
       setPending(next);
       pendingRef.current = next;
@@ -393,7 +357,6 @@ export function BookmarkList({
 
   const handleEditTagsSave = useCallback(
     (bookmarkId: string, tagIds: string[], newTags: TagFilterItem[]) => {
-      // 新規作成タグを allTagsState に反映
       const nextAllTags =
         newTags.length > 0
           ? [...allTagsState, ...newTags.filter((t) => !allTagsState.find((a) => a.id === t.id))].sort(
@@ -401,8 +364,6 @@ export function BookmarkList({
             )
           : allTagsState;
       if (newTags.length > 0) setAllTagsState(nextAllTags);
-
-      // ブックマークのタグを楽観的に更新
       setItems((prev) =>
         prev.map((bm) => {
           if (bm.id !== bookmarkId) return bm;
@@ -433,8 +394,6 @@ export function BookmarkList({
           setBulkTagError(result.error);
           return;
         }
-
-        // 選択中ブックマークに対して楽観的にタグを追加
         setItems((prev) =>
           prev.map((bm) => {
             if (!selectedIds.has(bm.id)) return bm;
@@ -465,30 +424,22 @@ export function BookmarkList({
   );
 
   const itemsRef = useRef<Bookmark[]>(initial);
-  useEffect(() => {
-    itemsRef.current = items;
-  }, [items]);
+  useEffect(() => { itemsRef.current = items; }, [items]);
 
   const handleDragEndWithSave = useCallback(async (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-
     const prev = itemsRef.current;
     const oldIndex = prev.findIndex((b) => b.id === active.id);
     const newIndex = prev.findIndex((b) => b.id === over.id);
     if (oldIndex === -1 || newIndex === -1) return;
-
     const next = [...prev];
     const [moved] = next.splice(oldIndex, 1);
     next.splice(newIndex, 0, moved);
-
     setItems(next);
-
     try {
       const result = await reorderBookmarks(next.map((b) => b.id));
-      if (result.error) {
-        setItems(prev);
-      }
+      if (result.error) setItems(prev);
     } catch {
       setItems(prev);
     }
@@ -519,7 +470,7 @@ export function BookmarkList({
         onChange={(e) => setSearchQuery(e.target.value)}
         placeholder="タイトル・URL・メモで検索"
         aria-label="ブックマークを検索"
-        className="mb-4 w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-400"
+        className="mb-4 w-full rounded-md border border-zinc-300 px-4 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
       />
 
       <TagFilter
@@ -532,26 +483,26 @@ export function BookmarkList({
         <button
           type="button"
           onClick={toggleAll}
-          className="cursor-pointer rounded border border-gray-300 px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+          className="cursor-pointer rounded px-3 py-1 text-xs font-medium bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
         >
           {allSelected ? "全解除" : "全選択"}
         </button>
         {selectedIds.size > 0 && (
           <>
-            <span className="text-sm text-gray-500 dark:text-gray-400">
+            <span className="text-sm text-zinc-500">
               {selectedIds.size}件選択中
             </span>
             <button
               type="button"
               onClick={() => setIsBulkTagging((prev) => !prev)}
-              className="cursor-pointer rounded border border-blue-300 px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-400 dark:hover:bg-blue-950"
+              className="cursor-pointer rounded px-3 py-1 text-xs font-medium bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
             >
               タグを追加
             </button>
             <button
               type="button"
               onClick={handleBulkDelete}
-              className="cursor-pointer rounded border border-red-300 px-3 py-1 text-sm text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950"
+              className="cursor-pointer rounded border border-red-300 px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
             >
               削除
             </button>
@@ -570,18 +521,17 @@ export function BookmarkList({
       )}
 
       {filteredItems.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-gray-300 py-12 text-center text-sm text-gray-500 dark:border-gray-600 dark:text-gray-400">
+        <div className="rounded-lg border border-dashed border-zinc-300 py-12 text-center text-sm text-zinc-500">
           {items.length === 0 ? "まだブックマークがありません" : "該当するブックマークがありません"}
         </div>
       ) : mounted ? (
-        // クライアントマウント後: DnD 有効
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragEnd={handleDragEndWithSave}
         >
           <SortableContext items={filteredItems.map((b) => b.id)} strategy={verticalListSortingStrategy}>
-            <ul className="divide-y divide-gray-200 rounded-lg border dark:divide-gray-700 dark:border-gray-700">
+            <ul className="divide-y divide-zinc-100 rounded-lg border border-zinc-200">
               {filteredItems.map((bm) => (
                 <SortableItem key={bm.id} {...itemProps(bm)} />
               ))}
@@ -589,8 +539,7 @@ export function BookmarkList({
           </SortableContext>
         </DndContext>
       ) : (
-        // SSR / ハイドレーション: DndContext なしでプレーンリスト
-        <ul className="divide-y divide-gray-200 rounded-lg border dark:divide-gray-700 dark:border-gray-700">
+        <ul className="divide-y divide-zinc-100 rounded-lg border border-zinc-200">
           {filteredItems.map((bm) => (
             <PlainItem key={bm.id} {...itemProps(bm)} />
           ))}

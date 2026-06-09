@@ -81,7 +81,7 @@ export async function updateBookmark(
   if (bookmark.userId !== userId) return { error: "権限がありません" };
 
   const validTagIds =
-    data.tagIds !== undefined && data.tagIds.length
+    data.tagIds?.length
       ? (
           await prisma.tag.findMany({
             where: { id: { in: data.tagIds }, userId },
