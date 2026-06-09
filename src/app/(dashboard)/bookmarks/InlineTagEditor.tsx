@@ -25,7 +25,6 @@ export function InlineTagEditor({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  // TagInput で新規作成したタグを allTags にマージして候補に含める
   const mergedTags = [
     ...allTags,
     ...localNewTags.filter((t) => !allTags.find((a) => a.id === t.id)),
@@ -51,7 +50,7 @@ export function InlineTagEditor({
   }
 
   return (
-    <div className="mt-2 rounded border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900">
+    <div className="mt-2 rounded-md border border-zinc-200 bg-zinc-50 p-3">
       <TagInput availableTags={mergedTags} selectedTagIds={tagIds} onChange={handleChange} />
       {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
       <div className="mt-2 flex gap-2">
@@ -59,7 +58,7 @@ export function InlineTagEditor({
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          className="cursor-pointer rounded px-3 py-1 text-xs font-medium bg-zinc-900 text-white hover:bg-zinc-700 disabled:opacity-50"
         >
           {saving ? "保存中..." : "保存"}
         </button>
@@ -67,7 +66,7 @@ export function InlineTagEditor({
           type="button"
           onClick={onCancel}
           disabled={saving}
-          className="rounded border border-gray-300 px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 disabled:opacity-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+          className="cursor-pointer rounded px-3 py-1 text-xs font-medium bg-zinc-100 text-zinc-700 hover:bg-zinc-200 disabled:opacity-50"
         >
           キャンセル
         </button>

@@ -18,17 +18,17 @@ export default async function BookmarksPage() {
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">ブックマーク一覧</h2>
+        <h2 className="text-lg font-bold text-zinc-900">ブックマーク一覧</h2>
         <div className="flex gap-2">
           <Link
             href="/bookmarks/tags"
-            className="rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+            className="cursor-pointer rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
           >
             タグ管理
           </Link>
           <Link
             href="/bookmarks/new"
-            className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            className="cursor-pointer rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700"
           >
             追加
           </Link>
@@ -36,7 +36,7 @@ export default async function BookmarksPage() {
       </div>
 
       {bookmarks.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-gray-300 py-16 text-center text-gray-500 dark:border-gray-600 dark:text-gray-400">
+        <div className="rounded-lg border border-dashed border-zinc-300 py-16 text-center text-sm text-zinc-500">
           まだブックマークがありません
         </div>
       ) : (

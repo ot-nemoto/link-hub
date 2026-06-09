@@ -80,41 +80,41 @@ export function TagsClient({ initialTags }: { initialTags: Tag[] }) {
           placeholder="新しいタグ名"
           maxLength={50}
           disabled={creating}
-          className="flex-1 rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-400 disabled:opacity-50"
+          className="flex-1 rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 disabled:opacity-50"
         />
         <button
           type="submit"
           disabled={creating || inputValue.trim().length === 0}
-          className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          className="cursor-pointer rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-50"
         >
           {creating ? "作成中..." : "作成"}
         </button>
       </form>
 
-      {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
+      {error && (
+        <p className="mb-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>
+      )}
 
       {tags.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-gray-300 py-16 text-center text-gray-500 dark:border-gray-600 dark:text-gray-400">
+        <div className="rounded-lg border border-dashed border-zinc-300 py-16 text-center text-sm text-zinc-500">
           タグがありません
         </div>
       ) : (
-        <ul className="divide-y divide-gray-200 rounded-lg border dark:divide-gray-700 dark:border-gray-700">
+        <ul className="divide-y divide-zinc-100 rounded-lg border border-zinc-200">
           {tags.map((tag) => (
             <li
               key={tag.id}
-              className="flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-800"
+              className="flex items-center justify-between px-4 py-3 bg-white hover:bg-zinc-50"
             >
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-800 dark:text-gray-100">{tag.name}</span>
-                <span className="text-xs text-gray-400 dark:text-gray-500">
-                  {tag.bookmarkCount}件
-                </span>
+                <span className="text-sm text-zinc-900">{tag.name}</span>
+                <span className="text-xs text-zinc-400">{tag.bookmarkCount}件</span>
               </div>
               <button
                 type="button"
                 onClick={() => handleDelete(tag.id)}
                 disabled={deletingIds.has(tag.id)}
-                className="rounded border border-red-300 px-3 py-1 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950"
+                className="cursor-pointer rounded border border-red-300 px-3 py-1 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
               >
                 {deletingIds.has(tag.id) ? "削除中..." : "削除"}
               </button>
