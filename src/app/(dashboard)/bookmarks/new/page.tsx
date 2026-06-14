@@ -1,4 +1,7 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+
+export const metadata: Metadata = { title: "ブックマーク追加" };
 
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
