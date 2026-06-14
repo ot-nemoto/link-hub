@@ -10,7 +10,7 @@ const mPlus1Code = M_PLUS_1_Code({
 });
 
 export const metadata: Metadata = {
-  title: "Link Hub",
+  title: { template: "%s | Link Hub", default: "Link Hub" },
   description: "ブックマーク管理アプリ",
   icons: { icon: "/favicon.svg" },
 };
