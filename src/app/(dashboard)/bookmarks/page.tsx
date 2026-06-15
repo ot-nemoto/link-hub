@@ -1,5 +1,8 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+
+export const metadata: Metadata = { title: "ブックマーク一覧" };
 
 import { getSession } from "@/lib/auth";
 import { getBookmarks } from "@/lib/bookmarks";
