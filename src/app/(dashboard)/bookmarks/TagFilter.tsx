@@ -31,9 +31,7 @@ export function TagFilter({ tags, selectedTagIds, onChange }: Props) {
             type="button"
             onClick={() => toggle(tag.id)}
             className={`cursor-pointer rounded-full px-3 py-1 text-sm font-medium ${
-              active
-                ? "bg-zinc-900 text-white"
-                : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+              active ? "bg-zinc-900 text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
             }`}
           >
             {tag.name}

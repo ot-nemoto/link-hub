@@ -1,8 +1,9 @@
 // @vitest-environment node
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { Prisma } from "@prisma/client";
 
-import { getTags, getTagsWithCount, createTag, deleteTag } from "./tags";
+import { Prisma } from "@prisma/client";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { createTag, deleteTag, getTags, getTagsWithCount } from "./tags";
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
@@ -36,9 +37,7 @@ describe("getTags", () => {
 
     const result = await getTags(userId);
 
-    expect(mockTagFindMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { userId } }),
-    );
+    expect(mockTagFindMany).toHaveBeenCalledWith(expect.objectContaining({ where: { userId } }));
     expect(result).toEqual([tag]);
   });
 });
@@ -93,9 +92,7 @@ describe("createTag", () => {
   });
 
   it("P2002 レース条件の場合は { conflict: true, tag } を返す", async () => {
-    mockTagFindUnique
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce(tag as never);
+    mockTagFindUnique.mockResolvedValueOnce(null).mockResolvedValueOnce(tag as never);
     const p2002 = new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
       code: "P2002",
       clientVersion: "7.5.0",
