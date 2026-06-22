@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { updateBookmarkTags } from "./actions";
-import { TagInput, type Tag } from "./TagInput";
+import { type Tag, TagInput } from "./TagInput";
 
 type Props = {
   bookmarkId: string;
@@ -13,13 +13,7 @@ type Props = {
   onCancel: () => void;
 };
 
-export function InlineTagEditor({
-  bookmarkId,
-  allTags,
-  currentTagIds,
-  onSave,
-  onCancel,
-}: Props) {
+export function InlineTagEditor({ bookmarkId, allTags, currentTagIds, onSave, onCancel }: Props) {
   const [tagIds, setTagIds] = useState(currentTagIds);
   const [localNewTags, setLocalNewTags] = useState<Tag[]>([]);
   const [saving, setSaving] = useState(false);

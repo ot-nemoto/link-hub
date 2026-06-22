@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { fetchOgp } from "./fetchOgp";
-import { TagInput, type Tag } from "./TagInput";
+import { type Tag, TagInput } from "./TagInput";
 
 type Props = {
   availableTags: Tag[];
@@ -43,8 +43,12 @@ export function BookmarkForm({ availableTags, defaultValues, action }: Props) {
 
   const titleRef = useRef(title);
   const ogImageRef = useRef(ogImage);
-  useEffect(() => { titleRef.current = title; }, [title]);
-  useEffect(() => { ogImageRef.current = ogImage; }, [ogImage]);
+  useEffect(() => {
+    titleRef.current = title;
+  }, [title]);
+  useEffect(() => {
+    ogImageRef.current = ogImage;
+  }, [ogImage]);
 
   async function handleUrlBlur(e: React.FocusEvent<HTMLInputElement>) {
     const url = e.currentTarget.value.trim();

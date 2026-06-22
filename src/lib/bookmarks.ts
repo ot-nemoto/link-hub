@@ -62,9 +62,7 @@ export async function createBookmark(
       memo: data.memo || null,
       ogImage: data.ogImage ?? null,
       sortOrder,
-      ...(validTagIds.length
-        ? { tags: { create: validTagIds.map((tagId) => ({ tagId })) } }
-        : {}),
+      ...(validTagIds.length ? { tags: { create: validTagIds.map((tagId) => ({ tagId })) } } : {}),
     },
   });
 
@@ -80,17 +78,16 @@ export async function updateBookmark(
   if (!bookmark) return { error: "ブックマークが見つかりません" };
   if (bookmark.userId !== userId) return { error: "権限がありません" };
 
-  const validTagIds =
-    data.tagIds?.length
-      ? (
-          await prisma.tag.findMany({
-            where: { id: { in: data.tagIds }, userId },
-            select: { id: true },
-          })
-        ).map((t) => t.id)
-      : data.tagIds !== undefined
-        ? []
-        : undefined;
+  const validTagIds = data.tagIds?.length
+    ? (
+        await prisma.tag.findMany({
+          where: { id: { in: data.tagIds }, userId },
+          select: { id: true },
+        })
+      ).map((t) => t.id)
+    : data.tagIds !== undefined
+      ? []
+      : undefined;
 
   await prisma.bookmark.update({
     where: { id },
@@ -103,9 +100,7 @@ export async function updateBookmark(
         ? {
             tags: {
               deleteMany: {},
-              ...(validTagIds.length
-                ? { create: validTagIds.map((tagId) => ({ tagId })) }
-                : {}),
+              ...(validTagIds.length ? { create: validTagIds.map((tagId) => ({ tagId })) } : {}),
             },
           }
         : {}),
@@ -138,9 +133,7 @@ export async function updateBookmarkTags(
     data: {
       tags: {
         deleteMany: {},
-        ...(validTagIds.length
-          ? { create: validTagIds.map((tagId) => ({ tagId })) }
-          : {}),
+        ...(validTagIds.length ? { create: validTagIds.map((tagId) => ({ tagId })) } : {}),
       },
     },
   });
@@ -148,28 +141,20 @@ export async function updateBookmarkTags(
   return {};
 }
 
-export async function reorderBookmarks(
-  userId: string,
-  ids: string[],
-): Promise<{ error?: string }> {
+export async function reorderBookmarks(userId: string, ids: string[]): Promise<{ error?: string }> {
   const owned = await prisma.bookmark.count({
     where: { id: { in: ids }, userId },
   });
   if (owned !== ids.length) return { error: "権限がありません" };
 
   await prisma.$transaction(
-    ids.map((id, index) =>
-      prisma.bookmark.update({ where: { id }, data: { sortOrder: index } }),
-    ),
+    ids.map((id, index) => prisma.bookmark.update({ where: { id }, data: { sortOrder: index } })),
   );
 
   return {};
 }
 
-export async function deleteBookmark(
-  userId: string,
-  id: string,
-): Promise<{ error?: string }> {
+export async function deleteBookmark(userId: string, id: string): Promise<{ error?: string }> {
   const bookmark = await prisma.bookmark.findUnique({ where: { id } });
   if (!bookmark) return { error: "ブックマークが見つかりません" };
   if (bookmark.userId !== userId) return { error: "権限がありません" };
@@ -179,10 +164,7 @@ export async function deleteBookmark(
   return {};
 }
 
-export async function deleteBookmarks(
-  userId: string,
-  ids: string[],
-): Promise<{ error?: string }> {
+export async function deleteBookmarks(userId: string, ids: string[]): Promise<{ error?: string }> {
   await prisma.bookmark.deleteMany({
     where: { id: { in: ids }, userId },
   });

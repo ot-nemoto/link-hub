@@ -179,9 +179,7 @@ describe("fetchOgp", () => {
   });
 
   it("og:title も <title> タグもない場合 title は undefined で返す", async () => {
-    mockFetch.mockResolvedValue(
-      makeHtmlResponse(`<html><head></head><body></body></html>`),
-    );
+    mockFetch.mockResolvedValue(makeHtmlResponse(`<html><head></head><body></body></html>`));
 
     const result = await fetchOgp("https://example.com");
 

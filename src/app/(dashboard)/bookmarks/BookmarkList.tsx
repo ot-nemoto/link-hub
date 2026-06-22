@@ -1,13 +1,13 @@
 "use client";
 
 import {
+  closestCenter,
   DndContext,
+  type DragEndEvent,
   KeyboardSensor,
   PointerSensor,
-  closestCenter,
   useSensor,
   useSensors,
-  type DragEndEvent,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -18,12 +18,12 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { bulkAddTags, deleteBookmark, deleteBookmarks, reorderBookmarks } from "./actions";
 import { BulkTagPanel } from "./BulkTagPanel";
 import { InlineTagEditor } from "./InlineTagEditor";
-import { TagFilter, UNTAGGED_ID, type TagFilterItem } from "./TagFilter";
+import { TagFilter, type TagFilterItem, UNTAGGED_ID } from "./TagFilter";
 import { UndoSnackbar } from "./UndoSnackbar";
-import { bulkAddTags, deleteBookmark, deleteBookmarks, reorderBookmarks } from "./actions";
 
 type BookmarkTag = { tagId: string; tag: { id: string; name: string } };
 
@@ -72,7 +72,18 @@ type ItemProps = {
   onEditTagsCancel: () => void;
 };
 
-function PlainItem({ bm, isDndDisabled, isSelected, onToggleSelect, onDelete, allTags, editingTags, onEditTagsStart, onEditTagsSave, onEditTagsCancel }: ItemProps) {
+function PlainItem({
+  bm,
+  isDndDisabled,
+  isSelected,
+  onToggleSelect,
+  onDelete,
+  allTags,
+  editingTags,
+  onEditTagsStart,
+  onEditTagsSave,
+  onEditTagsCancel,
+}: ItemProps) {
   return (
     <li className="flex items-center gap-3 px-4 py-3 bg-white">
       {isDndDisabled ? null : (
@@ -87,12 +98,31 @@ function PlainItem({ bm, isDndDisabled, isSelected, onToggleSelect, onDelete, al
         className="h-4 w-4 shrink-0 cursor-pointer"
         aria-label={`${bm.title}を選択`}
       />
-      <ItemContent bm={bm} onDelete={onDelete} allTags={allTags} editingTags={editingTags} onEditTagsStart={onEditTagsStart} onEditTagsSave={onEditTagsSave} onEditTagsCancel={onEditTagsCancel} />
+      <ItemContent
+        bm={bm}
+        onDelete={onDelete}
+        allTags={allTags}
+        editingTags={editingTags}
+        onEditTagsStart={onEditTagsStart}
+        onEditTagsSave={onEditTagsSave}
+        onEditTagsCancel={onEditTagsCancel}
+      />
     </li>
   );
 }
 
-function SortableItem({ bm, isDndDisabled, isSelected, onToggleSelect, onDelete, allTags, editingTags, onEditTagsStart, onEditTagsSave, onEditTagsCancel }: ItemProps) {
+function SortableItem({
+  bm,
+  isDndDisabled,
+  isSelected,
+  onToggleSelect,
+  onDelete,
+  allTags,
+  editingTags,
+  onEditTagsStart,
+  onEditTagsSave,
+  onEditTagsCancel,
+}: ItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: bm.id,
     disabled: isDndDisabled,
@@ -105,11 +135,7 @@ function SortableItem({ bm, isDndDisabled, isSelected, onToggleSelect, onDelete,
   };
 
   return (
-    <li
-      ref={setNodeRef}
-      style={style}
-      className="flex items-center gap-3 px-4 py-3 bg-white"
-    >
+    <li ref={setNodeRef} style={style} className="flex items-center gap-3 px-4 py-3 bg-white">
       {!isDndDisabled && (
         <button
           type="button"
@@ -128,7 +154,15 @@ function SortableItem({ bm, isDndDisabled, isSelected, onToggleSelect, onDelete,
         className="h-4 w-4 shrink-0 cursor-pointer"
         aria-label={`${bm.title}を選択`}
       />
-      <ItemContent bm={bm} onDelete={onDelete} allTags={allTags} editingTags={editingTags} onEditTagsStart={onEditTagsStart} onEditTagsSave={onEditTagsSave} onEditTagsCancel={onEditTagsCancel} />
+      <ItemContent
+        bm={bm}
+        onDelete={onDelete}
+        allTags={allTags}
+        editingTags={editingTags}
+        onEditTagsStart={onEditTagsStart}
+        onEditTagsSave={onEditTagsSave}
+        onEditTagsCancel={onEditTagsCancel}
+      />
     </li>
   );
 }
@@ -162,9 +196,7 @@ function ItemContent({
           {bm.title}
         </a>
         <p className="truncate text-xs text-zinc-400">{bm.url}</p>
-        {bm.memo && (
-          <p className="truncate text-sm text-zinc-600">{bm.memo}</p>
-        )}
+        {bm.memo && <p className="truncate text-sm text-zinc-600">{bm.memo}</p>}
         <div className="mt-1 flex flex-wrap items-center gap-1">
           {bm.tags.map((bt) => {
             const tagName = allTags.find((t) => t.id === bt.tagId)?.name ?? bt.tag.name;
@@ -242,11 +274,19 @@ export function BookmarkList({
   const [pending, setPending] = useState<PendingDelete | null>(null);
   const pendingRef = useRef<PendingDelete | null>(null);
 
-  useEffect(() => { setMounted(true); }, []);
-  useEffect(() => { setItems(initial); }, [initial]);
-  useEffect(() => { setAllTagsState(allTags); }, [allTags]);
   useEffect(() => {
-    return () => { if (pendingRef.current) clearTimeout(pendingRef.current.timerId); };
+    setMounted(true);
+  }, []);
+  useEffect(() => {
+    setItems(initial);
+  }, [initial]);
+  useEffect(() => {
+    setAllTagsState(allTags);
+  }, [allTags]);
+  useEffect(() => {
+    return () => {
+      if (pendingRef.current) clearTimeout(pendingRef.current.timerId);
+    };
   }, []);
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -288,9 +328,7 @@ export function BookmarkList({
 
   const toggleAll = useCallback(() => {
     setSelectedIds((prev) =>
-      prev.size === filteredItems.length
-        ? new Set()
-        : new Set(filteredItems.map((b) => b.id)),
+      prev.size === filteredItems.length ? new Set() : new Set(filteredItems.map((b) => b.id)),
     );
   }, [filteredItems]);
 
@@ -359,9 +397,10 @@ export function BookmarkList({
     (bookmarkId: string, tagIds: string[], newTags: TagFilterItem[]) => {
       const nextAllTags =
         newTags.length > 0
-          ? [...allTagsState, ...newTags.filter((t) => !allTagsState.find((a) => a.id === t.id))].sort(
-              (a, b) => a.name.localeCompare(b.name),
-            )
+          ? [
+              ...allTagsState,
+              ...newTags.filter((t) => !allTagsState.find((a) => a.id === t.id)),
+            ].sort((a, b) => a.name.localeCompare(b.name))
           : allTagsState;
       if (newTags.length > 0) setAllTagsState(nextAllTags);
       setItems((prev) =>
@@ -424,7 +463,9 @@ export function BookmarkList({
   );
 
   const itemsRef = useRef<Bookmark[]>(initial);
-  useEffect(() => { itemsRef.current = items; }, [items]);
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
 
   const handleDragEndWithSave = useCallback(async (event: DragEndEvent) => {
     const { active, over } = event;
@@ -473,11 +514,7 @@ export function BookmarkList({
         className="mb-4 w-full rounded-md border border-zinc-300 px-4 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
       />
 
-      <TagFilter
-        tags={allTagsState}
-        selectedTagIds={activeTagIds}
-        onChange={setActiveTagIds}
-      />
+      <TagFilter tags={allTagsState} selectedTagIds={activeTagIds} onChange={setActiveTagIds} />
 
       <div className="mb-3 flex items-center gap-2">
         <button
@@ -489,9 +526,7 @@ export function BookmarkList({
         </button>
         {selectedIds.size > 0 && (
           <>
-            <span className="text-sm text-zinc-500">
-              {selectedIds.size}件選択中
-            </span>
+            <span className="text-sm text-zinc-500">{selectedIds.size}件選択中</span>
             <button
               type="button"
               onClick={() => setIsBulkTagging((prev) => !prev)}
@@ -516,7 +551,10 @@ export function BookmarkList({
           saving={bulkTagSaving}
           error={bulkTagError}
           onSave={handleBulkTagsSave}
-          onCancel={() => { setIsBulkTagging(false); setBulkTagError(""); }}
+          onCancel={() => {
+            setIsBulkTagging(false);
+            setBulkTagError("");
+          }}
         />
       )}
 
@@ -530,7 +568,10 @@ export function BookmarkList({
           collisionDetection={closestCenter}
           onDragEnd={handleDragEndWithSave}
         >
-          <SortableContext items={filteredItems.map((b) => b.id)} strategy={verticalListSortingStrategy}>
+          <SortableContext
+            items={filteredItems.map((b) => b.id)}
+            strategy={verticalListSortingStrategy}
+          >
             <ul className="divide-y divide-zinc-100 rounded-lg border border-zinc-200">
               {filteredItems.map((bm) => (
                 <SortableItem key={bm.id} {...itemProps(bm)} />
