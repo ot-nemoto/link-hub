@@ -23,7 +23,9 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="ja">
-        <body className={`${mPlus1Code.variable} font-mplus1code antialiased`}>{children}</body>
+        <body className={`${mPlus1Code.variable} font-mplus1code antialiased`}>
+          {children}
+        </body>
       </html>
     </ClerkProvider>
   );

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
-import { Header } from "@/components/Header";
+
 import { getSession } from "@/lib/auth";
+import { Header } from "@/components/Header";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();

@@ -5,8 +5,8 @@ export const metadata: Metadata = { title: "ブックマーク編集" };
 
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { updateBookmark } from "../../actions";
 import { BookmarkForm } from "../../BookmarkForm";
+import { updateBookmark } from "../../actions";
 
 export default async function EditBookmarkPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
@@ -28,7 +28,9 @@ export default async function EditBookmarkPage({ params }: { params: Promise<{ i
 
   return (
     <div>
-      <h2 className="mb-6 text-lg font-bold text-zinc-900">ブックマークを編集</h2>
+      <h2 className="mb-6 text-lg font-bold text-zinc-900">
+        ブックマークを編集
+      </h2>
       <BookmarkForm
         availableTags={tags}
         defaultValues={{

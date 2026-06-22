@@ -5,8 +5,8 @@ export const metadata: Metadata = { title: "ブックマーク追加" };
 
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { createBookmark } from "../actions";
 import { BookmarkForm } from "../BookmarkForm";
+import { createBookmark } from "../actions";
 
 export default async function NewBookmarkPage() {
   const session = await getSession();
@@ -20,7 +20,9 @@ export default async function NewBookmarkPage() {
 
   return (
     <div>
-      <h2 className="mb-6 text-lg font-bold text-zinc-900">ブックマークを追加</h2>
+      <h2 className="mb-6 text-lg font-bold text-zinc-900">
+        ブックマークを追加
+      </h2>
       <BookmarkForm availableTags={tags} action={createBookmark} />
     </div>
   );
