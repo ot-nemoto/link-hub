@@ -53,10 +53,7 @@ export async function createTag(
   }
 }
 
-export async function deleteTag(
-  userId: string,
-  id: string,
-): Promise<{ error?: string }> {
+export async function deleteTag(userId: string, id: string): Promise<{ error?: string }> {
   const tag = await prisma.tag.findUnique({ where: { id } });
   if (!tag) return { error: "タグが見つかりません" };
   if (tag.userId !== userId) return { error: "権限がありません" };

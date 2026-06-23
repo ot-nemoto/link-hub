@@ -1,8 +1,8 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { flushSync } from "react-dom";
-import { useRouter } from "next/navigation";
 
 import { createTag, deleteTag } from "../actions";
 
@@ -36,9 +36,7 @@ export function TagsClient({ initialTags }: { initialTags: Tag[] }) {
       }
       const newTag = result.tag;
       setTags((prev) =>
-        [...prev, { ...newTag, bookmarkCount: 0 }].sort((a, b) =>
-          a.name.localeCompare(b.name),
-        ),
+        [...prev, { ...newTag, bookmarkCount: 0 }].sort((a, b) => a.name.localeCompare(b.name)),
       );
       setInputValue("");
     } finally {
@@ -91,9 +89,7 @@ export function TagsClient({ initialTags }: { initialTags: Tag[] }) {
         </button>
       </form>
 
-      {error && (
-        <p className="mb-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>
-      )}
+      {error && <p className="mb-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>}
 
       {tags.length === 0 ? (
         <div className="rounded-lg border border-dashed border-zinc-300 py-16 text-center text-sm text-zinc-500">

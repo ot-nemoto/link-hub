@@ -25,13 +25,10 @@ export function TagInput({ inputId, availableTags, selectedTagIds, onChange }: P
   const suggestions = trimmed
     ? availableTags.filter(
         (t) =>
-          t.name.toLowerCase().includes(trimmed.toLowerCase()) &&
-          !selectedTagIds.includes(t.id),
+          t.name.toLowerCase().includes(trimmed.toLowerCase()) && !selectedTagIds.includes(t.id),
       )
     : availableTags.filter((t) => !selectedTagIds.includes(t.id));
-  const exactMatch = availableTags.find(
-    (t) => t.name.toLowerCase() === trimmed.toLowerCase(),
-  );
+  const exactMatch = availableTags.find((t) => t.name.toLowerCase() === trimmed.toLowerCase());
   const canCreate = trimmed.length > 0 && trimmed.length <= 50 && !exactMatch;
 
   function removeTag(id: string) {

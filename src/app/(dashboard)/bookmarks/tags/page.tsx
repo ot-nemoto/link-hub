@@ -18,10 +18,7 @@ export default async function TagsPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <h2 className="text-lg font-bold text-zinc-900">タグ管理</h2>
-        <Link
-          href="/bookmarks"
-          className="text-sm text-zinc-500 hover:text-zinc-700"
-        >
+        <Link href="/bookmarks" className="text-sm text-zinc-500 hover:text-zinc-700">
           ← ブックマーク一覧へ
         </Link>
       </div>

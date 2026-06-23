@@ -2,14 +2,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
-  getBookmarks,
+  bulkAddTags,
   createBookmark,
-  updateBookmark,
-  updateBookmarkTags,
-  reorderBookmarks,
   deleteBookmark,
   deleteBookmarks,
-  bulkAddTags,
+  getBookmarks,
+  reorderBookmarks,
+  updateBookmark,
+  updateBookmarkTags,
 } from "./bookmarks";
 
 vi.mock("@/lib/prisma", () => ({
