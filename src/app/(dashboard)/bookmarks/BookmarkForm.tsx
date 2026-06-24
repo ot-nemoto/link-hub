@@ -22,9 +22,11 @@ type Props = {
     ogImage?: string;
     tagIds?: string[];
   }) => Promise<{ error?: string }>;
+  onSuccess?: () => void;
+  onCancel?: () => void;
 };
 
-export function BookmarkForm({ availableTags, defaultValues, action }: Props) {
+export function BookmarkForm({ availableTags, defaultValues, action, onSuccess, onCancel }: Props) {
   const router = useRouter();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -113,8 +115,12 @@ export function BookmarkForm({ availableTags, defaultValues, action }: Props) {
       return;
     }
 
-    router.push("/bookmarks");
-    router.refresh();
+    if (onSuccess) {
+      onSuccess();
+    } else {
+      router.push("/bookmarks");
+      router.refresh();
+    }
   }
 
   return (
@@ -195,7 +201,7 @@ export function BookmarkForm({ availableTags, defaultValues, action }: Props) {
         </button>
         <button
           type="button"
-          onClick={() => router.push("/bookmarks")}
+          onClick={() => (onCancel ? onCancel() : router.push("/bookmarks"))}
           className="cursor-pointer rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
         >
           キャンセル

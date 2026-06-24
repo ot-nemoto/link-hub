@@ -16,18 +16,21 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { BookmarkAddModal } from "@/components/BookmarkAddModal";
+import { BookmarkEditModal } from "@/components/BookmarkEditModal";
 import { TagManagementModal } from "@/components/TagManagementModal";
 import { getTagColor } from "@/lib/tag-colors";
 import {
   bulkAddTags,
+  createBookmark,
   createTag,
   deleteBookmark,
   deleteBookmarks,
   deleteTag,
   reorderBookmarks,
+  updateBookmark,
 } from "./actions";
 import { BulkTagPanel } from "./BulkTagPanel";
 import { InlineTagEditor } from "./InlineTagEditor";
@@ -73,6 +76,7 @@ type ItemProps = {
   isDndDisabled: boolean;
   isSelected: boolean;
   onToggleSelect: (id: string) => void;
+  onEdit: (bm: Bookmark) => void;
   onDelete: (bm: Bookmark) => void;
   allTags: TagFilterItem[];
   editingTags: boolean;
@@ -86,6 +90,7 @@ function PlainItem({
   isDndDisabled,
   isSelected,
   onToggleSelect,
+  onEdit,
   onDelete,
   allTags,
   editingTags,
@@ -109,6 +114,7 @@ function PlainItem({
       />
       <ItemContent
         bm={bm}
+        onEdit={onEdit}
         onDelete={onDelete}
         allTags={allTags}
         editingTags={editingTags}
@@ -125,6 +131,7 @@ function SortableItem({
   isDndDisabled,
   isSelected,
   onToggleSelect,
+  onEdit,
   onDelete,
   allTags,
   editingTags,
@@ -171,6 +178,7 @@ function SortableItem({
       />
       <ItemContent
         bm={bm}
+        onEdit={onEdit}
         onDelete={onDelete}
         allTags={allTags}
         editingTags={editingTags}
@@ -184,6 +192,7 @@ function SortableItem({
 
 function ItemContent({
   bm,
+  onEdit,
   onDelete,
   allTags,
   editingTags,
@@ -192,6 +201,7 @@ function ItemContent({
   onEditTagsCancel,
 }: {
   bm: Bookmark;
+  onEdit: (bm: Bookmark) => void;
   onDelete: (bm: Bookmark) => void;
   allTags: TagFilterItem[];
   editingTags: boolean;
@@ -252,12 +262,13 @@ function ItemContent({
         />
       )}
       <div className="flex shrink-0 gap-2">
-        <Link
-          href={`/bookmarks/${bm.id}/edit`}
+        <button
+          type="button"
+          onClick={() => onEdit(bm)}
           className="cursor-pointer rounded px-3 py-1 text-xs font-medium bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
         >
           編集
-        </Link>
+        </button>
         <button
           type="button"
           onClick={() => onDelete(bm)}
@@ -288,6 +299,8 @@ export function BookmarkList({
   const [allTagsState, setAllTagsState] = useState<TagFilterItem[]>(allTags);
   const [tagsWithCountState, setTagsWithCountState] = useState<TagWithCount[]>(tagsWithCount);
   const [isTagModalOpen, setIsTagModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingBookmarkId, setEditingBookmarkId] = useState<string | null>(null);
   const [activeTagIds, setActiveTagIds] = useState<string[]>([]);
   const [editingTagsId, setEditingTagsId] = useState<string | null>(null);
   const [isBulkTagging, setIsBulkTagging] = useState(false);
@@ -516,6 +529,16 @@ export function BookmarkList({
     router.refresh();
   }, [router]);
 
+  const handleAddModalSuccess = useCallback(() => {
+    setIsAddModalOpen(false);
+    router.refresh();
+  }, [router]);
+
+  const handleEditModalSuccess = useCallback(() => {
+    setEditingBookmarkId(null);
+    router.refresh();
+  }, [router]);
+
   const isDndDisabled = isSearching || activeTagIds.length > 0;
 
   const itemProps = (bm: Bookmark) => ({
@@ -524,6 +547,7 @@ export function BookmarkList({
     isDndDisabled,
     isSelected: selectedIds.has(bm.id),
     onToggleSelect: toggleSelect,
+    onEdit: (b: Bookmark) => setEditingBookmarkId(b.id),
     onDelete: handleDelete,
     allTags: allTagsState,
     editingTags: editingTagsId === bm.id,
@@ -535,6 +559,17 @@ export function BookmarkList({
 
   return (
     <div>
+      <div className="mb-6 flex items-center justify-between">
+        <h2 className="text-lg font-bold text-zinc-900">ブックマーク一覧</h2>
+        <button
+          type="button"
+          onClick={() => setIsAddModalOpen(true)}
+          className="cursor-pointer rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700"
+        >
+          追加
+        </button>
+      </div>
+
       <input
         type="search"
         value={searchQuery}
@@ -645,6 +680,36 @@ export function BookmarkList({
           onDeleteTag={deleteTag}
         />
       )}
+
+      {isAddModalOpen && (
+        <BookmarkAddModal
+          availableTags={allTagsState}
+          action={createBookmark}
+          onClose={() => setIsAddModalOpen(false)}
+          onSuccess={handleAddModalSuccess}
+        />
+      )}
+
+      {editingBookmarkId &&
+        (() => {
+          const bm = items.find((b) => b.id === editingBookmarkId);
+          if (!bm) return null;
+          return (
+            <BookmarkEditModal
+              availableTags={allTagsState}
+              defaultValues={{
+                url: bm.url,
+                title: bm.title,
+                memo: bm.memo ?? "",
+                ogImage: bm.ogImage ?? undefined,
+                tagIds: bm.tags.map((bt) => bt.tagId),
+              }}
+              action={updateBookmark.bind(null, editingBookmarkId)}
+              onClose={() => setEditingBookmarkId(null)}
+              onSuccess={handleEditModalSuccess}
+            />
+          );
+        })()}
     </div>
   );
 }
