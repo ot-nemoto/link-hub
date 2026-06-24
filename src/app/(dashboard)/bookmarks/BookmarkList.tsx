@@ -19,8 +19,16 @@ import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { TagManagementModal } from "@/components/TagManagementModal";
 import { getTagColor } from "@/lib/tag-colors";
-import { bulkAddTags, deleteBookmark, deleteBookmarks, reorderBookmarks } from "./actions";
+import {
+  bulkAddTags,
+  createTag,
+  deleteBookmark,
+  deleteBookmarks,
+  deleteTag,
+  reorderBookmarks,
+} from "./actions";
 import { BulkTagPanel } from "./BulkTagPanel";
 import { InlineTagEditor } from "./InlineTagEditor";
 import { TagFilter, type TagFilterItem, UNTAGGED_ID } from "./TagFilter";
@@ -262,18 +270,24 @@ function ItemContent({
   );
 }
 
+type TagWithCount = { id: string; name: string; bookmarkCount: number };
+
 export function BookmarkList({
   bookmarks: initial,
   allTags,
+  tagsWithCount,
 }: {
   bookmarks: Bookmark[];
   allTags: TagFilterItem[];
+  tagsWithCount: TagWithCount[];
 }) {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [items, setItems] = useState<Bookmark[]>(initial);
   const [allTagsState, setAllTagsState] = useState<TagFilterItem[]>(allTags);
+  const [tagsWithCountState, setTagsWithCountState] = useState<TagWithCount[]>(tagsWithCount);
+  const [isTagModalOpen, setIsTagModalOpen] = useState(false);
   const [activeTagIds, setActiveTagIds] = useState<string[]>([]);
   const [editingTagsId, setEditingTagsId] = useState<string | null>(null);
   const [isBulkTagging, setIsBulkTagging] = useState(false);
@@ -291,6 +305,9 @@ export function BookmarkList({
   useEffect(() => {
     setAllTagsState(allTags);
   }, [allTags]);
+  useEffect(() => {
+    setTagsWithCountState(tagsWithCount);
+  }, [tagsWithCount]);
   useEffect(() => {
     return () => {
       if (pendingRef.current) clearTimeout(pendingRef.current.timerId);
@@ -494,6 +511,11 @@ export function BookmarkList({
     }
   }, []);
 
+  const handleTagModalClose = useCallback(() => {
+    setIsTagModalOpen(false);
+    router.refresh();
+  }, [router]);
+
   const isDndDisabled = isSearching || activeTagIds.length > 0;
 
   const itemProps = (bm: Bookmark) => ({
@@ -522,7 +544,16 @@ export function BookmarkList({
         className="mb-4 w-full rounded-md border border-zinc-300 px-4 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
       />
 
-      <TagFilter tags={allTagsState} selectedTagIds={activeTagIds} onChange={setActiveTagIds} />
+      <div className="mb-4 flex items-center justify-between">
+        <TagFilter tags={allTagsState} selectedTagIds={activeTagIds} onChange={setActiveTagIds} />
+        <button
+          type="button"
+          onClick={() => setIsTagModalOpen(true)}
+          className="shrink-0 cursor-pointer rounded-md border border-zinc-300 px-3 py-1 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+        >
+          タグ管理
+        </button>
+      </div>
 
       <div className="mb-3 flex items-center gap-2">
         <button
@@ -603,6 +634,15 @@ export function BookmarkList({
               : `${pending.bookmarks.length}件削除しました`
           }
           onUndo={handleUndo}
+        />
+      )}
+
+      {isTagModalOpen && (
+        <TagManagementModal
+          initialTags={tagsWithCountState}
+          onClose={handleTagModalClose}
+          onCreateTag={createTag}
+          onDeleteTag={deleteTag}
         />
       )}
     </div>

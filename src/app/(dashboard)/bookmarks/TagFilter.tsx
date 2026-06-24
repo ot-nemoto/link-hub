@@ -24,7 +24,7 @@ export function TagFilter({ tags, selectedTagIds, onChange }: Props) {
   }
 
   return (
-    <div className="mb-4 flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-2">
       {tags.map((tag) => {
         const active = selectedTagIds.includes(tag.id);
         const color = getTagColor(tag.name);

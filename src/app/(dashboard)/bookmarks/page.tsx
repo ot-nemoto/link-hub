@@ -6,16 +6,17 @@ export const metadata: Metadata = { title: "ブックマーク一覧" };
 
 import { getSession } from "@/lib/auth";
 import { getBookmarks } from "@/lib/bookmarks";
-import { getTags } from "@/lib/tags";
+import { getTags, getTagsWithCount } from "@/lib/tags";
 import { BookmarkList } from "./BookmarkList";
 
 export default async function BookmarksPage() {
   const session = await getSession();
   if (!session) redirect("/sign-in");
 
-  const [bookmarks, tags] = await Promise.all([
+  const [bookmarks, tags, tagsWithCount] = await Promise.all([
     getBookmarks(session.user.id),
     getTags(session.user.id),
+    getTagsWithCount(session.user.id),
   ]);
 
   return (
@@ -23,12 +24,6 @@ export default async function BookmarksPage() {
       <div className="mb-6 flex items-center justify-between">
         <h2 className="text-lg font-bold text-zinc-900">ブックマーク一覧</h2>
         <div className="flex gap-2">
-          <Link
-            href="/bookmarks/tags"
-            className="cursor-pointer rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
-          >
-            タグ管理
-          </Link>
           <Link
             href="/bookmarks/new"
             className="cursor-pointer rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700"
@@ -43,7 +38,7 @@ export default async function BookmarksPage() {
           まだブックマークがありません
         </div>
       ) : (
-        <BookmarkList bookmarks={bookmarks} allTags={tags} />
+        <BookmarkList bookmarks={bookmarks} allTags={tags} tagsWithCount={tagsWithCount} />
       )}
     </div>
   );
