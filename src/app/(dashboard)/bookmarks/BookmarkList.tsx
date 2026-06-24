@@ -131,7 +131,9 @@ function SortableItem({
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
+    transition: [transition, "background-color 150ms ease-in-out", "border-color 150ms ease-in-out"]
+      .filter(Boolean)
+      .join(", "),
     opacity: isDragging ? 0.5 : 1,
   };
 
@@ -139,7 +141,7 @@ function SortableItem({
     <li
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-3 transition-all duration-150 ease-in-out hover:border-zinc-400 hover:bg-zinc-50"
+      className="flex items-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-3 hover:border-zinc-400 hover:bg-zinc-50"
     >
       {!isDndDisabled && (
         <button
