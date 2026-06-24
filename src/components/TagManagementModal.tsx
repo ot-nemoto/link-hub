@@ -61,6 +61,8 @@ export function TagManagementModal({ initialTags, onClose, onCreateTag, onDelete
         [...prev, { ...newTag, bookmarkCount: 0 }].sort((a, b) => a.name.localeCompare(b.name)),
       );
       setInputValue("");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "タグの作成に失敗しました");
     } finally {
       setCreating(false);
       inputRef.current?.focus();
