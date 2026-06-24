@@ -19,6 +19,7 @@ import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { getTagColor } from "@/lib/tag-colors";
 import { bulkAddTags, deleteBookmark, deleteBookmarks, reorderBookmarks } from "./actions";
 import { BulkTagPanel } from "./BulkTagPanel";
 import { InlineTagEditor } from "./InlineTagEditor";
@@ -85,7 +86,7 @@ function PlainItem({
   onEditTagsCancel,
 }: ItemProps) {
   return (
-    <li className="flex items-center gap-3 px-4 py-3 bg-white">
+    <li className="flex items-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-3 transition-all duration-150 ease-in-out hover:border-zinc-400 hover:bg-zinc-50">
       {isDndDisabled ? null : (
         <span className="shrink-0 text-zinc-400">
           <DragHandleIcon />
@@ -135,7 +136,11 @@ function SortableItem({
   };
 
   return (
-    <li ref={setNodeRef} style={style} className="flex items-center gap-3 px-4 py-3 bg-white">
+    <li
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-3 transition-all duration-150 ease-in-out hover:border-zinc-400 hover:bg-zinc-50"
+    >
       {!isDndDisabled && (
         <button
           type="button"
@@ -191,7 +196,7 @@ function ItemContent({
           href={bm.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="block truncate text-sm font-medium text-zinc-900 hover:underline"
+          className="block truncate text-sm font-medium text-zinc-900 transition-colors duration-150 hover:text-purple-700 hover:underline"
         >
           {bm.title}
         </a>
@@ -200,10 +205,11 @@ function ItemContent({
         <div className="mt-1 flex flex-wrap items-center gap-1">
           {bm.tags.map((bt) => {
             const tagName = allTags.find((t) => t.id === bt.tagId)?.name ?? bt.tag.name;
+            const color = getTagColor(tagName);
             return (
               <span
                 key={bt.tagId}
-                className="inline-flex rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-500"
+                className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${color.bg} ${color.text}`}
               >
                 {tagName}
               </span>
@@ -572,7 +578,7 @@ export function BookmarkList({
             items={filteredItems.map((b) => b.id)}
             strategy={verticalListSortingStrategy}
           >
-            <ul className="divide-y divide-zinc-100 rounded-lg border border-zinc-200">
+            <ul className="flex flex-col gap-3">
               {filteredItems.map((bm) => (
                 <SortableItem key={bm.id} {...itemProps(bm)} />
               ))}
