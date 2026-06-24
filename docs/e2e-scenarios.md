@@ -126,18 +126,23 @@
 
 ---
 
-## タグ管理ページ
+## タグ管理モーダル
 
 | # | ユーザー | 手順 | 確認観点 | 期待値 |
 |---|---------|------|---------|-------|
-| 1 | `bonjiri@example.com` | `/bookmarks/tags` にアクセスする | タグ一覧表示 | 「Frontend」「Backend」タグが表示される |
-| 2 | `bonjiri@example.com` | `/bookmarks/tags` にアクセスする | ブックマーク件数表示 | 各タグ名の横に件数が表示される（例: `Frontend 3件`） |
-| 3 | `tebasaki@example.com` | 全タグを削除後に `/bookmarks/tags` にアクセスする | 空状態表示 | 「タグがありません」が表示される |
-| 4 | `tebasaki@example.com` | タグ名入力欄に新しいタグ名を入力して「追加」をクリックする | タグ作成 | タグが一覧に追加される |
-| 5 | `tebasaki@example.com` | タグ追加後に入力欄を確認する | フォーカス復帰 | 入力欄にフォーカスが戻っている |
-| 6 | `tebasaki@example.com` | 既存タグ名を入力して「追加」をクリックする | 重複防止 | 既存タグが使われ、重複して作成されない |
-| 7 | `tebasaki@example.com` | タグの削除ボタンをクリックする | タグ削除 | タグが一覧から消える |
-| 8 | `bonjiri@example.com` | 「← ブックマーク一覧」リンクをクリックする | 戻り遷移 | `/bookmarks` に戻る |
+| 1 | `bonjiri@example.com` | ブックマーク一覧の「タグ管理」ボタンをクリックする | モーダル表示 | タグ管理モーダルが画面中央にオーバーレイ付きで表示される |
+| 2 | `bonjiri@example.com` | モーダル内のタグ一覧を確認する | タグ一覧表示 | 「Frontend」「Backend」タグがカラーチップ付きで表示される |
+| 3 | `bonjiri@example.com` | モーダル内のタグ一覧を確認する | ブックマーク件数表示 | 各タグ名の横に件数が表示される（例: `Frontend 3件`） |
+| 4 | `tebasaki@example.com` | 全タグを削除後にモーダルを開く | 空状態表示 | 「タグがありません」が表示される |
+| 5 | `tebasaki@example.com` | モーダル内でタグ名を入力して「作成」をクリックする | タグ作成 | タグが一覧に追加される（五十音順） |
+| 6 | `tebasaki@example.com` | タグ作成後に入力欄を確認する | フォーカス復帰 | 入力欄にフォーカスが戻っている |
+| 7 | `tebasaki@example.com` | 既存タグ名を入力して「作成」をクリックする | 重複防止 | 「同名のタグが既に存在します」エラーが表示される |
+| 8 | `tebasaki@example.com` | モーダル内のタグの「削除」ボタンをクリックする | タグ削除 | タグが一覧から消える |
+| 9 | `bonjiri@example.com` | ESC キーを押す | モーダル閉じ（ESC） | モーダルが閉じる |
+| 10 | `bonjiri@example.com` | オーバーレイ（暗い背景部分）をクリックする | モーダル閉じ（オーバーレイ） | モーダルが閉じる |
+| 11 | `bonjiri@example.com` | × ボタンをクリックする | モーダル閉じ（×ボタン） | モーダルが閉じる |
+| 12 | `tebasaki@example.com` | モーダルでタグを追加後にモーダルを閉じる | 閉じた後の即反映 | タグフィルターやブックマークのタグ表示に変更が反映される |
+| 13 | `bonjiri@example.com` | `/bookmarks/tags` に直接アクセスする | 旧ページ廃止 | 404 になる |
 
 ---
 
@@ -171,4 +176,4 @@
 | # | ユーザー | 手順 | 確認観点 | 期待値 |
 |---|---------|------|---------|-------|
 | 1 | `bonjiri@example.com` → `tsukune@example.com` | bonjiri でログインしてブックマーク数（6件）を確認後、ログアウトして tsukune でログインする | ブックマーク分離 | tsukune のブックマーク（Figma・MDN Web Docs の2件）のみ表示される。bonjiri のブックマークは表示されない |
-| 2 | `bonjiri@example.com` → `tsukune@example.com` | bonjiri でログインしてタグ（Frontend・Backend）を確認後、ログアウトして tsukune でログインし `/bookmarks/tags` にアクセスする | タグ分離 | tsukune のタグ（Design）のみ表示される。bonjiri のタグは表示されない |
+| 2 | `bonjiri@example.com` → `tsukune@example.com` | bonjiri でログインしてタグ（Frontend・Backend）を確認後、ログアウトして tsukune でログインしタグ管理モーダルを開く | タグ分離 | tsukune のタグ（Design）のみ表示される。bonjiri のタグは表示されない |
