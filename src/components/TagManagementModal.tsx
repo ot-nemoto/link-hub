@@ -78,6 +78,8 @@ export function TagManagementModal({ initialTags, onClose, onCreateTag, onDelete
         return;
       }
       setTags((prev) => prev.filter((t) => t.id !== id));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "タグの削除に失敗しました");
     } finally {
       setDeletingIds((prev) => {
         const next = new Set(prev);
