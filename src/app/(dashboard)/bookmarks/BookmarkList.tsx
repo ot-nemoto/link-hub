@@ -503,10 +503,11 @@ export function BookmarkList({
       setAllTagsState(newTags);
 
       try {
-        await reorderTags(
+        const result = await reorderTags(
           newTags.map((t) => t.id),
           { skipRevalidate: true },
         );
+        if (result.error) throw new Error(result.error);
       } catch {
         setAllTagsState(oldTags);
       }
