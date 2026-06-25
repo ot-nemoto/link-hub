@@ -72,13 +72,17 @@ export async function updateBookmark(
   if (!bookmark) return { error: "ブックマークが見つかりません" };
   if (bookmark.userId !== userId) return { error: "権限がありません" };
 
-  let validTagId: string | null = null;
-  if (data.tagId) {
-    const tag = await prisma.tag.findFirst({
-      where: { id: data.tagId, userId },
-      select: { id: true },
-    });
-    if (tag) validTagId = tag.id;
+  let validTagId: string | null | undefined;
+  if (data.tagId !== undefined) {
+    if (data.tagId) {
+      const tag = await prisma.tag.findFirst({
+        where: { id: data.tagId, userId },
+        select: { id: true },
+      });
+      validTagId = tag ? tag.id : null;
+    } else {
+      validTagId = null;
+    }
   }
 
   await prisma.bookmark.update({
@@ -88,7 +92,7 @@ export async function updateBookmark(
       title: data.title,
       memo: data.memo || null,
       ...(data.ogImage !== undefined ? { ogImage: data.ogImage ?? null } : {}),
-      tagId: validTagId,
+      ...(validTagId !== undefined ? { tagId: validTagId } : {}),
     },
   });
 
