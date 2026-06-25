@@ -184,6 +184,7 @@ export function BookmarkForm({ availableTags, defaultValues, action, onSuccess, 
         <div className="mt-1 flex flex-wrap gap-2">
           <button
             type="button"
+            aria-pressed={selectedTagId === null}
             onClick={() => setSelectedTagId(null)}
             className={`cursor-pointer rounded-full px-3 py-1 text-xs font-medium transition-colors ${
               selectedTagId === null
@@ -200,6 +201,7 @@ export function BookmarkForm({ availableTags, defaultValues, action, onSuccess, 
               <button
                 key={tag.id}
                 type="button"
+                aria-pressed={isSelected}
                 onClick={() => setSelectedTagId(tag.id)}
                 className={`cursor-pointer rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                   isSelected
