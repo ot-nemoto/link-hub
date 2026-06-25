@@ -35,39 +35,31 @@ model Bookmark {
   ogImage   String?  @map("og_image")
   sortOrder Int      @default(0) @map("sort_order")
   userId    String   @map("user_id")
+  tagId     String?  @map("tag_id")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  user User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tags BookmarkTag[]
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tag  Tag? @relation(fields: [tagId], references: [id], onDelete: SetNull)
 
   @@index([userId])
+  @@index([tagId])
   @@map("bookmarks")
 }
 
 model Tag {
   id        String   @id @default(cuid())
   name      String
+  sortOrder Int      @default(0) @map("sort_order")
   userId    String   @map("user_id")
   createdAt DateTime @default(now()) @map("created_at")
 
-  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  bookmarks BookmarkTag[]
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookmarks Bookmark[]
 
   @@unique([userId, name])
   @@index([userId])
   @@map("tags")
-}
-
-model BookmarkTag {
-  bookmarkId String @map("bookmark_id")
-  tagId      String @map("tag_id")
-
-  bookmark Bookmark @relation(fields: [bookmarkId], references: [id], onDelete: Cascade)
-  tag      Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
-
-  @@id([bookmarkId, tagId])
-  @@map("bookmark_tags")
 }
 ```
 
@@ -93,13 +85,21 @@ erDiagram
         String ogImage "nullable"
         Int sortOrder
         String userId FK
+        String tagId FK "nullable"
         DateTime createdAt
         DateTime updatedAt
+    }
+    Tag {
+        String id PK
+        String name
+        Int sortOrder
+        String userId FK
+        DateTime createdAt
     }
 
     User ||--o{ Bookmark : "所有"
     User ||--o{ Tag : "所有"
-    Bookmark }o--o{ Tag : "BookmarkTag"
+    Tag ||--o{ Bookmark : "カテゴリ"
 ```
 
 ---
@@ -128,28 +128,19 @@ erDiagram
 | ogImage | String? | OGP 画像 URL（URL 入力時に自動取得、任意） |
 | sortOrder | Int | 表示順（デフォルト 0、D&D による並び替えで更新） |
 | userId | String | 外部キー → User.id（User 削除時に CASCADE） |
+| tagId | String? | 外部キー → Tag.id（Tag 削除時に SET NULL）。カテゴリ分類用。null は「未分類」 |
 | createdAt | DateTime | 作成日時 |
 | updatedAt | DateTime | 更新日時 |
-
----
-
-## テーブル定義（追加分）
 
 ### Tag
 
 | カラム | 型 | 説明 |
 |--------|-----|------|
 | id | String (CUID) | 主キー |
-| name | String | タグ名（ユーザー内でユニーク、最大 50 文字） |
+| name | String | タグ名（ユーザー内でユニーク、最大 50 文字）。カテゴリとして使用 |
+| sortOrder | Int | 表示順（デフォルト 0、D&D による並び替えで更新） |
 | userId | String | 外部キー → User.id（User 削除時に CASCADE） |
 | createdAt | DateTime | 作成日時 |
-
-### BookmarkTag
-
-| カラム | 型 | 説明 |
-|--------|-----|------|
-| bookmarkId | String | 複合主キー。外部キー → Bookmark.id（Bookmark 削除時に CASCADE） |
-| tagId | String | 複合主キー。外部キー → Tag.id（Tag 削除時に CASCADE） |
 
 ---
 
@@ -160,5 +151,6 @@ erDiagram
 | users | `clerk_id` | Clerk ID による高速ルックアップ（UNIQUE） |
 | users | `email` | メールアドレス重複防止（UNIQUE） |
 | bookmarks | `user_id` | ユーザー別ブックマーク取得の高速化 |
+| bookmarks | `tag_id` | カテゴリ別ブックマーク取得の高速化 |
 | tags | `(user_id, name)` | ユーザー内タグ名のユニーク制約・高速ルックアップ |
 | tags | `user_id` | ユーザー別タグ取得の高速化 |

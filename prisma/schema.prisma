@@ -28,37 +28,29 @@ model Bookmark {
   ogImage   String?  @map("og_image")
   sortOrder Int      @default(0) @map("sort_order")
   userId    String   @map("user_id")
+  tagId     String?  @map("tag_id")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  user User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tags BookmarkTag[]
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tag  Tag? @relation(fields: [tagId], references: [id], onDelete: SetNull)
 
   @@index([userId])
+  @@index([tagId])
   @@map("bookmarks")
 }
 
 model Tag {
   id        String   @id @default(cuid())
   name      String
+  sortOrder Int      @default(0) @map("sort_order")
   userId    String   @map("user_id")
   createdAt DateTime @default(now()) @map("created_at")
 
-  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  bookmarks BookmarkTag[]
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookmarks Bookmark[]
 
   @@unique([userId, name])
   @@index([userId])
   @@map("tags")
-}
-
-model BookmarkTag {
-  bookmarkId String @map("bookmark_id")
-  tagId      String @map("tag_id")
-
-  bookmark Bookmark @relation(fields: [bookmarkId], references: [id], onDelete: Cascade)
-  tag      Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
-
-  @@id([bookmarkId, tagId])
-  @@map("bookmark_tags")
 }

@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 export async function getTags(userId: string) {
   return prisma.tag.findMany({
     where: { userId },
-    orderBy: { name: "asc" },
+    orderBy: { sortOrder: "asc" },
     select: { id: true, name: true },
   });
 }
@@ -13,13 +13,13 @@ export async function getTags(userId: string) {
 export async function getTagsWithCount(userId: string) {
   const rawTags = await prisma.tag.findMany({
     where: { userId },
-    orderBy: { name: "asc" },
+    orderBy: { sortOrder: "asc" },
     select: { id: true, name: true, _count: { select: { bookmarks: true } } },
   });
 
   return rawTags.map(({ _count, ...tag }) => ({
     ...tag,
-    bookmarkCount: _count.bookmarks,
+    bookmarkCount: _count?.bookmarks ?? 0,
   }));
 }
 
@@ -35,8 +35,14 @@ export async function createTag(
   if (existing) return { conflict: true, tag: { id: existing.id, name: existing.name } };
 
   try {
+    const maxSort = await prisma.tag.aggregate({
+      where: { userId },
+      _max: { sortOrder: true },
+    });
+    const sortOrder = (maxSort._max.sortOrder ?? -1) + 1;
+
     const tag = await prisma.tag.create({
-      data: { userId, name },
+      data: { userId, name, sortOrder },
       select: { id: true, name: true },
     });
     return { tag };
@@ -51,6 +57,17 @@ export async function createTag(
     }
     return { error: "タグの作成に失敗しました" };
   }
+}
+
+export async function reorderTags(userId: string, ids: string[]): Promise<{ error?: string }> {
+  const count = await prisma.tag.count({ where: { id: { in: ids }, userId } });
+  if (count !== ids.length) return { error: "権限がありません" };
+
+  await prisma.$transaction(
+    ids.map((id, index) => prisma.tag.update({ where: { id }, data: { sortOrder: index } })),
+  );
+
+  return {};
 }
 
 export async function deleteTag(userId: string, id: string): Promise<{ error?: string }> {

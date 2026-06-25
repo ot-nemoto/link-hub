@@ -5,7 +5,7 @@ export type BookmarkData = {
   title: string;
   memo: string;
   ogImage?: string;
-  tagIds?: string[];
+  tagId?: string | null;
 };
 
 export async function getBookmarks(userId: string, query?: string) {
@@ -24,12 +24,7 @@ export async function getBookmarks(userId: string, query?: string) {
     where,
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     include: {
-      tags: {
-        select: {
-          tagId: true,
-          tag: { select: { id: true, name: true } },
-        },
-      },
+      tag: { select: { id: true, name: true } },
     },
   });
 }
@@ -44,15 +39,14 @@ export async function createBookmark(
   });
   const sortOrder = (agg._max.sortOrder ?? -1) + 1;
 
-  // 自ユーザーのタグのみに絞り込み（他ユーザーの tagId を除外）
-  const validTagIds = data.tagIds?.length
-    ? (
-        await prisma.tag.findMany({
-          where: { id: { in: data.tagIds }, userId },
-          select: { id: true },
-        })
-      ).map((t) => t.id)
-    : [];
+  let validTagId: string | null = null;
+  if (data.tagId) {
+    const tag = await prisma.tag.findFirst({
+      where: { id: data.tagId, userId },
+      select: { id: true },
+    });
+    if (tag) validTagId = tag.id;
+  }
 
   await prisma.bookmark.create({
     data: {
@@ -62,7 +56,7 @@ export async function createBookmark(
       memo: data.memo || null,
       ogImage: data.ogImage ?? null,
       sortOrder,
-      ...(validTagIds.length ? { tags: { create: validTagIds.map((tagId) => ({ tagId })) } } : {}),
+      tagId: validTagId,
     },
   });
 
@@ -78,16 +72,18 @@ export async function updateBookmark(
   if (!bookmark) return { error: "ブックマークが見つかりません" };
   if (bookmark.userId !== userId) return { error: "権限がありません" };
 
-  const validTagIds = data.tagIds?.length
-    ? (
-        await prisma.tag.findMany({
-          where: { id: { in: data.tagIds }, userId },
-          select: { id: true },
-        })
-      ).map((t) => t.id)
-    : data.tagIds !== undefined
-      ? []
-      : undefined;
+  let validTagId: string | null | undefined;
+  if (data.tagId !== undefined) {
+    if (data.tagId) {
+      const tag = await prisma.tag.findFirst({
+        where: { id: data.tagId, userId },
+        select: { id: true },
+      });
+      validTagId = tag ? tag.id : null;
+    } else {
+      validTagId = null;
+    }
+  }
 
   await prisma.bookmark.update({
     where: { id },
@@ -96,46 +92,34 @@ export async function updateBookmark(
       title: data.title,
       memo: data.memo || null,
       ...(data.ogImage !== undefined ? { ogImage: data.ogImage ?? null } : {}),
-      ...(validTagIds !== undefined
-        ? {
-            tags: {
-              deleteMany: {},
-              ...(validTagIds.length ? { create: validTagIds.map((tagId) => ({ tagId })) } : {}),
-            },
-          }
-        : {}),
+      ...(validTagId !== undefined ? { tagId: validTagId } : {}),
     },
   });
 
   return {};
 }
 
-export async function updateBookmarkTags(
+export async function moveBookmark(
   userId: string,
   id: string,
-  tagIds: string[],
+  tagId: string | null,
+  sortOrder: number,
 ): Promise<{ error?: string }> {
   const bookmark = await prisma.bookmark.findUnique({ where: { id } });
   if (!bookmark) return { error: "ブックマークが見つかりません" };
   if (bookmark.userId !== userId) return { error: "権限がありません" };
 
-  const validTagIds = tagIds.length
-    ? (
-        await prisma.tag.findMany({
-          where: { id: { in: tagIds }, userId },
-          select: { id: true },
-        })
-      ).map((t) => t.id)
-    : [];
+  if (tagId) {
+    const tag = await prisma.tag.findFirst({
+      where: { id: tagId, userId },
+      select: { id: true },
+    });
+    if (!tag) return { error: "カテゴリが見つかりません" };
+  }
 
   await prisma.bookmark.update({
     where: { id },
-    data: {
-      tags: {
-        deleteMany: {},
-        ...(validTagIds.length ? { create: validTagIds.map((tagId) => ({ tagId })) } : {}),
-      },
-    },
+    data: { tagId, sortOrder },
   });
 
   return {};
@@ -167,39 +151,6 @@ export async function deleteBookmark(userId: string, id: string): Promise<{ erro
 export async function deleteBookmarks(userId: string, ids: string[]): Promise<{ error?: string }> {
   await prisma.bookmark.deleteMany({
     where: { id: { in: ids }, userId },
-  });
-
-  return {};
-}
-
-export async function bulkAddTags(
-  userId: string,
-  bookmarkIds: string[],
-  tagIds: string[],
-): Promise<{ error?: string }> {
-  if (bookmarkIds.length === 0 || tagIds.length === 0) return {};
-
-  const validBookmarkIds = (
-    await prisma.bookmark.findMany({
-      where: { id: { in: bookmarkIds }, userId },
-      select: { id: true },
-    })
-  ).map((b) => b.id);
-
-  const validTagIds = (
-    await prisma.tag.findMany({
-      where: { id: { in: tagIds }, userId },
-      select: { id: true },
-    })
-  ).map((t) => t.id);
-
-  if (validBookmarkIds.length === 0 || validTagIds.length === 0) return {};
-
-  await prisma.bookmarkTag.createMany({
-    data: validBookmarkIds.flatMap((bookmarkId) =>
-      validTagIds.map((tagId) => ({ bookmarkId, tagId })),
-    ),
-    skipDuplicates: true,
   });
 
   return {};
