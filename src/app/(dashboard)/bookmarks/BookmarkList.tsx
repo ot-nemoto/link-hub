@@ -16,10 +16,22 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { bulkAddTags, deleteBookmark, deleteBookmarks, reorderBookmarks } from "./actions";
+import { BookmarkAddModal } from "@/components/BookmarkAddModal";
+import { BookmarkEditModal } from "@/components/BookmarkEditModal";
+import { TagManagementModal } from "@/components/TagManagementModal";
+import { getTagColor } from "@/lib/tag-colors";
+import {
+  bulkAddTags,
+  createBookmark,
+  createTag,
+  deleteBookmark,
+  deleteBookmarks,
+  deleteTag,
+  reorderBookmarks,
+  updateBookmark,
+} from "./actions";
 import { BulkTagPanel } from "./BulkTagPanel";
 import { InlineTagEditor } from "./InlineTagEditor";
 import { TagFilter, type TagFilterItem, UNTAGGED_ID } from "./TagFilter";
@@ -64,6 +76,7 @@ type ItemProps = {
   isDndDisabled: boolean;
   isSelected: boolean;
   onToggleSelect: (id: string) => void;
+  onEdit: (bm: Bookmark) => void;
   onDelete: (bm: Bookmark) => void;
   allTags: TagFilterItem[];
   editingTags: boolean;
@@ -77,6 +90,7 @@ function PlainItem({
   isDndDisabled,
   isSelected,
   onToggleSelect,
+  onEdit,
   onDelete,
   allTags,
   editingTags,
@@ -85,7 +99,7 @@ function PlainItem({
   onEditTagsCancel,
 }: ItemProps) {
   return (
-    <li className="flex items-center gap-3 px-4 py-3 bg-white">
+    <li className="flex items-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-3 transition-all duration-150 ease-in-out hover:border-zinc-400 hover:bg-zinc-50">
       {isDndDisabled ? null : (
         <span className="shrink-0 text-zinc-400">
           <DragHandleIcon />
@@ -100,6 +114,7 @@ function PlainItem({
       />
       <ItemContent
         bm={bm}
+        onEdit={onEdit}
         onDelete={onDelete}
         allTags={allTags}
         editingTags={editingTags}
@@ -116,6 +131,7 @@ function SortableItem({
   isDndDisabled,
   isSelected,
   onToggleSelect,
+  onEdit,
   onDelete,
   allTags,
   editingTags,
@@ -130,12 +146,18 @@ function SortableItem({
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
+    transition: [transition, "background-color 150ms ease-in-out", "border-color 150ms ease-in-out"]
+      .filter(Boolean)
+      .join(", "),
     opacity: isDragging ? 0.5 : 1,
   };
 
   return (
-    <li ref={setNodeRef} style={style} className="flex items-center gap-3 px-4 py-3 bg-white">
+    <li
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-3 hover:border-zinc-400 hover:bg-zinc-50"
+    >
       {!isDndDisabled && (
         <button
           type="button"
@@ -156,6 +178,7 @@ function SortableItem({
       />
       <ItemContent
         bm={bm}
+        onEdit={onEdit}
         onDelete={onDelete}
         allTags={allTags}
         editingTags={editingTags}
@@ -169,6 +192,7 @@ function SortableItem({
 
 function ItemContent({
   bm,
+  onEdit,
   onDelete,
   allTags,
   editingTags,
@@ -177,6 +201,7 @@ function ItemContent({
   onEditTagsCancel,
 }: {
   bm: Bookmark;
+  onEdit: (bm: Bookmark) => void;
   onDelete: (bm: Bookmark) => void;
   allTags: TagFilterItem[];
   editingTags: boolean;
@@ -191,7 +216,7 @@ function ItemContent({
           href={bm.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="block truncate text-sm font-medium text-zinc-900 hover:underline"
+          className="block truncate text-sm font-medium text-zinc-900 transition-colors duration-150 hover:text-purple-700 hover:underline"
         >
           {bm.title}
         </a>
@@ -200,10 +225,11 @@ function ItemContent({
         <div className="mt-1 flex flex-wrap items-center gap-1">
           {bm.tags.map((bt) => {
             const tagName = allTags.find((t) => t.id === bt.tagId)?.name ?? bt.tag.name;
+            const color = getTagColor(tagName);
             return (
               <span
                 key={bt.tagId}
-                className="inline-flex rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-500"
+                className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${color.bg} ${color.text}`}
               >
                 {tagName}
               </span>
@@ -236,12 +262,13 @@ function ItemContent({
         />
       )}
       <div className="flex shrink-0 gap-2">
-        <Link
-          href={`/bookmarks/${bm.id}/edit`}
+        <button
+          type="button"
+          onClick={() => onEdit(bm)}
           className="cursor-pointer rounded px-3 py-1 text-xs font-medium bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
         >
           編集
-        </Link>
+        </button>
         <button
           type="button"
           onClick={() => onDelete(bm)}
@@ -254,18 +281,26 @@ function ItemContent({
   );
 }
 
+type TagWithCount = { id: string; name: string; bookmarkCount: number };
+
 export function BookmarkList({
   bookmarks: initial,
   allTags,
+  tagsWithCount,
 }: {
   bookmarks: Bookmark[];
   allTags: TagFilterItem[];
+  tagsWithCount: TagWithCount[];
 }) {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [items, setItems] = useState<Bookmark[]>(initial);
   const [allTagsState, setAllTagsState] = useState<TagFilterItem[]>(allTags);
+  const [tagsWithCountState, setTagsWithCountState] = useState<TagWithCount[]>(tagsWithCount);
+  const [isTagModalOpen, setIsTagModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingBookmarkId, setEditingBookmarkId] = useState<string | null>(null);
   const [activeTagIds, setActiveTagIds] = useState<string[]>([]);
   const [editingTagsId, setEditingTagsId] = useState<string | null>(null);
   const [isBulkTagging, setIsBulkTagging] = useState(false);
@@ -283,6 +318,9 @@ export function BookmarkList({
   useEffect(() => {
     setAllTagsState(allTags);
   }, [allTags]);
+  useEffect(() => {
+    setTagsWithCountState(tagsWithCount);
+  }, [tagsWithCount]);
   useEffect(() => {
     return () => {
       if (pendingRef.current) clearTimeout(pendingRef.current.timerId);
@@ -486,6 +524,21 @@ export function BookmarkList({
     }
   }, []);
 
+  const handleTagModalClose = useCallback(() => {
+    setIsTagModalOpen(false);
+    router.refresh();
+  }, [router]);
+
+  const handleAddModalSuccess = useCallback(() => {
+    setIsAddModalOpen(false);
+    router.refresh();
+  }, [router]);
+
+  const handleEditModalSuccess = useCallback(() => {
+    setEditingBookmarkId(null);
+    router.refresh();
+  }, [router]);
+
   const isDndDisabled = isSearching || activeTagIds.length > 0;
 
   const itemProps = (bm: Bookmark) => ({
@@ -494,6 +547,7 @@ export function BookmarkList({
     isDndDisabled,
     isSelected: selectedIds.has(bm.id),
     onToggleSelect: toggleSelect,
+    onEdit: (b: Bookmark) => setEditingBookmarkId(b.id),
     onDelete: handleDelete,
     allTags: allTagsState,
     editingTags: editingTagsId === bm.id,
@@ -505,6 +559,17 @@ export function BookmarkList({
 
   return (
     <div>
+      <div className="mb-6 flex items-center justify-between">
+        <h2 className="text-lg font-bold text-zinc-900">ブックマーク一覧</h2>
+        <button
+          type="button"
+          onClick={() => setIsAddModalOpen(true)}
+          className="cursor-pointer rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700"
+        >
+          追加
+        </button>
+      </div>
+
       <input
         type="search"
         value={searchQuery}
@@ -514,7 +579,16 @@ export function BookmarkList({
         className="mb-4 w-full rounded-md border border-zinc-300 px-4 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
       />
 
-      <TagFilter tags={allTagsState} selectedTagIds={activeTagIds} onChange={setActiveTagIds} />
+      <div className="mb-4 flex items-center justify-between">
+        <TagFilter tags={allTagsState} selectedTagIds={activeTagIds} onChange={setActiveTagIds} />
+        <button
+          type="button"
+          onClick={() => setIsTagModalOpen(true)}
+          className="shrink-0 cursor-pointer rounded-md border border-zinc-300 px-3 py-1 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+        >
+          タグ管理
+        </button>
+      </div>
 
       <div className="mb-3 flex items-center gap-2">
         <button
@@ -572,7 +646,7 @@ export function BookmarkList({
             items={filteredItems.map((b) => b.id)}
             strategy={verticalListSortingStrategy}
           >
-            <ul className="divide-y divide-zinc-100 rounded-lg border border-zinc-200">
+            <ul className="flex flex-col gap-3">
               {filteredItems.map((bm) => (
                 <SortableItem key={bm.id} {...itemProps(bm)} />
               ))}
@@ -597,6 +671,45 @@ export function BookmarkList({
           onUndo={handleUndo}
         />
       )}
+
+      {isTagModalOpen && (
+        <TagManagementModal
+          initialTags={tagsWithCountState}
+          onClose={handleTagModalClose}
+          onCreateTag={createTag}
+          onDeleteTag={deleteTag}
+        />
+      )}
+
+      {isAddModalOpen && (
+        <BookmarkAddModal
+          availableTags={allTagsState}
+          action={createBookmark}
+          onClose={() => setIsAddModalOpen(false)}
+          onSuccess={handleAddModalSuccess}
+        />
+      )}
+
+      {editingBookmarkId &&
+        (() => {
+          const bm = items.find((b) => b.id === editingBookmarkId);
+          if (!bm) return null;
+          return (
+            <BookmarkEditModal
+              availableTags={allTagsState}
+              defaultValues={{
+                url: bm.url,
+                title: bm.title,
+                memo: bm.memo ?? "",
+                ogImage: bm.ogImage ?? undefined,
+                tagIds: bm.tags.map((bt) => bt.tagId),
+              }}
+              action={updateBookmark.bind(null, editingBookmarkId)}
+              onClose={() => setEditingBookmarkId(null)}
+              onSuccess={handleEditModalSuccess}
+            />
+          );
+        })()}
     </div>
   );
 }

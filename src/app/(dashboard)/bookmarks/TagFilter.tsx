@@ -1,5 +1,7 @@
 "use client";
 
+import { getTagColor } from "@/lib/tag-colors";
+
 export type TagFilterItem = { id: string; name: string };
 
 const UNTAGGED_ID = "__untagged__";
@@ -22,16 +24,17 @@ export function TagFilter({ tags, selectedTagIds, onChange }: Props) {
   }
 
   return (
-    <div className="mb-4 flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-2">
       {tags.map((tag) => {
         const active = selectedTagIds.includes(tag.id);
+        const color = getTagColor(tag.name);
         return (
           <button
             key={tag.id}
             type="button"
             onClick={() => toggle(tag.id)}
             className={`cursor-pointer rounded-full px-3 py-1 text-sm font-medium ${
-              active ? "bg-zinc-900 text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+              active ? `${color.activeBg} text-white` : `${color.bg} ${color.text} hover:opacity-80`
             }`}
           >
             {tag.name}

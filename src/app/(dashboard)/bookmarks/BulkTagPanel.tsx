@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { getTagColor } from "@/lib/tag-colors";
 
 import type { TagFilterItem } from "./TagFilter";
 
@@ -28,13 +29,16 @@ export function BulkTagPanel({ allTags, saving, error, onSave, onCancel }: Props
         <div className="mb-3 flex flex-wrap gap-2">
           {allTags.map((tag) => {
             const active = selectedTagIds.includes(tag.id);
+            const color = getTagColor(tag.name);
             return (
               <button
                 key={tag.id}
                 type="button"
                 onClick={() => toggle(tag.id)}
                 className={`cursor-pointer rounded-full px-3 py-1 text-sm font-medium ${
-                  active ? "bg-zinc-900 text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+                  active
+                    ? `${color.activeBg} text-white`
+                    : `${color.bg} ${color.text} hover:opacity-80`
                 }`}
               >
                 {tag.name}
