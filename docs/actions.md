@@ -6,13 +6,13 @@
 |--------|------|---------|
 | `createBookmark(data)` | ブックマーク新規登録 | `src/app/(dashboard)/bookmarks/actions.ts` |
 | `updateBookmark(id, data)` | ブックマーク更新 | `src/app/(dashboard)/bookmarks/actions.ts` |
-| `updateBookmarkTags(id, tagIds)` | ブックマークのタグ上書き更新 | `src/app/(dashboard)/bookmarks/actions.ts` |
-| `reorderBookmarks(ids)` | ブックマークの並び順更新 | `src/app/(dashboard)/bookmarks/actions.ts` |
+| `moveBookmark(id, tagId, sortOrder, options?)` | ブックマークのカテゴリ移動・並び順更新 | `src/app/(dashboard)/bookmarks/actions.ts` |
+| `reorderBookmarks(ids, options?)` | ブックマークの並び順更新 | `src/app/(dashboard)/bookmarks/actions.ts` |
 | `deleteBookmark(id, prevState)` | ブックマーク削除 | `src/app/(dashboard)/bookmarks/actions.ts` |
 | `deleteBookmarks(ids)` | ブックマーク一括削除 | `src/app/(dashboard)/bookmarks/actions.ts` |
-| `createTag(name)` | タグ新規作成 | `src/app/(dashboard)/bookmarks/actions.ts` |
-| `deleteTag(id)` | タグ削除 | `src/app/(dashboard)/bookmarks/actions.ts` |
-| `bulkAddTags(bookmarkIds, tagIds)` | 複数ブックマークへのタグ一括付与 | `src/app/(dashboard)/bookmarks/actions.ts` |
+| `createTag(name)` | カテゴリ新規作成 | `src/app/(dashboard)/bookmarks/actions.ts` |
+| `reorderTags(ids, options?)` | カテゴリの並び順更新 | `src/app/(dashboard)/bookmarks/actions.ts` |
+| `deleteTag(id)` | カテゴリ削除 | `src/app/(dashboard)/bookmarks/actions.ts` |
 | `fetchOgp(url)` | URL から OGP 情報を取得 | `src/app/(dashboard)/bookmarks/fetchOgp.ts` |
 
 ---
@@ -23,7 +23,7 @@
 - 未認証時は `/sign-in` へ redirect する
 - ただし `fetchOgp(url)`（`bookmarks/fetchOgp.ts`）はユーザーデータを操作しない外部フェッチのため、この認証チェックの対象外とする
 - 戻り値は少なくとも `error?: string` を含む型にする
-- DB 変更後は `revalidatePath()` でキャッシュを更新する
+- DB 変更後は `revalidatePath()` でキャッシュを更新する（`skipRevalidate` オプションが有効な場合を除く）
 - `src/lib/` の関数が返す `{ error }` はそのまま返す。予期しないエラーは再 throw する
 
 ---
@@ -34,7 +34,7 @@
 
 ブックマークを新規登録する。
 
-**引数:** `{ url, title, memo, ogImage?, tagIds?: string[] }`
+**引数:** `{ url, title, memo, ogImage?, tagId?: string | null }`
 
 **戻り値:** `{}` | `{ error: string }`
 
@@ -46,7 +46,7 @@
 
 ブックマークを更新する。
 
-**引数:** `id: string`, `{ url, title, memo, ogImage?, tagIds?: string[] }`
+**引数:** `id: string`, `{ url, title, memo, ogImage?, tagId?: string | null }`
 
 **戻り値:** `{}` | `{ error: string }`
 
@@ -58,23 +58,33 @@
 
 ---
 
-### `updateBookmarkTags(id, tagIds)`
+### `moveBookmark(id, tagId, sortOrder, options?)`
 
-ブックマークのタグを上書き更新する。
+ブックマークを指定カテゴリに移動し、並び順を設定する。D&D によるカテゴリ間移動時に呼ばれる。
 
-**引数:** `id: string`, `tagIds: string[]`
+**引数:** `id: string`, `tagId: string | null`, `sortOrder: number`, `options?: { skipRevalidate?: boolean }`
 
 **戻り値:** `{}` | `{ error: string }`
+
+| エラー | 条件 |
+|--------|------|
+| 未認証 | `/sign-in` へ redirect |
+| `"ブックマークが見つかりません"` | 指定 ID が存在しない |
+| `"権限がありません"` | 他ユーザーのブックマーク |
+
+**skipRevalidate:** `true` の場合、`revalidatePath()` をスキップする。D&D のオプティミスティック更新時に使用し、UI のロールバックを防ぐ。
 
 ---
 
-### `reorderBookmarks(ids)`
+### `reorderBookmarks(ids, options?)`
 
 ブックマークの並び順を更新する。D&D 完了時に呼ばれる。
 
-**引数:** `ids: string[]`（並び替え後の順序で並べた bookmark ID の配列）
+**引数:** `ids: string[]`（並び替え後の順序で並べた bookmark ID の配列）, `options?: { skipRevalidate?: boolean }`
 
 **戻り値:** `{}` | `{ error: string }`
+
+**skipRevalidate:** `true` の場合、`revalidatePath()` をスキップする。
 
 ---
 
@@ -106,11 +116,11 @@
 
 ---
 
-## タグ操作（`src/app/(dashboard)/bookmarks/actions.ts`）
+## カテゴリ操作（`src/app/(dashboard)/bookmarks/actions.ts`）
 
 ### `createTag(name)`
 
-タグを新規作成する。同一ユーザー内で name がユニーク。
+カテゴリを新規作成する。同一ユーザー内で name がユニーク。
 
 **引数:** `name: string`
 
@@ -119,14 +129,31 @@
 | 戻り値 | 条件 |
 |--------|------|
 | `{ tag }` | 正常作成 |
-| `{ conflict: true, tag }` | 同名タグが既に存在する（既存タグを返す） |
+| `{ conflict: true, tag }` | 同名カテゴリが既に存在する（既存カテゴリを返す） |
 | `{ error }` | バリデーションエラー・作成失敗 |
+
+---
+
+### `reorderTags(ids, options?)`
+
+カテゴリの並び順を更新する。D&D によるカテゴリ並び替え時に呼ばれる。
+
+**引数:** `ids: string[]`（並び替え後の順序で並べた tag ID の配列）, `options?: { skipRevalidate?: boolean }`
+
+**戻り値:** `{}` | `{ error: string }`
+
+| エラー | 条件 |
+|--------|------|
+| 未認証 | `/sign-in` へ redirect |
+| `"権限がありません"` | 他ユーザーのカテゴリが含まれている |
+
+**skipRevalidate:** `true` の場合、`revalidatePath()` をスキップする。
 
 ---
 
 ### `deleteTag(id)`
 
-タグを削除する。関連する BookmarkTag も CASCADE 削除される。
+カテゴリを削除する。関連するブックマークの `tagId` は `SET NULL`（未分類）になる。
 
 **引数:** `id: string`
 
@@ -135,17 +162,7 @@
 | エラー | 条件 |
 |--------|------|
 | `"タグが見つかりません"` | 指定 ID が存在しない |
-| `"権限がありません"` | 他ユーザーのタグ |
-
----
-
-### `bulkAddTags(bookmarkIds, tagIds)`
-
-複数ブックマークにタグを一括付与する。既存タグは維持される。
-
-**引数:** `bookmarkIds: string[]`, `tagIds: string[]`
-
-**戻り値:** `{}` | `{ error: string }`
+| `"権限がありません"` | 他ユーザーのカテゴリ |
 
 ---
 
