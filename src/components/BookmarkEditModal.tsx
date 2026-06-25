@@ -2,7 +2,8 @@
 
 import { useEffect, useRef } from "react";
 import { BookmarkForm } from "@/app/(dashboard)/bookmarks/BookmarkForm";
-import type { Tag } from "@/app/(dashboard)/bookmarks/TagInput";
+
+type Tag = { id: string; name: string };
 
 type Props = {
   availableTags: Tag[];
@@ -11,17 +12,23 @@ type Props = {
     title: string;
     memo: string;
     ogImage?: string;
-    tagIds?: string[];
+    tagId?: string | null;
   };
   action: (data: {
     url: string;
     title: string;
     memo: string;
     ogImage?: string;
-    tagIds?: string[];
+    tagId?: string | null;
   }) => Promise<{ error?: string }>;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (data: {
+    url: string;
+    title: string;
+    memo: string;
+    ogImage?: string;
+    tagId?: string | null;
+  }) => void;
 };
 
 export function BookmarkEditModal({

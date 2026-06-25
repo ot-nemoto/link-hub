@@ -49,11 +49,11 @@ export function TagManagementModal({ initialTags, onClose, onCreateTag, onDelete
     try {
       const result = await onCreateTag(name);
       if (result.conflict) {
-        setError("同名のタグが既に存在します");
+        setError("同名のカテゴリが既に存在します");
         return;
       }
       if (result.error || !result.tag) {
-        setError(result.error ?? "タグの作成に失敗しました");
+        setError(result.error ?? "カテゴリの作成に失敗しました");
         return;
       }
       const newTag = result.tag;
@@ -62,7 +62,7 @@ export function TagManagementModal({ initialTags, onClose, onCreateTag, onDelete
       );
       setInputValue("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "タグの作成に失敗しました");
+      setError(e instanceof Error ? e.message : "カテゴリの作成に失敗しました");
     } finally {
       setCreating(false);
       inputRef.current?.focus();
@@ -79,7 +79,7 @@ export function TagManagementModal({ initialTags, onClose, onCreateTag, onDelete
       }
       setTags((prev) => prev.filter((t) => t.id !== id));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "タグの削除に失敗しました");
+      setError(e instanceof Error ? e.message : "カテゴリの削除に失敗しました");
     } finally {
       setDeletingIds((prev) => {
         const next = new Set(prev);
@@ -94,7 +94,7 @@ export function TagManagementModal({ initialTags, onClose, onCreateTag, onDelete
       ref={overlayRef}
       role="dialog"
       aria-modal="true"
-      aria-label="タグ管理"
+      aria-label="カテゴリ管理"
       onClick={handleOverlayClick}
       onKeyDown={(e) => {
         if (e.key === "Escape") onClose();
@@ -103,7 +103,7 @@ export function TagManagementModal({ initialTags, onClose, onCreateTag, onDelete
     >
       <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-lg">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-zinc-900">タグ管理</h2>
+          <h2 className="text-lg font-bold text-zinc-900">カテゴリ管理</h2>
           <button
             type="button"
             onClick={onClose}
@@ -137,7 +137,7 @@ export function TagManagementModal({ initialTags, onClose, onCreateTag, onDelete
               setInputValue(e.target.value);
               setError("");
             }}
-            placeholder="新しいタグ名"
+            placeholder="新しいカテゴリ名"
             maxLength={50}
             disabled={creating}
             className="flex-1 rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 disabled:opacity-50"
@@ -157,7 +157,7 @@ export function TagManagementModal({ initialTags, onClose, onCreateTag, onDelete
 
         {tags.length === 0 ? (
           <div className="rounded-lg border border-dashed border-zinc-300 py-12 text-center text-sm text-zinc-500">
-            タグがありません
+            カテゴリがありません
           </div>
         ) : (
           <ul className="max-h-80 overflow-y-auto divide-y divide-zinc-100 rounded-lg border border-zinc-200">
