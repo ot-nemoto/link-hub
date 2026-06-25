@@ -3,8 +3,10 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
+import { getTagColor } from "@/lib/tag-colors";
 import { fetchOgp } from "./fetchOgp";
-import { type Tag, TagInput } from "./TagInput";
+
+type Tag = { id: string; name: string };
 
 type Props = {
   availableTags: Tag[];
@@ -13,16 +15,22 @@ type Props = {
     title: string;
     memo: string;
     ogImage?: string;
-    tagIds?: string[];
+    tagId?: string | null;
   };
   action: (data: {
     url: string;
     title: string;
     memo: string;
     ogImage?: string;
-    tagIds?: string[];
+    tagId?: string | null;
   }) => Promise<{ error?: string }>;
-  onSuccess?: () => void;
+  onSuccess?: (data: {
+    url: string;
+    title: string;
+    memo: string;
+    ogImage?: string;
+    tagId?: string | null;
+  }) => void;
   onCancel?: () => void;
 };
 
@@ -33,15 +41,7 @@ export function BookmarkForm({ availableTags, defaultValues, action, onSuccess, 
   const [title, setTitle] = useState(defaultValues?.title ?? "");
   const [ogImage, setOgImage] = useState(defaultValues?.ogImage ?? "");
   const [fetchingOgp, setFetchingOgp] = useState(false);
-  const [selectedTagIds, setSelectedTagIds] = useState<string[]>(defaultValues?.tagIds ?? []);
-  const [localTags, setLocalTags] = useState<Tag[]>(availableTags);
-
-  function handleTagChange(ids: string[], newTag?: Tag) {
-    setSelectedTagIds(ids);
-    if (newTag && !localTags.some((t) => t.id === newTag.id)) {
-      setLocalTags((prev) => [...prev, newTag]);
-    }
-  }
+  const [selectedTagId, setSelectedTagId] = useState<string | null>(defaultValues?.tagId ?? null);
 
   const titleRef = useRef(title);
   const ogImageRef = useRef(ogImage);
@@ -81,7 +81,7 @@ export function BookmarkForm({ availableTags, defaultValues, action, onSuccess, 
       title: (form.elements.namedItem("title") as HTMLInputElement).value.trim(),
       memo: (form.elements.namedItem("memo") as HTMLTextAreaElement).value.trim(),
       ogImage: ogImage || undefined,
-      tagIds: selectedTagIds,
+      tagId: selectedTagId,
     };
 
     const newErrors: Record<string, string> = {};
@@ -116,7 +116,7 @@ export function BookmarkForm({ availableTags, defaultValues, action, onSuccess, 
     }
 
     if (onSuccess) {
-      onSuccess();
+      onSuccess(data);
     } else {
       router.push("/bookmarks");
       router.refresh();
@@ -178,16 +178,39 @@ export function BookmarkForm({ availableTags, defaultValues, action, onSuccess, 
       </div>
 
       <div>
-        <label htmlFor="tag-input" className="block text-sm font-medium text-zinc-700">
-          タグ
+        <label htmlFor="category" className="block text-sm font-medium text-zinc-700">
+          カテゴリ
         </label>
-        <div className="mt-1">
-          <TagInput
-            inputId="tag-input"
-            availableTags={localTags}
-            selectedTagIds={selectedTagIds}
-            onChange={handleTagChange}
-          />
+        <div className="mt-1 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setSelectedTagId(null)}
+            className={`cursor-pointer rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+              selectedTagId === null
+                ? "bg-zinc-800 text-white"
+                : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+            }`}
+          >
+            未分類
+          </button>
+          {availableTags.map((tag) => {
+            const color = getTagColor(tag.name);
+            const isSelected = selectedTagId === tag.id;
+            return (
+              <button
+                key={tag.id}
+                type="button"
+                onClick={() => setSelectedTagId(tag.id)}
+                className={`cursor-pointer rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                  isSelected
+                    ? `${color.activeBg} text-white`
+                    : `${color.bg} ${color.text} hover:opacity-80`
+                }`}
+              >
+                {tag.name}
+              </button>
+            );
+          })}
         </div>
       </div>
 

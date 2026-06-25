@@ -1,9 +1,13 @@
 "use client";
 
 import {
+  type CollisionDetection,
   closestCenter,
   DndContext,
   type DragEndEvent,
+  type DragOverEvent,
+  DragOverlay,
+  type DragStartEvent,
   KeyboardSensor,
   PointerSensor,
   useSensor,
@@ -23,21 +27,20 @@ import { BookmarkEditModal } from "@/components/BookmarkEditModal";
 import { TagManagementModal } from "@/components/TagManagementModal";
 import { getTagColor } from "@/lib/tag-colors";
 import {
-  bulkAddTags,
   createBookmark,
   createTag,
   deleteBookmark,
   deleteBookmarks,
   deleteTag,
+  moveBookmark,
   reorderBookmarks,
+  reorderTags,
   updateBookmark,
 } from "./actions";
-import { BulkTagPanel } from "./BulkTagPanel";
-import { InlineTagEditor } from "./InlineTagEditor";
-import { TagFilter, type TagFilterItem, UNTAGGED_ID } from "./TagFilter";
 import { UndoSnackbar } from "./UndoSnackbar";
 
-type BookmarkTag = { tagId: string; tag: { id: string; name: string } };
+const UNCATEGORIZED_KEY = "__uncategorized__";
+const UNDO_TIMEOUT_MS = 5000;
 
 type Bookmark = {
   id: string;
@@ -45,15 +48,18 @@ type Bookmark = {
   title: string;
   memo: string | null;
   ogImage: string | null;
-  tags: BookmarkTag[];
+  sortOrder: number;
+  tag: { id: string; name: string } | null;
+  tagId: string | null;
 };
+
+type TagItem = { id: string; name: string };
+type TagWithCount = { id: string; name: string; bookmarkCount: number };
 
 type PendingDelete = {
   bookmarks: Bookmark[];
   timerId: ReturnType<typeof setTimeout>;
 };
-
-const UNDO_TIMEOUT_MS = 5000;
 
 function DragHandleIcon() {
   return (
@@ -70,86 +76,27 @@ function DragHandleIcon() {
   );
 }
 
-type ItemProps = {
+function SortableBookmarkItem({
+  bm,
+  isSearching,
+  onEdit,
+  onDelete,
+}: {
   bm: Bookmark;
   isSearching: boolean;
-  isDndDisabled: boolean;
-  isSelected: boolean;
-  onToggleSelect: (id: string) => void;
   onEdit: (bm: Bookmark) => void;
   onDelete: (bm: Bookmark) => void;
-  allTags: TagFilterItem[];
-  editingTags: boolean;
-  onEditTagsStart: () => void;
-  onEditTagsSave: (tagIds: string[], newTags: TagFilterItem[]) => void;
-  onEditTagsCancel: () => void;
-};
-
-function PlainItem({
-  bm,
-  isDndDisabled,
-  isSelected,
-  onToggleSelect,
-  onEdit,
-  onDelete,
-  allTags,
-  editingTags,
-  onEditTagsStart,
-  onEditTagsSave,
-  onEditTagsCancel,
-}: ItemProps) {
-  return (
-    <li className="flex items-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-3 transition-all duration-150 ease-in-out hover:border-zinc-400 hover:bg-zinc-50">
-      {isDndDisabled ? null : (
-        <span className="shrink-0 text-zinc-400">
-          <DragHandleIcon />
-        </span>
-      )}
-      <input
-        type="checkbox"
-        checked={isSelected}
-        onChange={() => onToggleSelect(bm.id)}
-        className="h-4 w-4 shrink-0 cursor-pointer"
-        aria-label={`${bm.title}を選択`}
-      />
-      <ItemContent
-        bm={bm}
-        onEdit={onEdit}
-        onDelete={onDelete}
-        allTags={allTags}
-        editingTags={editingTags}
-        onEditTagsStart={onEditTagsStart}
-        onEditTagsSave={onEditTagsSave}
-        onEditTagsCancel={onEditTagsCancel}
-      />
-    </li>
-  );
-}
-
-function SortableItem({
-  bm,
-  isDndDisabled,
-  isSelected,
-  onToggleSelect,
-  onEdit,
-  onDelete,
-  allTags,
-  editingTags,
-  onEditTagsStart,
-  onEditTagsSave,
-  onEditTagsCancel,
-}: ItemProps) {
+}) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: bm.id,
-    disabled: isDndDisabled,
+    disabled: isSearching,
+    data: { type: "bookmark", tagId: bm.tagId },
   });
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition: [transition, "background-color 150ms ease-in-out", "border-color 150ms ease-in-out"]
-      .filter(Boolean)
-      .join(", "),
-    opacity: isDragging ? 0.5 : 1,
+    transition: transition || undefined,
+    opacity: isDragging ? 0.4 : 1,
   };
 
   return (
@@ -158,7 +105,7 @@ function SortableItem({
       style={style}
       className="flex items-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-3 hover:border-zinc-400 hover:bg-zinc-50"
     >
-      {!isDndDisabled && (
+      {!isSearching && (
         <button
           type="button"
           {...attributes}
@@ -169,45 +116,19 @@ function SortableItem({
           <DragHandleIcon />
         </button>
       )}
-      <input
-        type="checkbox"
-        checked={isSelected}
-        onChange={() => onToggleSelect(bm.id)}
-        className="h-4 w-4 shrink-0 cursor-pointer"
-        aria-label={`${bm.title}を選択`}
-      />
-      <ItemContent
-        bm={bm}
-        onEdit={onEdit}
-        onDelete={onDelete}
-        allTags={allTags}
-        editingTags={editingTags}
-        onEditTagsStart={onEditTagsStart}
-        onEditTagsSave={onEditTagsSave}
-        onEditTagsCancel={onEditTagsCancel}
-      />
+      <BookmarkItemContent bm={bm} onEdit={onEdit} onDelete={onDelete} />
     </li>
   );
 }
 
-function ItemContent({
+function BookmarkItemContent({
   bm,
   onEdit,
   onDelete,
-  allTags,
-  editingTags,
-  onEditTagsStart,
-  onEditTagsSave,
-  onEditTagsCancel,
 }: {
   bm: Bookmark;
   onEdit: (bm: Bookmark) => void;
   onDelete: (bm: Bookmark) => void;
-  allTags: TagFilterItem[];
-  editingTags: boolean;
-  onEditTagsStart: () => void;
-  onEditTagsSave: (tagIds: string[], newTags: TagFilterItem[]) => void;
-  onEditTagsCancel: () => void;
 }) {
   return (
     <>
@@ -222,36 +143,6 @@ function ItemContent({
         </a>
         <p className="truncate text-xs text-zinc-400">{bm.url}</p>
         {bm.memo && <p className="truncate text-sm text-zinc-600">{bm.memo}</p>}
-        <div className="mt-1 flex flex-wrap items-center gap-1">
-          {bm.tags.map((bt) => {
-            const tagName = allTags.find((t) => t.id === bt.tagId)?.name ?? bt.tag.name;
-            const color = getTagColor(tagName);
-            return (
-              <span
-                key={bt.tagId}
-                className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${color.bg} ${color.text}`}
-              >
-                {tagName}
-              </span>
-            );
-          })}
-          <button
-            type="button"
-            onClick={onEditTagsStart}
-            className="cursor-pointer rounded px-1.5 py-0.5 text-xs text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600"
-          >
-            タグ編集
-          </button>
-        </div>
-        {editingTags && (
-          <InlineTagEditor
-            bookmarkId={bm.id}
-            allTags={allTags}
-            currentTagIds={bm.tags.map((bt) => bt.tagId)}
-            onSave={onEditTagsSave}
-            onCancel={onEditTagsCancel}
-          />
-        )}
       </div>
       {bm.ogImage && (
         <img
@@ -265,7 +156,7 @@ function ItemContent({
         <button
           type="button"
           onClick={() => onEdit(bm)}
-          className="cursor-pointer rounded px-3 py-1 text-xs font-medium bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
+          className="cursor-pointer rounded bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-200"
         >
           編集
         </button>
@@ -281,7 +172,122 @@ function ItemContent({
   );
 }
 
-type TagWithCount = { id: string; name: string; bookmarkCount: number };
+function CategoryDropZone({ categoryKey }: { categoryKey: string }) {
+  const { setNodeRef, isOver } = useSortable({
+    id: `drop-zone-${categoryKey}`,
+    data: { type: "drop-zone", tagId: categoryKey === UNCATEGORIZED_KEY ? null : categoryKey },
+  });
+
+  if (!isOver) return <div ref={setNodeRef} className="h-1" />;
+
+  return (
+    <div
+      ref={setNodeRef}
+      className="rounded-md border-2 border-dashed border-blue-400 bg-blue-50 py-4 text-center text-xs text-blue-500"
+    >
+      ここにドロップ
+    </div>
+  );
+}
+
+function CategoryGroup({
+  categoryKey,
+  tag,
+  bookmarks,
+  isSearching,
+  onEdit,
+  onDelete,
+}: {
+  categoryKey: string;
+  tag: TagItem | null;
+  bookmarks: Bookmark[];
+  isSearching: boolean;
+  onEdit: (bm: Bookmark) => void;
+  onDelete: (bm: Bookmark) => void;
+}) {
+  const [collapsed, setCollapsed] = useState(false);
+  const color = tag ? getTagColor(tag.name) : null;
+  const isSortable = tag !== null;
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: `category-${categoryKey}`,
+    disabled: !isSortable,
+    data: { type: "category" },
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition: transition || undefined,
+    opacity: isDragging ? 0.4 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="mb-6">
+      <div className="mb-2 flex w-full items-center gap-2 border-b border-zinc-200 pb-1.5">
+        {isSortable && (
+          <button
+            type="button"
+            {...attributes}
+            {...listeners}
+            className="shrink-0 cursor-grab text-zinc-400 hover:text-zinc-600 active:cursor-grabbing"
+            aria-label="ドラッグしてカテゴリを並び替え"
+          >
+            <DragHandleIcon />
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => setCollapsed((prev) => !prev)}
+          className="flex flex-1 cursor-pointer items-center gap-2"
+        >
+          <span
+            className={`inline-block h-2.5 w-2.5 rounded-full ${color ? color.activeBg : "bg-zinc-400"}`}
+          />
+          <span className={`text-sm font-medium ${tag ? "text-zinc-900" : "text-zinc-500"}`}>
+            {tag ? tag.name : "未分類"}
+          </span>
+          <span className="text-xs text-zinc-400">{bookmarks.length}</span>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+            className={`ml-auto text-zinc-400 transition-transform ${collapsed ? "-rotate-90" : ""}`}
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
+      </div>
+
+      {!collapsed && (
+        <div className="pl-5">
+          <SortableContext
+            items={[...bookmarks.map((b) => b.id), `drop-zone-${categoryKey}`]}
+            strategy={verticalListSortingStrategy}
+          >
+            <ul className="flex flex-col gap-2">
+              {bookmarks.map((bm) => (
+                <SortableBookmarkItem
+                  key={bm.id}
+                  bm={bm}
+                  isSearching={isSearching}
+                  onEdit={onEdit}
+                  onDelete={onDelete}
+                />
+              ))}
+              <CategoryDropZone categoryKey={categoryKey} />
+            </ul>
+          </SortableContext>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function BookmarkList({
   bookmarks: initial,
@@ -289,25 +295,21 @@ export function BookmarkList({
   tagsWithCount,
 }: {
   bookmarks: Bookmark[];
-  allTags: TagFilterItem[];
+  allTags: TagItem[];
   tagsWithCount: TagWithCount[];
 }) {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [items, setItems] = useState<Bookmark[]>(initial);
-  const [allTagsState, setAllTagsState] = useState<TagFilterItem[]>(allTags);
+  const [allTagsState, setAllTagsState] = useState<TagItem[]>(allTags);
   const [tagsWithCountState, setTagsWithCountState] = useState<TagWithCount[]>(tagsWithCount);
   const [isTagModalOpen, setIsTagModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingBookmarkId, setEditingBookmarkId] = useState<string | null>(null);
-  const [activeTagIds, setActiveTagIds] = useState<string[]>([]);
-  const [editingTagsId, setEditingTagsId] = useState<string | null>(null);
-  const [isBulkTagging, setIsBulkTagging] = useState(false);
-  const [bulkTagSaving, setBulkTagSaving] = useState(false);
-  const [bulkTagError, setBulkTagError] = useState("");
   const [pending, setPending] = useState<PendingDelete | null>(null);
   const pendingRef = useRef<PendingDelete | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -327,11 +329,9 @@ export function BookmarkList({
     };
   }, []);
 
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-
   const isSearching = searchQuery.trim().length > 0;
 
-  const searchedItems = isSearching
+  const filteredItems = isSearching
     ? (() => {
         const q = searchQuery.toLowerCase();
         return items.filter(
@@ -343,32 +343,31 @@ export function BookmarkList({
       })()
     : items;
 
-  const filteredItems =
-    activeTagIds.length === 0
-      ? searchedItems
-      : searchedItems.filter((bm) => {
-          if (activeTagIds.includes(UNTAGGED_ID) && bm.tags.length === 0) return true;
-          return activeTagIds.some(
-            (tid) => tid !== UNTAGGED_ID && bm.tags.some((bt) => bt.tagId === tid),
-          );
-        });
+  const groupedBookmarks = (() => {
+    const groups: { key: string; tag: TagItem | null; bookmarks: Bookmark[] }[] = [];
+    const tagMap = new Map<string, Bookmark[]>();
+    const uncategorized: Bookmark[] = [];
 
-  const allSelected = filteredItems.length > 0 && selectedIds.size === filteredItems.length;
+    for (const bm of filteredItems) {
+      if (bm.tagId) {
+        const existing = tagMap.get(bm.tagId);
+        if (existing) existing.push(bm);
+        else tagMap.set(bm.tagId, [bm]);
+      } else {
+        uncategorized.push(bm);
+      }
+    }
 
-  const toggleSelect = useCallback((id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }, []);
+    for (const tag of allTagsState) {
+      const bms = (tagMap.get(tag.id) ?? []).toSorted((a, b) => a.sortOrder - b.sortOrder);
+      groups.push({ key: tag.id, tag, bookmarks: bms });
+    }
 
-  const toggleAll = useCallback(() => {
-    setSelectedIds((prev) =>
-      prev.size === filteredItems.length ? new Set() : new Set(filteredItems.map((b) => b.id)),
-    );
-  }, [filteredItems]);
+    uncategorized.sort((a, b) => a.sortOrder - b.sortOrder);
+    groups.push({ key: UNCATEGORIZED_KEY, tag: null, bookmarks: uncategorized });
+
+    return groups;
+  })();
 
   const commitPending = useCallback(
     async (p: PendingDelete) => {
@@ -409,19 +408,6 @@ export function BookmarkList({
     [startPending],
   );
 
-  const handleBulkDelete = useCallback(() => {
-    const targets = filteredItems.filter((b) => selectedIds.has(b.id));
-    if (targets.length === 0) return;
-    const idsToDelete = new Set(targets.map((b) => b.id));
-    setItems((prev) => prev.filter((b) => !idsToDelete.has(b.id)));
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      for (const id of idsToDelete) next.delete(id);
-      return next;
-    });
-    startPending(targets);
-  }, [filteredItems, selectedIds, startPending]);
-
   const handleUndo = useCallback(() => {
     if (!pendingRef.current) return;
     clearTimeout(pendingRef.current.timerId);
@@ -431,96 +417,159 @@ export function BookmarkList({
     setItems((prev) => [...prev, ...bookmarks]);
   }, []);
 
-  const handleEditTagsSave = useCallback(
-    (bookmarkId: string, tagIds: string[], newTags: TagFilterItem[]) => {
-      const nextAllTags =
-        newTags.length > 0
-          ? [
-              ...allTagsState,
-              ...newTags.filter((t) => !allTagsState.find((a) => a.id === t.id)),
-            ].sort((a, b) => a.name.localeCompare(b.name))
-          : allTagsState;
-      if (newTags.length > 0) setAllTagsState(nextAllTags);
-      setItems((prev) =>
-        prev.map((bm) => {
-          if (bm.id !== bookmarkId) return bm;
-          return {
-            ...bm,
-            tags: tagIds.map((tid) => {
-              const tag = nextAllTags.find((t) => t.id === tid) ?? { id: tid, name: tid };
-              return { tagId: tid, tag: { id: tid, name: tag.name } };
-            }),
-          };
-        }),
-      );
-      setEditingTagsId(null);
-      router.refresh();
-    },
-    [allTagsState, router],
-  );
-
-  const handleBulkTagsSave = useCallback(
-    async (tagIds: string[]) => {
-      if (tagIds.length === 0) return;
-      setBulkTagSaving(true);
-      setBulkTagError("");
-      const bookmarkIds = Array.from(selectedIds);
-      try {
-        const result = await bulkAddTags(bookmarkIds, tagIds);
-        if (result.error) {
-          setBulkTagError(result.error);
-          return;
-        }
-        setItems((prev) =>
-          prev.map((bm) => {
-            if (!selectedIds.has(bm.id)) return bm;
-            const existingTagIds = new Set(bm.tags.map((bt) => bt.tagId));
-            const newTags = tagIds
-              .filter((tid) => !existingTagIds.has(tid))
-              .map((tid) => {
-                const tag = allTagsState.find((t) => t.id === tid) ?? { id: tid, name: tid };
-                return { tagId: tid, tag: { id: tid, name: tag.name } };
-              });
-            return { ...bm, tags: [...bm.tags, ...newTags] };
-          }),
-        );
-        setIsBulkTagging(false);
-        router.refresh();
-      } catch {
-        setBulkTagError("タグの一括更新中にエラーが発生しました");
-      } finally {
-        setBulkTagSaving(false);
-      }
-    },
-    [selectedIds, allTagsState, router],
-  );
-
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
+
+  const collisionDetection: CollisionDetection = useCallback((args) => {
+    const activeData = args.active.data.current as { type: string } | undefined;
+    if (activeData?.type === "category") {
+      const categoryContainers = args.droppableContainers.filter(
+        (c) => (c.data.current as { type: string } | undefined)?.type === "category",
+      );
+      return closestCenter({ ...args, droppableContainers: categoryContainers });
+    }
+    return closestCenter(args);
+  }, []);
 
   const itemsRef = useRef<Bookmark[]>(initial);
   useEffect(() => {
     itemsRef.current = items;
   }, [items]);
 
-  const handleDragEndWithSave = useCallback(async (event: DragEndEvent) => {
+  const allTagsRef = useRef<TagItem[]>(allTags);
+  useEffect(() => {
+    allTagsRef.current = allTagsState;
+  }, [allTagsState]);
+
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  }, []);
+
+  const handleDragOver = useCallback(
+    (event: DragOverEvent) => {
+      const { active, over } = event;
+      if (!over) return;
+
+      const activeData = active.data.current as { type: string; tagId: string | null } | undefined;
+      const overData = over.data.current as { type: string; tagId: string | null } | undefined;
+      if (!activeData || activeData.type !== "bookmark") return;
+
+      let targetTagId: string | null | undefined;
+
+      if (overData?.type === "drop-zone") {
+        targetTagId = overData.tagId;
+      } else if (overData?.type === "bookmark") {
+        targetTagId = overData.tagId;
+      } else {
+        return;
+      }
+
+      if (targetTagId === undefined) return;
+      if (activeData.tagId === targetTagId) return;
+
+      const draggedId = active.id as string;
+      const newTag = targetTagId ? (allTagsState.find((t) => t.id === targetTagId) ?? null) : null;
+
+      setItems((prev) =>
+        prev.map((bm) =>
+          bm.id === draggedId ? { ...bm, tagId: targetTagId ?? null, tag: newTag } : bm,
+        ),
+      );
+    },
+    [allTagsState],
+  );
+
+  const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+    setActiveId(null);
     const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    const prev = itemsRef.current;
-    const oldIndex = prev.findIndex((b) => b.id === active.id);
-    const newIndex = prev.findIndex((b) => b.id === over.id);
-    if (oldIndex === -1 || newIndex === -1) return;
-    const next = [...prev];
-    const [moved] = next.splice(oldIndex, 1);
-    next.splice(newIndex, 0, moved);
-    setItems(next);
+    if (!over) return;
+
+    const activeData = active.data.current as { type: string } | undefined;
+    if (activeData?.type === "category") {
+      const activeKey = (active.id as string).replace("category-", "");
+      const overKey = (over.id as string).replace("category-", "");
+      if (activeKey === overKey) return;
+
+      const oldTags = allTagsRef.current;
+      const oldIndex = oldTags.findIndex((t) => t.id === activeKey);
+      const overIndex = oldTags.findIndex((t) => t.id === overKey);
+      if (oldIndex === -1 || overIndex === -1) return;
+
+      const newTags = [...oldTags];
+      const [moved] = newTags.splice(oldIndex, 1);
+      newTags.splice(overIndex, 0, moved);
+      setAllTagsState(newTags);
+
+      try {
+        await reorderTags(
+          newTags.map((t) => t.id),
+          { skipRevalidate: true },
+        );
+      } catch {
+        setAllTagsState(oldTags);
+      }
+      return;
+    }
+
+    const draggedId = active.id as string;
+    const bm = itemsRef.current.find((b) => b.id === draggedId);
+    if (!bm) return;
+
+    const overData = over.data.current as { type: string; tagId: string | null } | undefined;
+
+    let targetTagId: string | null;
+    if (overData?.type === "drop-zone") {
+      targetTagId = overData.tagId;
+    } else if (overData?.type === "bookmark") {
+      targetTagId = overData.tagId;
+    } else {
+      targetTagId = bm.tagId;
+    }
+
+    const currentItems = itemsRef.current;
+    const categoryItems = currentItems
+      .filter((b) => b.tagId === targetTagId)
+      .toSorted((a, b) => a.sortOrder - b.sortOrder);
+    const overId = over.id as string;
+
+    let newSortOrder: number;
+    if (overData?.type === "drop-zone") {
+      const maxSort = categoryItems
+        .filter((b) => b.id !== draggedId)
+        .reduce((max, b) => Math.max(max, b.sortOrder ?? 0), -1);
+      newSortOrder = maxSort + 1;
+    } else {
+      const overIndex = categoryItems.findIndex((b) => b.id === overId);
+      if (overIndex === -1) {
+        newSortOrder = categoryItems.length;
+      } else {
+        newSortOrder = overIndex;
+      }
+    }
+
+    const sameCategory = categoryItems.filter((b) => b.id !== draggedId);
+    const reordered = [...sameCategory];
+    const movedBm = { ...bm, tagId: targetTagId, sortOrder: newSortOrder };
+    reordered.splice(Math.min(newSortOrder, reordered.length), 0, movedBm);
+
+    const updatedIds = reordered.map((b) => b.id);
+    const updatedItems = currentItems.map((b) => {
+      const idx = updatedIds.indexOf(b.id);
+      if (idx !== -1) {
+        return { ...b, tagId: targetTagId, tag: movedBm.tag, sortOrder: idx };
+      }
+      return b;
+    });
+
+    setItems(updatedItems);
+
     try {
-      const result = await reorderBookmarks(next.map((b) => b.id));
-      if (result.error) setItems(prev);
+      await moveBookmark(draggedId, targetTagId, newSortOrder, { skipRevalidate: true });
+      await reorderBookmarks(updatedIds, { skipRevalidate: true });
     } catch {
-      setItems(prev);
+      setItems(currentItems);
     }
   }, []);
 
@@ -534,40 +583,63 @@ export function BookmarkList({
     router.refresh();
   }, [router]);
 
-  const handleEditModalSuccess = useCallback(() => {
-    setEditingBookmarkId(null);
-    router.refresh();
-  }, [router]);
+  const handleEditModalSuccess = useCallback(
+    (updated: {
+      url: string;
+      title: string;
+      memo: string;
+      ogImage?: string;
+      tagId?: string | null;
+    }) => {
+      const id = editingBookmarkId;
+      if (id) {
+        const newTag = updated.tagId
+          ? (allTagsState.find((t) => t.id === updated.tagId) ?? null)
+          : null;
+        setItems((prev) =>
+          prev.map((bm) =>
+            bm.id === id
+              ? {
+                  ...bm,
+                  url: updated.url,
+                  title: updated.title,
+                  memo: updated.memo || null,
+                  ogImage: updated.ogImage ?? bm.ogImage,
+                  tagId: updated.tagId ?? null,
+                  tag: newTag,
+                }
+              : bm,
+          ),
+        );
+      }
+      setEditingBookmarkId(null);
+      router.refresh();
+    },
+    [router, editingBookmarkId, allTagsState],
+  );
 
-  const isDndDisabled = isSearching || activeTagIds.length > 0;
-
-  const itemProps = (bm: Bookmark) => ({
-    bm,
-    isSearching,
-    isDndDisabled,
-    isSelected: selectedIds.has(bm.id),
-    onToggleSelect: toggleSelect,
-    onEdit: (b: Bookmark) => setEditingBookmarkId(b.id),
-    onDelete: handleDelete,
-    allTags: allTagsState,
-    editingTags: editingTagsId === bm.id,
-    onEditTagsStart: () => setEditingTagsId(bm.id),
-    onEditTagsSave: (tagIds: string[], newTags: TagFilterItem[]) =>
-      handleEditTagsSave(bm.id, tagIds, newTags),
-    onEditTagsCancel: () => setEditingTagsId(null),
-  });
+  const activeBookmark = activeId ? items.find((b) => b.id === activeId) : null;
 
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
         <h2 className="text-lg font-bold text-zinc-900">ブックマーク一覧</h2>
-        <button
-          type="button"
-          onClick={() => setIsAddModalOpen(true)}
-          className="cursor-pointer rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700"
-        >
-          追加
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setIsTagModalOpen(true)}
+            className="cursor-pointer rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+          >
+            カテゴリ管理
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsAddModalOpen(true)}
+            className="cursor-pointer rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700"
+          >
+            追加
+          </button>
+        </div>
       </div>
 
       <input
@@ -579,59 +651,6 @@ export function BookmarkList({
         className="mb-4 w-full rounded-md border border-zinc-300 px-4 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
       />
 
-      <div className="mb-4 flex items-center justify-between">
-        <TagFilter tags={allTagsState} selectedTagIds={activeTagIds} onChange={setActiveTagIds} />
-        <button
-          type="button"
-          onClick={() => setIsTagModalOpen(true)}
-          className="shrink-0 cursor-pointer rounded-md border border-zinc-300 px-3 py-1 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
-        >
-          タグ管理
-        </button>
-      </div>
-
-      <div className="mb-3 flex items-center gap-2">
-        <button
-          type="button"
-          onClick={toggleAll}
-          className="cursor-pointer rounded px-3 py-1 text-xs font-medium bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
-        >
-          {allSelected ? "全解除" : "全選択"}
-        </button>
-        {selectedIds.size > 0 && (
-          <>
-            <span className="text-sm text-zinc-500">{selectedIds.size}件選択中</span>
-            <button
-              type="button"
-              onClick={() => setIsBulkTagging((prev) => !prev)}
-              className="cursor-pointer rounded px-3 py-1 text-xs font-medium bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
-            >
-              タグを追加
-            </button>
-            <button
-              type="button"
-              onClick={handleBulkDelete}
-              className="cursor-pointer rounded border border-red-300 px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
-            >
-              削除
-            </button>
-          </>
-        )}
-      </div>
-
-      {isBulkTagging && (
-        <BulkTagPanel
-          allTags={allTagsState}
-          saving={bulkTagSaving}
-          error={bulkTagError}
-          onSave={handleBulkTagsSave}
-          onCancel={() => {
-            setIsBulkTagging(false);
-            setBulkTagError("");
-          }}
-        />
-      )}
-
       {filteredItems.length === 0 ? (
         <div className="rounded-lg border border-dashed border-zinc-300 py-12 text-center text-sm text-zinc-500">
           {items.length === 0 ? "まだブックマークがありません" : "該当するブックマークがありません"}
@@ -639,26 +658,72 @@ export function BookmarkList({
       ) : mounted ? (
         <DndContext
           sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEndWithSave}
+          collisionDetection={collisionDetection}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragEnd={handleDragEnd}
         >
           <SortableContext
-            items={filteredItems.map((b) => b.id)}
+            items={groupedBookmarks.map((g) => `category-${g.key}`)}
             strategy={verticalListSortingStrategy}
           >
-            <ul className="flex flex-col gap-3">
-              {filteredItems.map((bm) => (
-                <SortableItem key={bm.id} {...itemProps(bm)} />
-              ))}
-            </ul>
+            {groupedBookmarks.map((group) => (
+              <CategoryGroup
+                key={group.key}
+                categoryKey={group.key}
+                tag={group.tag}
+                bookmarks={group.bookmarks}
+                isSearching={isSearching}
+                onEdit={(bm) => setEditingBookmarkId(bm.id)}
+                onDelete={handleDelete}
+              />
+            ))}
           </SortableContext>
+          <DragOverlay>
+            {activeBookmark && (
+              <div className="flex items-center gap-3 rounded-lg border-2 border-blue-400 bg-white px-4 py-3 shadow-lg">
+                <span className="shrink-0 cursor-grabbing text-zinc-400">
+                  <DragHandleIcon />
+                </span>
+                <BookmarkItemContent bm={activeBookmark} onEdit={() => {}} onDelete={() => {}} />
+              </div>
+            )}
+          </DragOverlay>
         </DndContext>
       ) : (
-        <ul className="divide-y divide-zinc-100 rounded-lg border border-zinc-200">
-          {filteredItems.map((bm) => (
-            <PlainItem key={bm.id} {...itemProps(bm)} />
+        <div>
+          {groupedBookmarks.map((group) => (
+            <div key={group.key} className="mb-6">
+              <div className="mb-2 flex items-center gap-2 border-b border-zinc-200 pb-1.5">
+                <span
+                  className={`inline-block h-2.5 w-2.5 rounded-full ${
+                    group.tag ? getTagColor(group.tag.name).activeBg : "bg-zinc-400"
+                  }`}
+                />
+                <span
+                  className={`text-sm font-medium ${group.tag ? "text-zinc-900" : "text-zinc-500"}`}
+                >
+                  {group.tag ? group.tag.name : "未分類"}
+                </span>
+                <span className="text-xs text-zinc-400">{group.bookmarks.length}</span>
+              </div>
+              <ul className="flex flex-col gap-2 pl-5">
+                {group.bookmarks.map((bm) => (
+                  <li
+                    key={bm.id}
+                    className="flex items-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-3"
+                  >
+                    <BookmarkItemContent
+                      bm={bm}
+                      onEdit={(b) => setEditingBookmarkId(b.id)}
+                      onDelete={handleDelete}
+                    />
+                  </li>
+                ))}
+              </ul>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
 
       {pending && (
@@ -702,7 +767,7 @@ export function BookmarkList({
                 title: bm.title,
                 memo: bm.memo ?? "",
                 ogImage: bm.ogImage ?? undefined,
-                tagIds: bm.tags.map((bt) => bt.tagId),
+                tagId: bm.tagId,
               }}
               action={updateBookmark.bind(null, editingBookmarkId)}
               onClose={() => setEditingBookmarkId(null)}

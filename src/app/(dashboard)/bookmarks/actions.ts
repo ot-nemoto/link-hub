@@ -6,15 +6,18 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import {
   type BookmarkData,
-  bulkAddTags as libBulkAddTags,
   createBookmark as libCreateBookmark,
   deleteBookmark as libDeleteBookmark,
   deleteBookmarks as libDeleteBookmarks,
+  moveBookmark as libMoveBookmark,
   reorderBookmarks as libReorderBookmarks,
   updateBookmark as libUpdateBookmark,
-  updateBookmarkTags as libUpdateBookmarkTags,
 } from "@/lib/bookmarks";
-import { createTag as libCreateTag, deleteTag as libDeleteTag } from "@/lib/tags";
+import {
+  createTag as libCreateTag,
+  deleteTag as libDeleteTag,
+  reorderTags as libReorderTags,
+} from "@/lib/tags";
 
 export async function createBookmark(data: BookmarkData): Promise<{ error?: string }> {
   const session = await getSession();
@@ -34,24 +37,29 @@ export async function updateBookmark(id: string, data: BookmarkData): Promise<{ 
   return result;
 }
 
-export async function updateBookmarkTags(
+export async function moveBookmark(
   id: string,
-  tagIds: string[],
+  tagId: string | null,
+  sortOrder: number,
+  options?: { skipRevalidate?: boolean },
 ): Promise<{ error?: string }> {
   const session = await getSession();
   if (!session) redirect("/sign-in");
 
-  const result = await libUpdateBookmarkTags(session.user.id, id, tagIds);
-  revalidatePath("/bookmarks");
+  const result = await libMoveBookmark(session.user.id, id, tagId, sortOrder);
+  if (!options?.skipRevalidate) revalidatePath("/bookmarks");
   return result;
 }
 
-export async function reorderBookmarks(ids: string[]): Promise<{ error?: string }> {
+export async function reorderBookmarks(
+  ids: string[],
+  options?: { skipRevalidate?: boolean },
+): Promise<{ error?: string }> {
   const session = await getSession();
   if (!session) redirect("/sign-in");
 
   const result = await libReorderBookmarks(session.user.id, ids);
-  revalidatePath("/bookmarks");
+  if (!options?.skipRevalidate) revalidatePath("/bookmarks");
   return result;
 }
 
@@ -66,23 +74,23 @@ export async function createTag(
   return result;
 }
 
+export async function reorderTags(
+  ids: string[],
+  options?: { skipRevalidate?: boolean },
+): Promise<{ error?: string }> {
+  const session = await getSession();
+  if (!session) redirect("/sign-in");
+
+  const result = await libReorderTags(session.user.id, ids);
+  if (!options?.skipRevalidate) revalidatePath("/bookmarks");
+  return result;
+}
+
 export async function deleteTag(id: string): Promise<{ error?: string }> {
   const session = await getSession();
   if (!session) redirect("/sign-in");
 
   const result = await libDeleteTag(session.user.id, id);
-  revalidatePath("/bookmarks");
-  return result;
-}
-
-export async function bulkAddTags(
-  bookmarkIds: string[],
-  tagIds: string[],
-): Promise<{ error?: string }> {
-  const session = await getSession();
-  if (!session) redirect("/sign-in");
-
-  const result = await libBulkAddTags(session.user.id, bookmarkIds, tagIds);
   revalidatePath("/bookmarks");
   return result;
 }

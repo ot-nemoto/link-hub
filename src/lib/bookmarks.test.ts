@@ -2,14 +2,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
-  bulkAddTags,
   createBookmark,
   deleteBookmark,
   deleteBookmarks,
   getBookmarks,
+  moveBookmark,
   reorderBookmarks,
   updateBookmark,
-  updateBookmarkTags,
 } from "./bookmarks";
 
 vi.mock("@/lib/prisma", () => ({
@@ -25,10 +24,8 @@ vi.mock("@/lib/prisma", () => ({
       count: vi.fn(),
     },
     tag: {
+      findFirst: vi.fn(),
       findMany: vi.fn(),
-    },
-    bookmarkTag: {
-      createMany: vi.fn(),
     },
     $transaction: vi.fn(),
   },
@@ -46,8 +43,7 @@ const mockBookmarkDelete = vi.mocked(prisma.bookmark.delete);
 const mockBookmarkDeleteMany = vi.mocked(prisma.bookmark.deleteMany);
 const mockBookmarkAggregate = vi.mocked(prisma.bookmark.aggregate);
 const mockBookmarkCount = vi.mocked(prisma.bookmark.count);
-const mockTagFindMany = vi.mocked(prisma.tag.findMany);
-const mockBookmarkTagCreateMany = vi.mocked(prisma.bookmarkTag.createMany);
+const mockTagFindFirst = vi.mocked(prisma.tag.findFirst);
 const mockTransaction = vi.mocked(prisma.$transaction);
 
 const userId = "user_1";
@@ -59,6 +55,7 @@ const bookmark = {
   memo: null,
   ogImage: null,
   sortOrder: 0,
+  tagId: null,
   createdAt: new Date(),
   updatedAt: new Date(),
 };
@@ -121,6 +118,34 @@ describe("createBookmark", () => {
       data: expect.objectContaining({ sortOrder: 0 }),
     });
   });
+
+  it("tagId を指定すると自ユーザーのタグか検証してセットする", async () => {
+    mockBookmarkAggregate.mockResolvedValue({ _max: { sortOrder: 0 } } as never);
+    mockTagFindFirst.mockResolvedValue({ id: "tag_1" } as never);
+    mockBookmarkCreate.mockResolvedValue(bookmark);
+
+    await createBookmark(userId, { ...bookmarkData, tagId: "tag_1" });
+
+    expect(mockTagFindFirst).toHaveBeenCalledWith({
+      where: { id: "tag_1", userId },
+      select: { id: true },
+    });
+    expect(mockBookmarkCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({ tagId: "tag_1" }),
+    });
+  });
+
+  it("他ユーザーの tagId は null にフォールバックする", async () => {
+    mockBookmarkAggregate.mockResolvedValue({ _max: { sortOrder: 0 } } as never);
+    mockTagFindFirst.mockResolvedValue(null);
+    mockBookmarkCreate.mockResolvedValue(bookmark);
+
+    await createBookmark(userId, { ...bookmarkData, tagId: "tag_other" });
+
+    expect(mockBookmarkCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({ tagId: null }),
+    });
+  });
 });
 
 describe("updateBookmark", () => {
@@ -168,26 +193,40 @@ describe("updateBookmark", () => {
   });
 });
 
-describe("updateBookmarkTags", () => {
+describe("moveBookmark", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("正常系: ブックマークのタグを上書きして {} を返す", async () => {
+  it("正常系: tagId と sortOrder を更新して {} を返す", async () => {
     mockBookmarkFindUnique.mockResolvedValue(bookmark as never);
-    mockTagFindMany.mockResolvedValue([{ id: "tag_1" }, { id: "tag_2" }] as never);
+    mockTagFindFirst.mockResolvedValue({ id: "tag_1" } as never);
     mockBookmarkUpdate.mockResolvedValue(bookmark);
 
-    const result = await updateBookmarkTags(userId, "bm_1", ["tag_1", "tag_2"]);
+    const result = await moveBookmark(userId, "bm_1", "tag_1", 2);
 
     expect(result).toEqual({});
-    expect(mockBookmarkUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: "bm_1" } }),
-    );
+    expect(mockBookmarkUpdate).toHaveBeenCalledWith({
+      where: { id: "bm_1" },
+      data: { tagId: "tag_1", sortOrder: 2 },
+    });
+  });
+
+  it("tagId が null の場合は未分類に移動する", async () => {
+    mockBookmarkFindUnique.mockResolvedValue(bookmark as never);
+    mockBookmarkUpdate.mockResolvedValue(bookmark);
+
+    const result = await moveBookmark(userId, "bm_1", null, 0);
+
+    expect(result).toEqual({});
+    expect(mockBookmarkUpdate).toHaveBeenCalledWith({
+      where: { id: "bm_1" },
+      data: { tagId: null, sortOrder: 0 },
+    });
   });
 
   it("存在しないブックマークは error を返す", async () => {
     mockBookmarkFindUnique.mockResolvedValue(null);
 
-    const result = await updateBookmarkTags(userId, "bm_not_exist", ["tag_1"]);
+    const result = await moveBookmark(userId, "bm_not_exist", null, 0);
 
     expect(result).toEqual({ error: "ブックマークが見つかりません" });
     expect(mockBookmarkUpdate).not.toHaveBeenCalled();
@@ -196,9 +235,19 @@ describe("updateBookmarkTags", () => {
   it("他ユーザーのブックマークは error を返す", async () => {
     mockBookmarkFindUnique.mockResolvedValue(otherBookmark as never);
 
-    const result = await updateBookmarkTags(userId, "bm_1", ["tag_1"]);
+    const result = await moveBookmark(userId, "bm_1", null, 0);
 
     expect(result).toEqual({ error: "権限がありません" });
+    expect(mockBookmarkUpdate).not.toHaveBeenCalled();
+  });
+
+  it("存在しないカテゴリは error を返す", async () => {
+    mockBookmarkFindUnique.mockResolvedValue(bookmark as never);
+    mockTagFindFirst.mockResolvedValue(null);
+
+    const result = await moveBookmark(userId, "bm_1", "tag_not_exist", 0);
+
+    expect(result).toEqual({ error: "カテゴリが見つかりません" });
     expect(mockBookmarkUpdate).not.toHaveBeenCalled();
   });
 });
@@ -280,46 +329,5 @@ describe("deleteBookmarks", () => {
     expect(mockBookmarkDeleteMany).toHaveBeenCalledWith({
       where: { id: { in: ["bm_1", "bm_other"] }, userId },
     });
-  });
-});
-
-describe("bulkAddTags", () => {
-  beforeEach(() => vi.clearAllMocks());
-
-  it("正常系: 有効なブックマーク・タグに対して createMany を呼んで {} を返す", async () => {
-    mockBookmarkFindMany.mockResolvedValue([{ id: "bm_1" }, { id: "bm_2" }] as never);
-    mockTagFindMany.mockResolvedValue([{ id: "tag_1" }] as never);
-    mockBookmarkTagCreateMany.mockResolvedValue({ count: 2 });
-
-    const result = await bulkAddTags(userId, ["bm_1", "bm_2"], ["tag_1"]);
-
-    expect(result).toEqual({});
-    expect(mockBookmarkTagCreateMany).toHaveBeenCalledWith(
-      expect.objectContaining({ skipDuplicates: true }),
-    );
-  });
-
-  it("bookmarkIds が空の場合は createMany を呼ばず {} を返す", async () => {
-    const result = await bulkAddTags(userId, [], ["tag_1"]);
-
-    expect(result).toEqual({});
-    expect(mockBookmarkTagCreateMany).not.toHaveBeenCalled();
-  });
-
-  it("tagIds が空の場合は createMany を呼ばず {} を返す", async () => {
-    const result = await bulkAddTags(userId, ["bm_1"], []);
-
-    expect(result).toEqual({});
-    expect(mockBookmarkTagCreateMany).not.toHaveBeenCalled();
-  });
-
-  it("他ユーザーのブックマーク・タグは userId フィルタで除外される", async () => {
-    mockBookmarkFindMany.mockResolvedValue([] as never);
-    mockTagFindMany.mockResolvedValue([] as never);
-
-    const result = await bulkAddTags(userId, ["bm_other"], ["tag_other"]);
-
-    expect(result).toEqual({});
-    expect(mockBookmarkTagCreateMany).not.toHaveBeenCalled();
   });
 });
