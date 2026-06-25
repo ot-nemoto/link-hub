@@ -4,16 +4,15 @@
 
 | カテゴリ | 技術 | バージョン |
 |----------|------|-----------|
-| フレームワーク | Next.js (App Router) | 16.2.1 |
-| UI ライブラリ | React | 19.2.4 |
+| フレームワーク | Next.js (App Router) | 16.2.9 |
+| UI ライブラリ | React | 19.2.7 |
 | 言語 | TypeScript (strict) | latest |
 | スタイリング | Tailwind CSS | 4 |
-| ORM | Prisma | 7.5.0 |
+| ORM | Prisma | 7.8.0 |
 | DB | PostgreSQL (Neon) | - |
 | 認証 | Clerk | 7.x |
-| バリデーション | Zod | latest |
 | D&D | dnd-kit | core 6.x / sortable 10.x |
-| フォーマッタ/リンター | Biome | 2.4.9 |
+| フォーマッタ/リンター | Biome | 2.5.0 |
 | テスト（ユニット） | Vitest | 4.x |
 
 ## ディレクトリ構成
@@ -27,25 +26,33 @@ link-hub/
 │   │   │   ├── layout.tsx     # ヘッダー・ログアウトボタン
 │   │   │   ├── LogoutButton.tsx
 │   │   │   └── bookmarks/          # ブックマーク関連画面
-│   │   │       ├── page.tsx        # 一覧
-│   │   │       ├── new/page.tsx    # 新規登録
-│   │   │       ├── [id]/edit/page.tsx  # 編集
-│   │   │       ├── tags/page.tsx       # タグ管理
-│   │   │       ├── tags/TagsClient.tsx # タグ管理 Client Component
+│   │   │       ├── page.tsx            # 一覧（Server Component）
 │   │   │       ├── actions.ts          # Server Actions（書き込み操作を集約）
-│   │   │       ├── BookmarkForm.tsx
-│   │   │       ├── BookmarkList.tsx
-│   │   │       ├── BulkTagPanel.tsx    # 一括タグ付与パネル
+│   │   │       ├── BookmarkForm.tsx    # 登録・編集共通フォーム
+│   │   │       ├── BookmarkList.tsx    # 一覧（カテゴリグルーピング・D&D）
+│   │   │       ├── BookmarkItemContent.tsx  # ブックマーク行の内容表示
+│   │   │       ├── SortableBookmarkItem.tsx # ソート可能なブックマーク行
+│   │   │       ├── CategoryGroup.tsx       # カテゴリグループ（折りたたみ・D&D）
+│   │   │       ├── CategoryDropZone.tsx    # カテゴリ内ドロップゾーン
+│   │   │       ├── DragHandleIcon.tsx      # ドラッグハンドルアイコン
 │   │   │       ├── DeleteButton.tsx
-│   │   │       ├── InlineTagEditor.tsx # インラインタグ編集
-│   │   │       ├── TagFilter.tsx       # タグフィルターバー
-│   │   │       ├── TagInput.tsx        # タグ入力・新規作成
-│   │   │       ├── ThemeToggle.tsx
 │   │   │       ├── UndoSnackbar.tsx
+│   │   │       ├── useDragAndDrop.ts       # D&D ロジックカスタムフック
+│   │   │       ├── types.ts                # 共通型定義
 │   │   │       └── fetchOgp.ts
+│   ├── components/
+│   │   ├── Header.tsx             # ヘッダー
+│   │   ├── BookmarkAddModal.tsx   # ブックマーク追加モーダル
+│   │   ├── BookmarkEditModal.tsx  # ブックマーク編集モーダル
+│   │   ├── TagManagementModal.tsx # カテゴリ管理モーダル
+│   │   └── icons/
+│   │       └── AppIcon.tsx
 │   ├── lib/
 │   │   ├── prisma.ts          # Prisma クライアント
-│   │   └── validations/       # Zod スキーマ
+│   │   ├── auth.ts            # 認証ヘルパー
+│   │   ├── bookmarks.ts       # ブックマーク操作（Prisma）
+│   │   ├── tags.ts            # カテゴリ操作（Prisma）
+│   │   └── tag-colors.ts      # カテゴリカラー生成
 │   └── proxy.ts               # Next.js 16 middleware（旧 middleware.ts）
 ├── prisma/
 │   ├── schema.prisma
@@ -74,7 +81,7 @@ Client (Browser)
 - ページコンポーネントは Server Components を基本とし、インタラクションが必要な部分のみ Client Components を使用する
 - **reads（データ取得）**: Server Components から Prisma を直接呼ぶ
 - **writes（書き込み操作）**: Server Actions（`actions.ts`）に集約する。REST API は使用しない
-- バリデーションは Zod を使用し、`src/lib/validations/` に集約する
+- バリデーションはクライアント側で実施する（Zod は不使用）
 - ユーザー分離は全 Server Actions で `getSession()` による認証チェックを必須とする
 
 ### 機能追加時のガイドライン
