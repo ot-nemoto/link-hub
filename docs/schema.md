@@ -50,6 +50,7 @@ model Bookmark {
 model Tag {
   id        String   @id @default(cuid())
   name      String
+  sortOrder Int      @default(0) @map("sort_order")
   userId    String   @map("user_id")
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -91,6 +92,7 @@ erDiagram
     Tag {
         String id PK
         String name
+        Int sortOrder
         String userId FK
         DateTime createdAt
     }
@@ -136,6 +138,7 @@ erDiagram
 |--------|-----|------|
 | id | String (CUID) | 主キー |
 | name | String | タグ名（ユーザー内でユニーク、最大 50 文字）。カテゴリとして使用 |
+| sortOrder | Int | 表示順（デフォルト 0、D&D による並び替えで更新） |
 | userId | String | 外部キー → User.id（User 削除時に CASCADE） |
 | createdAt | DateTime | 作成日時 |
 
