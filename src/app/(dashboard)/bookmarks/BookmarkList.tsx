@@ -556,9 +556,10 @@ export function BookmarkList({
     reordered.splice(Math.min(newSortOrder, reordered.length), 0, movedBm);
 
     const updatedIds = reordered.map((b) => b.id);
+    const idToIndex = new Map(updatedIds.map((id, i) => [id, i]));
     const updatedItems = currentItems.map((b) => {
-      const idx = updatedIds.indexOf(b.id);
-      if (idx !== -1) {
+      const idx = idToIndex.get(b.id);
+      if (idx !== undefined) {
         return { ...b, tagId: targetTagId, tag: movedBm.tag, sortOrder: idx };
       }
       return b;
