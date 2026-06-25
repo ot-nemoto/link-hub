@@ -567,8 +567,12 @@ export function BookmarkList({
     setItems(updatedItems);
 
     try {
-      await moveBookmark(draggedId, targetTagId, newSortOrder, { skipRevalidate: true });
-      await reorderBookmarks(updatedIds, { skipRevalidate: true });
+      const moveResult = await moveBookmark(draggedId, targetTagId, newSortOrder, {
+        skipRevalidate: true,
+      });
+      if (moveResult.error) throw new Error(moveResult.error);
+      const reorderResult = await reorderBookmarks(updatedIds, { skipRevalidate: true });
+      if (reorderResult.error) throw new Error(reorderResult.error);
     } catch {
       setItems(currentItems);
     }
