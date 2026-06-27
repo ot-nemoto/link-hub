@@ -7,10 +7,7 @@
 | トップ | `/` | 不要 | ログイン画面へリダイレクト |
 | ログイン | `/sign-in` | 不要 | Clerk が提供するログイン画面 |
 | サインアップ | `/sign-up` | 不要 | Clerk が提供するサインアップ画面 |
-| ブックマーク一覧 | `/bookmarks` | 必要 | 自分のブックマーク一覧。新規登録ボタンあり |
-| ブックマーク新規登録 | `/bookmarks/new` | 必要 | URL・タイトル・メモを入力して登録 |
-| ブックマーク編集 | `/bookmarks/[id]/edit` | 必要 | 既存ブックマークの編集 |
-| タグ管理 | `/bookmarks/tags` | 必要 | タグの作成・削除・一覧表示 |
+| ブックマーク一覧 | `/bookmarks` | 必要 | 自分のブックマーク一覧。追加・編集・削除・カテゴリ管理はモーダルで操作 |
 | 認証エラー | `/auth-error` | 不要 | 認証失敗時のエラー表示 |
 
 ## 画面遷移図
@@ -18,40 +15,38 @@
 ```mermaid
 flowchart TD
     classDef screen fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f
-    classDef nav fill:#fef9c3,stroke:#ca8a04,color:#713f12
+    classDef modal fill:#fef9c3,stroke:#ca8a04,color:#713f12
+    classDef nav fill:#e2e8f0,stroke:#64748b,color:#334155
 
     UNAUTH([未認証アクセス])
     LOGIN[ログイン]:::screen
     AUTH_ERROR[認証エラー]:::screen
     LIST[ブックマーク一覧]:::screen
-    NEW[ブックマーク新規登録]:::screen
-    EDIT[ブックマーク編集]:::screen
-    TAGS[タグ管理]:::screen
+
+    ADD_MODAL[追加モーダル]:::modal
+    EDIT_MODAL[編集モーダル]:::modal
+    TAG_MODAL[カテゴリ管理モーダル]:::modal
 
     UNAUTH -->|Clerk Middleware| LOGIN
     LOGIN -->|ログイン成功| LIST
     LOGIN -->|エラー| AUTH_ERROR
     AUTH_ERROR -->|サインアウト| LOGIN
 
-    LIST -->|新規登録ボタン| NEW
-    LIST -->|編集ボタン| EDIT
-    LIST -->|タグ管理リンク| TAGS
+    LIST -->|追加ボタン| ADD_MODAL
+    LIST -->|編集ボタン| EDIT_MODAL
+    LIST -->|カテゴリ管理ボタン| TAG_MODAL
 
-    NEW -->|保存成功| LIST
-    NEW -->|キャンセル| LIST
+    ADD_MODAL -->|保存成功/キャンセル/ESC/×| LIST
+    EDIT_MODAL -->|保存成功/キャンセル/ESC/×| LIST
+    TAG_MODAL -->|閉じる/ESC/×| LIST
 
-    EDIT -->|保存成功| LIST
-    EDIT -->|キャンセル| LIST
-
-    TAGS -->|一覧リンク| LIST
-
-    subgraph Header ["Header（全画面共通）"]
+    subgraph Header ["Header（認証済み画面共通）"]
         direction LR
-        H_LIST(ブックマーク一覧):::nav
+        H_APP(アプリ名):::nav
+        H_EMAIL(メールアドレス):::nav
         H_LOGOUT(ログアウト):::nav
     end
 
-    H_LIST --> LIST
     H_LOGOUT -->|Clerk サインアウト| LOGIN
 ```
 
@@ -59,50 +54,50 @@ flowchart TD
 
 ### ブックマーク一覧（`/bookmarks`）
 
-- ログインユーザーのブックマークを sortOrder 順（昇順）で全件表示する
+- ログインユーザーのブックマークをカテゴリごとにグルーピング表示する
+- 各カテゴリグループはヘッダー（色丸・カテゴリ名・件数・折りたたみアイコン）を持つ
+- カテゴリヘッダーをクリックするとグループを折りたたみ/展開できる
+- カテゴリ未設定のブックマークは「未分類」グループに表示される
 - ブックマークが 0 件の場合は「まだブックマークがありません」を表示
 - 各ブックマークに編集ボタン・削除ボタンを表示
 - 削除ボタンをクリックすると即座に UI から非表示になり（楽観的更新）、5 秒後に DB から削除確定する（確認ダイアログは表示しない）
 - 5 秒以内に Undo した場合は削除を取り消す
-- ヘッダーに「新規登録」ボタンを表示
-- リスト表示のみ（カード表示廃止）
+- ヘッダーに「追加」ボタン・「カテゴリ管理」ボタンを表示
 - リスト行に OGP サムネイル（og_image）を表示する
 - キーワード検索（title / url / memo に対する部分一致）
-- 検索ワード入力中はドラッグ＆ドロップを無効化し、行の背景を薄青（`bg-blue-50` / `dark:bg-blue-950`）にしてドラッグハンドルを非表示にする
+- 検索ワード入力中はドラッグ＆ドロップを無効化し、ドラッグハンドルを非表示にする
 - ドラッグ＆ドロップで並び順を変更できる（ドラッグハンドルをクリックしてドラッグ）
-- 並び替え後は `reorderBookmarks()` Server Action で DB に保存する
-- チェックボックスで複数選択し一括削除可能
-- チェックボックスで複数選択後「タグを追加」ボタンで一括タグ付与パネルを表示できる
-- ダークモード対応（OS 設定に従い初期化、ローカルストレージで保持）
-- タグによるフィルタリング: 画面上部にタグフィルターを表示。タグをクリックして絞り込む（複数選択可）。「タグなし」フィルターも選択可。複数選択中は「全解除」ボタンを表示
-- 各ブックマーク行にタグバッジを表示
-- 各ブックマーク行の「タグ編集」ボタンでインラインタグ編集が可能（編集画面への遷移不要）
-- タグ管理ページ（`/bookmarks/tags`）へのリンクをタグフィルターバーに表示
+  - カテゴリ内ブックマーク並び替え: `reorderBookmarks()` で DB に保存
+  - カテゴリ間ブックマーク移動: `moveBookmark()` で DB に保存
+  - カテゴリ順並び替え: `reorderTags()` で DB に保存
 
-### タグ管理（`/bookmarks/tags`）
+### カテゴリ管理モーダル
 
-- ログインユーザーが所有するタグを一覧表示する
-- 各タグに紐づくブックマーク件数を表示する（例: `3件`）
-- タグ名を入力して「追加」で新規タグを作成できる
-- 同一ユーザー内で同名タグは作成できない（重複時は既存タグを使用）
-- 削除ボタンで対象タグを削除できる（関連する BookmarkTag も CASCADE 削除）
-- タグが 0 件の場合は「タグがありません」を表示
-- 「← ブックマーク一覧」リンクで `/bookmarks` に戻れる
+- 「カテゴリ管理」ボタンで開く
+- ログインユーザーが所有するカテゴリを一覧表示する
+- 各カテゴリに紐づくブックマーク件数を表示する（例: `3件`）
+- カテゴリ名を入力して「作成」で新規カテゴリを作成できる
+- 同一ユーザー内で同名カテゴリは作成できない（重複時はエラー「同名のカテゴリが既に存在します」）
+- 削除ボタンで対象カテゴリを削除できる（関連するブックマークの tagId は SET NULL → 未分類になる）
+- カテゴリが 0 件の場合は「カテゴリがありません」を表示
+- ESC キー・オーバーレイクリック・× ボタンで閉じる
 
-### ブックマーク新規登録（`/bookmarks/new`）
+### ブックマーク追加モーダル
 
-- URL（必須）・タイトル（必須）・メモ（任意）・タグ（任意、複数）を入力
+- 「追加」ボタンで開く
+- URL（必須）・タイトル（必須）・メモ（任意）・カテゴリ（任意、単一選択）を入力
 - URL 入力時に OGP を自動取得し、タイトル・OGP 画像 URL を補完する
 - クライアント側でバリデーションを実行（空チェック・URL 形式・http/https スキーム）
-- 保存後は一覧画面へリダイレクト
-- キャンセルボタンで一覧画面へ戻る
+- 保存後はモーダルを閉じて一覧を更新
+- ESC キー・オーバーレイクリック・× ボタン・キャンセルボタンで閉じる
 
-### ブックマーク編集（`/bookmarks/[id]/edit`）
+### ブックマーク編集モーダル
 
-- 既存の URL・タイトル・メモ・タグを初期値として表示
-- バリデーションは新規登録と同様
-- 保存後は一覧画面へリダイレクト
-- キャンセルボタンで一覧画面へ戻る
+- 「編集」ボタンで開く
+- 既存の URL・タイトル・メモ・カテゴリを初期値として表示
+- バリデーションは追加モーダルと同様
+- 保存後はモーダルを閉じて一覧を更新（楽観的更新）
+- ESC キー・オーバーレイクリック・× ボタン・キャンセルボタンで閉じる
 
 ## 各画面の表示状態
 
@@ -110,22 +105,21 @@ flowchart TD
 
 | 状態 | 条件 | 表示内容 |
 |------|------|---------|
-| Normal | ブックマークが 1 件以上、検索なし | ブックマークリストを表示（D&D 有効） |
-| Searching | 検索ワード入力中 | ブックマークリストを表示（D&D 無効、行背景薄青） |
+| Normal | ブックマークが 1 件以上、検索なし | カテゴリグループ付きブックマークリストを表示（D&D 有効） |
+| Searching | 検索ワード入力中 | カテゴリグループ付きブックマークリストを表示（D&D 無効、ハンドル非表示） |
 | Empty | ブックマークが 0 件 | 「まだブックマークがありません」のメッセージを表示 |
 | EmptySearch | 検索結果が 0 件 | 「該当するブックマークがありません」のメッセージを表示 |
-| Error | Server Action 失敗（削除エラーなど） | 削除ボタン直上にエラーメッセージ（`bg-red-50 text-red-600`）を表示 |
 
-### タグ管理（`/bookmarks/tags`）
+### カテゴリ管理モーダル
 
 | 状態 | 条件 | 表示内容 |
 |------|------|---------|
-| Normal | タグが 1 件以上 | タグ一覧（名前・ブックマーク件数・削除ボタン）を表示 |
-| Empty | タグが 0 件 | 「タグがありません」のメッセージを表示 |
-| Creating | タグ作成中（送信中） | 「追加」ボタンを `disabled`・入力欄も `disabled` |
-| Error | 作成・削除失敗 | タグ一覧上部にエラーメッセージを表示 |
+| Normal | カテゴリが 1 件以上 | カテゴリ一覧（名前・ブックマーク件数・削除ボタン）を表示 |
+| Empty | カテゴリが 0 件 | 「カテゴリがありません」のメッセージを表示 |
+| Creating | カテゴリ作成中（送信中） | 「作成」ボタンを `disabled`・入力欄も `disabled` |
+| Error | 作成・削除失敗 | カテゴリ一覧上部にエラーメッセージを表示 |
 
-### ブックマーク新規登録 / 編集（`/bookmarks/new`, `/bookmarks/[id]/edit`）
+### ブックマーク追加・編集モーダル
 
 | 状態 | 条件 | 表示内容 |
 |------|------|---------|
@@ -142,6 +136,7 @@ flowchart TD
 ```
 src/app/
 ├── layout.tsx              # ルートレイアウト（ClerkProvider）
+├── page.tsx                # トップ（/bookmarks へリダイレクト）
 ├── (auth)/                 # 認証画面グループ（ヘッダーなし）
 │   ├── sign-in/            # Clerk ログイン画面
 │   └── sign-up/            # Clerk サインアップ画面
@@ -149,49 +144,56 @@ src/app/
 │   ├── layout.tsx          # ダッシュボードレイアウト（ヘッダー含む）
 │   ├── LogoutButton.tsx    # ログアウトボタン（Clerk useClerk フック使用）
 │   └── bookmarks/          # ブックマーク関連画面
-│       ├── page.tsx        # 一覧
-│       ├── new/page.tsx    # 新規登録
-│       ├── [id]/edit/page.tsx  # 編集
+│       ├── page.tsx            # 一覧（Server Component）
 │       ├── BookmarkForm.tsx    # 登録・編集共通フォーム（OGP 自動取得含む）
-│       ├── BookmarkList.tsx    # ブックマーク一覧（DnD リスト・OGP・選択・削除・タグ編集）
-│       ├── BulkTagPanel.tsx    # 一括タグ付与パネル
-│       ├── DeleteButton.tsx    # 削除ボタン（楽観的更新・Undo連携）
-│       ├── InlineTagEditor.tsx # インラインタグ編集
-│       ├── TagFilter.tsx       # タグフィルターバー
-│       ├── TagInput.tsx        # タグ入力・新規作成
-│       ├── ThemeToggle.tsx     # ダークモード切り替えボタン
-│       ├── UndoSnackbar.tsx    # 削除 Undo スナックバー
-│       ├── actions.ts      # Server Actions（ブックマーク CRUD・タグ CRUD・一括操作）
-│       ├── fetchOgp.ts     # OGP 取得 Server Action
-│       └── tags/           # タグ管理画面
-│           ├── page.tsx        # タグ管理（Server Component）
-│           └── TagsClient.tsx  # タグ管理 UI（Client Component）
-└── auth-error/page.tsx     # 認証エラー画面
+│       ├── BookmarkList.tsx    # ブックマーク一覧（カテゴリグルーピング・D&D）
+│       ├── BookmarkItemContent.tsx  # ブックマーク行の内容表示
+│       ├── SortableBookmarkItem.tsx # ソート可能なブックマーク行
+│       ├── CategoryGroup.tsx       # カテゴリグループ（折りたたみ・D&D）
+│       ├── CategoryDropZone.tsx    # カテゴリ内ドロップゾーン
+│       ├── DragHandleIcon.tsx      # ドラッグハンドルアイコン
+│       ├── DeleteButton.tsx        # 削除ボタン（useActionState）
+│       ├── UndoSnackbar.tsx        # 削除 Undo スナックバー
+│       ├── useDragAndDrop.ts       # D&D ロジックカスタムフック
+│       ├── types.ts                # 共通型定義
+│       ├── actions.ts             # Server Actions
+│       └── fetchOgp.ts            # OGP 取得 Server Action
+├── auth-error/page.tsx     # 認証エラー画面
+src/components/
+├── Header.tsx              # ヘッダー（アプリ名・メール・ログアウト）
+├── BookmarkAddModal.tsx    # ブックマーク追加モーダル
+├── BookmarkEditModal.tsx   # ブックマーク編集モーダル
+├── TagManagementModal.tsx  # カテゴリ管理モーダル
+└── icons/
+    └── AppIcon.tsx         # アプリアイコン
 ```
 
 ## コンポーネント一覧
 
 | コンポーネント | ファイル | 種別 | 説明 |
 |--------------|---------|------|------|
-| `BookmarkForm` | `bookmarks/BookmarkForm.tsx` | Client Component | ブックマーク登録・編集フォーム。バリデーション・送信処理・OGP 自動取得を担当 |
-| `BookmarkList` | `bookmarks/BookmarkList.tsx` | Client Component | ブックマーク一覧。DnD リスト表示・OGP サムネイル・チェックボックス選択・削除操作・楽観的削除/Undo 管理を担当 |
-| `DeleteButton` | `bookmarks/DeleteButton.tsx` | Client Component | 削除ボタン。`useActionState` で Server Action を直接呼び出すのみ（楽観的削除/Undo は `BookmarkList` 側で実装） |
+| `BookmarkForm` | `bookmarks/BookmarkForm.tsx` | Client Component | ブックマーク登録・編集フォーム。バリデーション・送信処理・OGP 自動取得・カテゴリ選択を担当 |
+| `BookmarkList` | `bookmarks/BookmarkList.tsx` | Client Component | ブックマーク一覧。カテゴリグルーピング・検索・削除操作・楽観的削除/Undo 管理を担当 |
+| `BookmarkItemContent` | `bookmarks/BookmarkItemContent.tsx` | Component | ブックマーク行の表示内容（タイトル・URL・メモ・OGP画像・編集/削除ボタン） |
+| `SortableBookmarkItem` | `bookmarks/SortableBookmarkItem.tsx` | Component | ソート可能なブックマーク行。`useSortable` で D&D 対応 |
+| `CategoryGroup` | `bookmarks/CategoryGroup.tsx` | Client Component | カテゴリグループ。折りたたみ・D&D 対応のカテゴリヘッダーとブックマークリスト |
+| `CategoryDropZone` | `bookmarks/CategoryDropZone.tsx` | Component | カテゴリ内の空ドロップゾーン。カテゴリ間ブックマーク移動時の drop target |
+| `DragHandleIcon` | `bookmarks/DragHandleIcon.tsx` | Component | ドラッグハンドルの SVG アイコン |
+| `DeleteButton` | `bookmarks/DeleteButton.tsx` | Client Component | 削除ボタン。`useActionState` で Server Action を呼び出し |
 | `LogoutButton` | `LogoutButton.tsx` | Client Component | ログアウトボタン。Clerk 7 + React 19 対応のため `useClerk` フックで実装 |
-| `ThemeToggle` | `bookmarks/ThemeToggle.tsx` | Client Component | ダークモード切り替えボタン |
 | `UndoSnackbar` | `bookmarks/UndoSnackbar.tsx` | Client Component | 削除後 5 秒間表示する Undo スナックバー |
-| `TagInput` | `bookmarks/TagInput.tsx` | Client Component | タグの選択・新規入力コンポーネント。既存タグをドロップダウンで候補表示し、Enter で新規作成 |
-| `TagFilter` | `bookmarks/TagFilter.tsx` | Client Component | タグフィルターバー。タグをクリックして絞り込み（複数選択可）、「タグなし」フィルター・「全解除」ボタンも提供 |
-| `InlineTagEditor` | `bookmarks/InlineTagEditor.tsx` | Client Component | ブックマーク行内でのインラインタグ編集。`updateBookmarkTags()` を呼び出して保存 |
-| `BulkTagPanel` | `bookmarks/BulkTagPanel.tsx` | Client Component | 複数選択したブックマークへの一括タグ付与パネル。`bulkAddTags()` を呼び出して保存 |
-| `TagsClient` | `bookmarks/tags/TagsClient.tsx` | Client Component | タグ管理画面の UI。`createTag()` / `deleteTag()` を呼び出してタグの作成・削除を行う |
+| `Header` | `components/Header.tsx` | Client Component | ヘッダー。アプリ名・メールアドレス・ログアウトボタンを表示 |
+| `BookmarkAddModal` | `components/BookmarkAddModal.tsx` | Client Component | ブックマーク追加モーダル。`BookmarkForm` をラップ |
+| `BookmarkEditModal` | `components/BookmarkEditModal.tsx` | Client Component | ブックマーク編集モーダル。`BookmarkForm` をラップ |
+| `TagManagementModal` | `components/TagManagementModal.tsx` | Client Component | カテゴリ管理モーダル。カテゴリの作成・削除・一覧表示 |
 
 ## UI 規約
 
 - スタイリング: Tailwind CSS 4
-- カラー: blue-600 をプライマリカラーとして使用
-- フォーム要素: `rounded border border-gray-300` で統一
+- カラー: zinc-900 をプライマリカラーとして使用
+- フォーム要素: `rounded-md border border-zinc-300` で統一
 - エラー表示: `text-red-500`（フィールド）/ `bg-red-50 text-red-600`（フォーム全体）
 - ボタン:
-  - 主操作: `bg-blue-600 text-white hover:bg-blue-700`
-  - 副操作: `border border-gray-300 text-gray-600 hover:bg-gray-100`
+  - 主操作: `bg-zinc-900 text-white hover:bg-zinc-700`
+  - 副操作: `border border-zinc-300 text-zinc-700 hover:bg-zinc-50`
 - レスポンシブ: 未対応（MVP スコープ外）
