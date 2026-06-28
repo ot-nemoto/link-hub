@@ -40,7 +40,12 @@ export function CategoryGroup({
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="mb-6">
+    <div
+      ref={setNodeRef}
+      style={style}
+      id={`category-${categoryKey}`}
+      className="mb-6 scroll-mt-28"
+    >
       <div className="mb-2 flex w-full items-center gap-2 border-b border-zinc-200 pb-1.5">
         {isSortable && (
           <button
