@@ -64,7 +64,7 @@ export function useDragAndDrop({
 
       const activeData = active.data.current as { type: string; tagId: string | null } | undefined;
       const overData = over.data.current as { type: string; tagId: string | null } | undefined;
-      if (!activeData || activeData.type !== "bookmark") return;
+      if (activeData?.type !== "bookmark") return;
 
       let targetTagId: string | null | undefined;
 
