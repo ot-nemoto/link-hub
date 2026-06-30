@@ -11,6 +11,35 @@ function decodeHtmlEntities(str: string): string {
     .replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCharCode(Number.parseInt(code, 16)));
 }
 
+function normalizeCharset(charset: string): string {
+  const normalized = charset.trim().toLowerCase();
+  if (normalized === "utf8") return "utf-8";
+  if (normalized === "sjis" || normalized === "x-sjis") return "shift_jis";
+  return normalized;
+}
+
+function detectCharset(buffer: ArrayBuffer, contentType: string | null): string {
+  const headerCharset = contentType?.match(/charset=["']?([^"';\s]+)/i)?.[1];
+  if (headerCharset) return normalizeCharset(headerCharset);
+
+  // meta タグ判定用に先頭バイトを latin1 でスキャン（ASCII 範囲は文字コードに依らず一致する）
+  const head = new TextDecoder("latin1").decode(buffer.slice(0, 4096));
+  const metaCharset =
+    head.match(/<meta[^>]+charset=["']?([^"'/>\s]+)/i)?.[1] ??
+    head.match(/<meta[^>]+content=["'][^"']*charset=([^"';\s]+)/i)?.[1];
+  if (metaCharset) return normalizeCharset(metaCharset);
+
+  return "utf-8";
+}
+
+function decodeBuffer(buffer: ArrayBuffer, charset: string): string {
+  try {
+    return new TextDecoder(charset).decode(buffer);
+  } catch {
+    return new TextDecoder("utf-8").decode(buffer);
+  }
+}
+
 function isAllowedUrl(url: string): boolean {
   let parsed: URL;
   try {
@@ -42,7 +71,9 @@ export async function fetchOgp(
     });
     if (!res.ok) return { error: "取得できませんでした" };
 
-    const html = await res.text();
+    const buffer = await res.arrayBuffer();
+    const charset = detectCharset(buffer, res.headers.get("content-type"));
+    const html = decodeBuffer(buffer, charset);
 
     const getMetaContent = (property: string) =>
       html.match(
