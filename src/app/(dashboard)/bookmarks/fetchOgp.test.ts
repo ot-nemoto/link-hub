@@ -1,10 +1,21 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
+vi.mock("@/lib/auth", () => ({ getSession: vi.fn() }));
+
+import { redirect } from "next/navigation";
+import { getSession } from "@/lib/auth";
 import { fetchOgp } from "./fetchOgp";
 
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
+
+const mockGetSession = vi.mocked(getSession);
+const mockRedirect = vi.mocked(redirect).mockImplementation(() => {
+  throw new Error("NEXT_REDIRECT");
+});
+const session = { user: { id: "user_1", name: "Test", email: "test@example.com" } };
 
 const makeHtmlResponse = (html: string) =>
   new Response(html, { status: 200, headers: { "Content-Type": "text/html" } });
@@ -21,7 +32,19 @@ const EUC_JP_NIHONGO = [0xc6, 0xfc, 0xcb, 0xdc, 0xb8, 0xec];
 const SHIFT_JIS_NIHONGO = [0x93, 0xfa, 0x96, 0x7b, 0x8c, 0xea];
 
 describe("fetchOgp", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetSession.mockResolvedValue(session);
+  });
+
+  it("未認証の場合は /sign-in にリダイレクトする", async () => {
+    mockGetSession.mockResolvedValue(null);
+
+    await expect(fetchOgp("https://example.com")).rejects.toThrow("NEXT_REDIRECT");
+
+    expect(mockRedirect).toHaveBeenCalledWith("/sign-in");
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
 
   it("og:title と og:image を取得できる（property が content より前）", async () => {
     mockFetch.mockResolvedValue(

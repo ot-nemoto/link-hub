@@ -1,5 +1,9 @@
 "use server";
 
+import { redirect } from "next/navigation";
+
+import { getSession } from "@/lib/auth";
+
 function decodeHtmlEntities(str: string): string {
   return str
     .replace(/&nbsp;/g, " ")
@@ -63,6 +67,9 @@ function isAllowedUrl(url: string): boolean {
 export async function fetchOgp(
   url: string,
 ): Promise<{ title?: string; image?: string; error?: string }> {
+  const session = await getSession();
+  if (!session) redirect("/sign-in");
+
   if (!isAllowedUrl(url)) return { error: "取得できませんでした" };
   try {
     const res = await fetch(url, {
