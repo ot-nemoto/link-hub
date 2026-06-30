@@ -1,16 +1,50 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
+vi.mock("@/lib/auth", () => ({ getSession: vi.fn() }));
+
+import { redirect } from "next/navigation";
+import { getSession } from "@/lib/auth";
 import { fetchOgp } from "./fetchOgp";
 
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
 
+const mockGetSession = vi.mocked(getSession);
+const mockRedirect = vi.mocked(redirect).mockImplementation(() => {
+  throw new Error("NEXT_REDIRECT");
+});
+const session = { user: { id: "user_1", name: "Test", email: "test@example.com" } };
+
 const makeHtmlResponse = (html: string) =>
   new Response(html, { status: 200, headers: { "Content-Type": "text/html" } });
 
+const makeBytesResponse = (bytes: Uint8Array, contentType: string) =>
+  new Response(bytes, { status: 200, headers: { "Content-Type": contentType } });
+
+// "日本語" を各エンコーディングで表したバイト列（ASCII 部分は latin1 でそのまま）
+const ascii = (str: string) => Array.from(str, (c) => c.charCodeAt(0));
+const buildBytes = (before: string, jaBytes: number[], after: string) =>
+  new Uint8Array([...ascii(before), ...jaBytes, ...ascii(after)]);
+
+const EUC_JP_NIHONGO = [0xc6, 0xfc, 0xcb, 0xdc, 0xb8, 0xec];
+const SHIFT_JIS_NIHONGO = [0x93, 0xfa, 0x96, 0x7b, 0x8c, 0xea];
+
 describe("fetchOgp", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetSession.mockResolvedValue(session);
+  });
+
+  it("未認証の場合は /sign-in にリダイレクトする", async () => {
+    mockGetSession.mockResolvedValue(null);
+
+    await expect(fetchOgp("https://example.com")).rejects.toThrow("NEXT_REDIRECT");
+
+    expect(mockRedirect).toHaveBeenCalledWith("/sign-in");
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
 
   it("og:title と og:image を取得できる（property が content より前）", async () => {
     mockFetch.mockResolvedValue(
@@ -184,6 +218,71 @@ describe("fetchOgp", () => {
     const result = await fetchOgp("https://example.com");
 
     expect(result).toEqual({ title: undefined, image: undefined });
+  });
+
+  it("Content-Type ヘッダーの charset で EUC-JP のタイトルを decode する", async () => {
+    const bytes = buildBytes(
+      '<html><head><meta property="og:title" content="',
+      EUC_JP_NIHONGO,
+      '" /></head></html>',
+    );
+    mockFetch.mockResolvedValue(makeBytesResponse(bytes, "text/html; charset=EUC-JP"));
+
+    const result = await fetchOgp("https://example.com");
+
+    expect(result.title).toBe("日本語");
+  });
+
+  it("Content-Type ヘッダーの charset で Shift_JIS のタイトルを decode する", async () => {
+    const bytes = buildBytes(
+      '<html><head><meta property="og:title" content="',
+      SHIFT_JIS_NIHONGO,
+      '" /></head></html>',
+    );
+    mockFetch.mockResolvedValue(makeBytesResponse(bytes, "text/html; charset=Shift_JIS"));
+
+    const result = await fetchOgp("https://example.com");
+
+    expect(result.title).toBe("日本語");
+  });
+
+  it("<meta charset> で EUC-JP のタイトルを decode する（ヘッダーに charset なし）", async () => {
+    const bytes = buildBytes(
+      '<html><head><meta charset="euc-jp"><meta property="og:title" content="',
+      EUC_JP_NIHONGO,
+      '" /></head></html>',
+    );
+    mockFetch.mockResolvedValue(makeBytesResponse(bytes, "text/html"));
+
+    const result = await fetchOgp("https://example.com");
+
+    expect(result.title).toBe("日本語");
+  });
+
+  it("<meta http-equiv=Content-Type> で Shift_JIS のタイトルを decode する", async () => {
+    const bytes = buildBytes(
+      '<html><head><meta http-equiv="Content-Type" content="text/html; charset=Shift_JIS"><meta property="og:title" content="',
+      SHIFT_JIS_NIHONGO,
+      '" /></head></html>',
+    );
+    mockFetch.mockResolvedValue(makeBytesResponse(bytes, "text/html"));
+
+    const result = await fetchOgp("https://example.com");
+
+    expect(result.title).toBe("日本語");
+  });
+
+  it("charset が判定できない場合は UTF-8 として decode する", async () => {
+    const bytes = new Uint8Array(
+      new TextEncoder().encode(
+        '<html><head><meta property="og:title" content="日本語タイトル" /></head></html>',
+      ),
+    );
+    mockFetch.mockResolvedValue(makeBytesResponse(bytes, "text/html"));
+
+    const result = await fetchOgp("https://example.com");
+
+    expect(result.title).toBe("日本語タイトル");
   });
 
   it("プライベートIPは error を返す（SSRF対策）", async () => {
