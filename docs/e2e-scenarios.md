@@ -53,7 +53,8 @@
 | 8 | `bonjiri@example.com` | オーバーレイ（暗い背景部分）をクリックする | モーダル閉じ（オーバーレイ） | モーダルが閉じる |
 | 9 | `bonjiri@example.com` | × ボタンをクリックする | モーダル閉じ（×ボタン） | モーダルが閉じる |
 | 10 | `tebasaki@example.com` | モーダル内で URL を入力し、URL 欄からフォーカスを外す | OGP 自動取得 | タイトルが自動入力される |
-| 11 | `bonjiri@example.com` | `/bookmarks/new` に直接アクセスする | 旧ページ廃止 | 404 になる |
+| 11 | `tebasaki@example.com` | モーダル内で EUC-JP / Shift_JIS で配信されるサイトの URL を入力し、URL 欄からフォーカスを外す | OGP 自動取得（文字コード判定） | タイトルが文字化けせず正しい日本語で自動入力される |
+| 12 | `bonjiri@example.com` | `/bookmarks/new` に直接アクセスする | 旧ページ廃止 | 404 になる |
 
 ---
 
