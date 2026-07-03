@@ -133,10 +133,25 @@ export function BookmarkList({
   );
 
   const handleRestore = useCallback(
-    (bm: Bookmark) => {
+    async (bm: Bookmark) => {
       setDeletedItems((prev) => prev.filter((b) => b.id !== bm.id));
       setItems((prev) => [...prev, bm]);
-      void restoreBookmark(bm.id).then(() => router.refresh());
+
+      const rollback = () => {
+        setItems((prev) => prev.filter((b) => b.id !== bm.id));
+        setDeletedItems((prev) => [bm, ...prev]);
+      };
+
+      try {
+        const result = await restoreBookmark(bm.id);
+        if (result?.error) {
+          rollback();
+          return;
+        }
+        router.refresh();
+      } catch {
+        rollback();
+      }
     },
     [router],
   );
