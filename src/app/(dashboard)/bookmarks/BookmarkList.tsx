@@ -156,7 +156,7 @@ export function BookmarkList({
     [router],
   );
 
-  const handleEmptyTrash = useCallback(() => {
+  const handleEmptyTrash = useCallback(async () => {
     if (
       !window.confirm(
         "ゴミ箱内のブックマークをすべて完全に削除します。この操作は取り消せません。よろしいですか？",
@@ -164,9 +164,20 @@ export function BookmarkList({
     ) {
       return;
     }
+    const prevDeleted = deletedItems;
     setDeletedItems([]);
-    void emptyTrash().then(() => router.refresh());
-  }, [router]);
+
+    try {
+      const result = await emptyTrash();
+      if (result?.error) {
+        setDeletedItems(prevDeleted);
+        return;
+      }
+      router.refresh();
+    } catch {
+      setDeletedItems(prevDeleted);
+    }
+  }, [router, deletedItems]);
 
   const {
     sensors,
