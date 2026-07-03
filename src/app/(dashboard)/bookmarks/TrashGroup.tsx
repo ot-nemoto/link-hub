@@ -9,11 +9,13 @@ export const TRASH_COLLAPSE_KEY = "__trash__";
 export function TrashGroup({
   bookmarks,
   initialCollapsed,
+  processingIds,
   onRestore,
   onEmptyTrash,
 }: {
   bookmarks: Bookmark[];
   initialCollapsed: boolean;
+  processingIds: Set<string>;
   onRestore: (bm: Bookmark) => void;
   onEmptyTrash: () => void;
 }) {
@@ -92,7 +94,8 @@ export function TrashGroup({
               <button
                 type="button"
                 onClick={() => onRestore(bm)}
-                className="shrink-0 cursor-pointer rounded bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-200"
+                disabled={processingIds.has(bm.id)}
+                className="shrink-0 cursor-pointer rounded bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 復元
               </button>

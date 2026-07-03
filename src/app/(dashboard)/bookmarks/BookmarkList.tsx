@@ -45,6 +45,7 @@ export function BookmarkList({
   const [searchQuery, setSearchQuery] = useState("");
   const [items, setItems] = useState<Bookmark[]>(initial);
   const [deletedItems, setDeletedItems] = useState<Bookmark[]>(deletedBookmarks);
+  const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
   const [allTagsState, setAllTagsState] = useState<TagItem[]>(allTags);
   const [tagsWithCountState, setTagsWithCountState] = useState<TagWithCount[]>(tagsWithCount);
   const [isTagModalOpen, setIsTagModalOpen] = useState(false);
@@ -107,9 +108,21 @@ export function BookmarkList({
     return groups;
   })();
 
+  const addProcessing = useCallback((id: string) => {
+    setProcessingIds((prev) => new Set(prev).add(id));
+  }, []);
+  const removeProcessing = useCallback((id: string) => {
+    setProcessingIds((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+  }, []);
+
   const handleDelete = useCallback(
     async (bm: Bookmark) => {
       // ソフトデリート: アクティブ一覧から外し、楽観的にゴミ箱の先頭へ移す
+      addProcessing(bm.id);
       setItems((prev) => prev.filter((b) => b.id !== bm.id));
       setDeletedItems((prev) => [bm, ...prev]);
 
@@ -127,13 +140,18 @@ export function BookmarkList({
         router.refresh();
       } catch {
         rollback();
+      } finally {
+        removeProcessing(bm.id);
       }
     },
-    [router],
+    [router, addProcessing, removeProcessing],
   );
 
   const handleRestore = useCallback(
     async (bm: Bookmark) => {
+      // 削除リクエスト処理中の bm は復元不可（TrashGroup 側でボタンを disable）
+      if (processingIds.has(bm.id)) return;
+      addProcessing(bm.id);
       setDeletedItems((prev) => prev.filter((b) => b.id !== bm.id));
       setItems((prev) => [...prev, bm]);
 
@@ -151,9 +169,11 @@ export function BookmarkList({
         router.refresh();
       } catch {
         rollback();
+      } finally {
+        removeProcessing(bm.id);
       }
     },
-    [router],
+    [router, processingIds, addProcessing, removeProcessing],
   );
 
   const handleEmptyTrash = useCallback(async () => {
@@ -434,6 +454,7 @@ export function BookmarkList({
         <TrashGroup
           bookmarks={deletedItems}
           initialCollapsed={initialCollapsed[TRASH_COLLAPSE_KEY] ?? true}
+          processingIds={processingIds}
           onRestore={handleRestore}
           onEmptyTrash={handleEmptyTrash}
         />
