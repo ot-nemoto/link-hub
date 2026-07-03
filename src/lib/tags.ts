@@ -64,16 +64,17 @@ export async function updateTag(
   id: string,
   name: string,
 ): Promise<{ tag?: { id: string; name: string }; conflict?: boolean; error?: string }> {
-  if (!name || name.length > 50) return { error: "タグ名が不正です" };
+  const trimmed = name.trim();
+  if (!trimmed || trimmed.length > 50) return { error: "タグ名が不正です" };
 
   const tag = await prisma.tag.findUnique({ where: { id } });
   if (!tag) return { error: "タグが見つかりません" };
   if (tag.userId !== userId) return { error: "権限がありません" };
 
-  if (tag.name === name) return { tag: { id: tag.id, name: tag.name } };
+  if (tag.name === trimmed) return { tag: { id: tag.id, name: tag.name } };
 
   const existing = await prisma.tag.findUnique({
-    where: { userId_name: { userId, name } },
+    where: { userId_name: { userId, name: trimmed } },
   });
   if (existing && existing.id !== id) {
     return { conflict: true, tag: { id: existing.id, name: existing.name } };
@@ -82,7 +83,7 @@ export async function updateTag(
   try {
     const updated = await prisma.tag.update({
       where: { id },
-      data: { name },
+      data: { name: trimmed },
       select: { id: true, name: true },
     });
     return { tag: updated };
@@ -90,7 +91,7 @@ export async function updateTag(
     // findUnique → update の間に別リクエストが同名タグを作成した場合（P2002）は conflict として扱う
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
       const conflicted = await prisma.tag.findUnique({
-        where: { userId_name: { userId, name } },
+        where: { userId_name: { userId, name: trimmed } },
         select: { id: true, name: true },
       });
       if (conflicted) return { conflict: true, tag: { id: conflicted.id, name: conflicted.name } };

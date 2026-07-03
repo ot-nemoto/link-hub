@@ -141,6 +141,29 @@ describe("updateTag", () => {
     expect(mockTagUpdate).not.toHaveBeenCalled();
   });
 
+  it("空白のみの場合は error を返す", async () => {
+    const result = await updateTag(userId, "tag_1", "   ");
+
+    expect(result).toEqual({ error: "タグ名が不正です" });
+    expect(mockTagUpdate).not.toHaveBeenCalled();
+  });
+
+  it("前後の空白を trim して更新する", async () => {
+    mockTagFindUnique
+      .mockResolvedValueOnce(tag as never) // 対象タグ取得
+      .mockResolvedValueOnce(null); // 重複チェック
+    mockTagUpdate.mockResolvedValue({ id: "tag_1", name: "Vue" } as never);
+
+    const result = await updateTag(userId, "tag_1", "  Vue  ");
+
+    expect(result).toEqual({ tag: { id: "tag_1", name: "Vue" } });
+    expect(mockTagUpdate).toHaveBeenCalledWith({
+      where: { id: "tag_1" },
+      data: { name: "Vue" },
+      select: { id: true, name: true },
+    });
+  });
+
   it("名前が51文字以上の場合は error を返す", async () => {
     const result = await updateTag(userId, "tag_1", "a".repeat(51));
 
