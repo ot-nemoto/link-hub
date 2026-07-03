@@ -87,6 +87,9 @@ flowchart TD
 - 各カテゴリに紐づくブックマーク件数を表示する（例: `3件`）
 - カテゴリ名を入力して「作成」で新規カテゴリを作成できる
 - 同一ユーザー内で同名カテゴリは作成できない（重複時はエラー「同名のカテゴリが既に存在します」）
+- 各カテゴリの「編集」ボタンで名前をインライン編集できる（入力欄＋「保存」「キャンセル」に切り替わる）
+  - Enter で保存、Escape でキャンセル（モーダルは閉じない）
+  - 空・50文字超は保存不可。別カテゴリと同名への変更は不可（エラー「同名のカテゴリが既に存在します」）
 - 削除ボタンで対象カテゴリを削除できる（関連するブックマークの tagId は SET NULL → 未分類になる）
 - カテゴリが 0 件の場合は「カテゴリがありません」を表示
 - ESC キー・オーバーレイクリック・× ボタンで閉じる
@@ -123,10 +126,11 @@ flowchart TD
 
 | 状態 | 条件 | 表示内容 |
 |------|------|---------|
-| Normal | カテゴリが 1 件以上 | カテゴリ一覧（名前・ブックマーク件数・削除ボタン）を表示 |
+| Normal | カテゴリが 1 件以上 | カテゴリ一覧（名前・ブックマーク件数・編集/削除ボタン）を表示 |
 | Empty | カテゴリが 0 件 | 「カテゴリがありません」のメッセージを表示 |
 | Creating | カテゴリ作成中（送信中） | 「作成」ボタンを `disabled`・入力欄も `disabled` |
-| Error | 作成・削除失敗 | カテゴリ一覧上部にエラーメッセージを表示 |
+| Editing | 「編集」クリック中 | 対象行が入力欄＋「保存」「キャンセル」に切り替わる（保存中は `disabled`） |
+| Error | 作成・更新・削除失敗 | カテゴリ一覧上部にエラーメッセージを表示 |
 
 ### ブックマーク追加・編集モーダル
 
@@ -194,7 +198,7 @@ src/components/
 | `Header` | `components/Header.tsx` | Client Component | ヘッダー。アプリ名・メールアドレス・ログアウトボタンを表示 |
 | `BookmarkAddModal` | `components/BookmarkAddModal.tsx` | Client Component | ブックマーク追加モーダル。`BookmarkForm` をラップ |
 | `BookmarkEditModal` | `components/BookmarkEditModal.tsx` | Client Component | ブックマーク編集モーダル。`BookmarkForm` をラップ |
-| `TagManagementModal` | `components/TagManagementModal.tsx` | Client Component | カテゴリ管理モーダル。カテゴリの作成・削除・一覧表示 |
+| `TagManagementModal` | `components/TagManagementModal.tsx` | Client Component | カテゴリ管理モーダル。カテゴリの作成・編集・削除・一覧表示 |
 
 ## UI 規約
 

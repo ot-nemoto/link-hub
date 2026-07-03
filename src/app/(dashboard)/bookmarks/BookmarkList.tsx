@@ -16,6 +16,7 @@ import {
   deleteBookmarks,
   deleteTag,
   updateBookmark,
+  updateTag,
 } from "./actions";
 import { BookmarkItemContent } from "./BookmarkItemContent";
 import { CategoryGroup } from "./CategoryGroup";
@@ -422,6 +423,7 @@ export function BookmarkList({
           initialTags={tagsWithCountState}
           onClose={handleTagModalClose}
           onCreateTag={createTag}
+          onUpdateTag={updateTag}
           onDeleteTag={deleteTag}
         />
       )}
