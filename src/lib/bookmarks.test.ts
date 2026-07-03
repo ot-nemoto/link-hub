@@ -54,6 +54,7 @@ const bookmark = {
   title: "Example",
   memo: null,
   ogImage: null,
+  hideOgImage: false,
   sortOrder: 0,
   tagId: null,
   createdAt: new Date(),
@@ -190,6 +191,29 @@ describe("updateBookmark", () => {
         data: expect.not.objectContaining({ ogImage: expect.anything() }),
       }),
     );
+  });
+
+  it("hideOgImage が指定された場合は update データに含める", async () => {
+    mockBookmarkFindUnique.mockResolvedValue(bookmark as never);
+    mockBookmarkUpdate.mockResolvedValue(bookmark);
+
+    await updateBookmark(userId, "bm_1", { ...bookmarkData, hideOgImage: true });
+
+    expect(mockBookmarkUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ hideOgImage: true }),
+      }),
+    );
+  });
+
+  it("hideOgImage が undefined の場合は update データに含めない（既存値を保持）", async () => {
+    mockBookmarkFindUnique.mockResolvedValue(bookmark as never);
+    mockBookmarkUpdate.mockResolvedValue(bookmark);
+
+    await updateBookmark(userId, "bm_1", { ...bookmarkData, hideOgImage: undefined });
+
+    const callArg = mockBookmarkUpdate.mock.calls[0][0];
+    expect(callArg.data).not.toHaveProperty("hideOgImage");
   });
 });
 

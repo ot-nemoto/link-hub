@@ -183,6 +183,7 @@ export function BookmarkList({
       memo: string;
       ogImage?: string;
       tagId?: string | null;
+      hideOgImage?: boolean;
     }) => {
       const id = editingBookmarkId;
       if (id) {
@@ -198,6 +199,7 @@ export function BookmarkList({
                   title: updated.title,
                   memo: updated.memo || null,
                   ogImage: updated.ogImage ?? bm.ogImage,
+                  hideOgImage: updated.hideOgImage ?? bm.hideOgImage,
                   tagId: updated.tagId ?? null,
                   tag: newTag,
                 }
@@ -450,6 +452,7 @@ export function BookmarkList({
                 memo: bm.memo ?? "",
                 ogImage: bm.ogImage ?? undefined,
                 tagId: bm.tagId,
+                hideOgImage: bm.hideOgImage,
               }}
               action={updateBookmark.bind(null, editingBookmarkId)}
               onClose={() => setEditingBookmarkId(null)}

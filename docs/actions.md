@@ -47,7 +47,7 @@
 
 ブックマークを更新する。
 
-**引数:** `id: string`, `{ url, title, memo, ogImage?, tagId?: string | null }`
+**引数:** `id: string`, `{ url, title, memo, ogImage?, tagId?: string | null, hideOgImage?: boolean }`
 
 **戻り値:** `{}` | `{ error: string }`
 
@@ -56,6 +56,8 @@
 | 未認証 | `/sign-in` へ redirect |
 | `"ブックマークが見つかりません"` | 指定 ID が存在しない |
 | `"権限がありません"` | 他ユーザーのブックマーク |
+
+> `ogImage` / `hideOgImage` / `tagId` は `undefined` の場合は更新データに含めず既存値を保持する。`hideOgImage` は OGP 画像を一覧で非表示にするフラグ（画像 URL 自体は保持）。
 
 ---
 
