@@ -9,6 +9,7 @@ function bm(id: string, url: string): Bookmark {
     title: id,
     memo: null,
     ogImage: null,
+    hideOgImage: false,
     sortOrder: 0,
     tag: null,
     tagId: null,

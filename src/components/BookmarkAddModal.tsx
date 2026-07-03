@@ -13,6 +13,7 @@ type Props = {
     memo: string;
     ogImage?: string;
     tagId?: string | null;
+    hideOgImage?: boolean;
   }) => Promise<{ error?: string }>;
   onClose: () => void;
   onSuccess: (data: {
@@ -21,6 +22,7 @@ type Props = {
     memo: string;
     ogImage?: string;
     tagId?: string | null;
+    hideOgImage?: boolean;
   }) => void;
 };
 

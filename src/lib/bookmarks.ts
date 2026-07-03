@@ -6,6 +6,7 @@ export type BookmarkData = {
   memo: string;
   ogImage?: string;
   tagId?: string | null;
+  hideOgImage?: boolean;
 };
 
 export async function getBookmarks(userId: string, query?: string) {
@@ -92,6 +93,7 @@ export async function updateBookmark(
       title: data.title,
       memo: data.memo || null,
       ...(data.ogImage !== undefined ? { ogImage: data.ogImage ?? null } : {}),
+      ...(data.hideOgImage !== undefined ? { hideOgImage: data.hideOgImage } : {}),
       ...(validTagId !== undefined ? { tagId: validTagId } : {}),
     },
   });

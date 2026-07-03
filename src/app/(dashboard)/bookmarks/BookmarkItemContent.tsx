@@ -25,7 +25,7 @@ export function BookmarkItemContent({
         <p className="truncate text-xs text-zinc-400">{bm.url}</p>
         {bm.memo && <p className="truncate text-sm text-zinc-600">{bm.memo}</p>}
       </div>
-      {bm.ogImage && (
+      {bm.ogImage && !bm.hideOgImage && (
         <img
           src={bm.ogImage}
           alt=""
