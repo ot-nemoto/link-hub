@@ -11,6 +11,7 @@
 | `deleteBookmark(id, prevState)` | ブックマーク削除 | `src/app/(dashboard)/bookmarks/actions.ts` |
 | `deleteBookmarks(ids)` | ブックマーク一括削除 | `src/app/(dashboard)/bookmarks/actions.ts` |
 | `createTag(name)` | カテゴリ新規作成 | `src/app/(dashboard)/bookmarks/actions.ts` |
+| `updateTag(id, name)` | カテゴリ名の更新 | `src/app/(dashboard)/bookmarks/actions.ts` |
 | `reorderTags(ids, options?)` | カテゴリの並び順更新 | `src/app/(dashboard)/bookmarks/actions.ts` |
 | `deleteTag(id)` | カテゴリ削除 | `src/app/(dashboard)/bookmarks/actions.ts` |
 | `fetchOgp(url)` | URL から OGP 情報を取得 | `src/app/(dashboard)/bookmarks/fetchOgp.ts` |
@@ -138,6 +139,27 @@
 | `{ conflict: true, tag }` | 同名カテゴリが既に存在する（既存カテゴリを返す） |
 | `{ error: "タグ名が不正です" }` | 名前が空、または 50 文字超 |
 | `{ error: "タグの作成に失敗しました" }` | P2002 以外の予期しない DB エラー |
+
+**未認証時:** `/sign-in` へ redirect
+
+---
+
+### `updateTag(id, name)`
+
+カテゴリ名を更新する。同一ユーザー内で name がユニーク。
+
+**引数:** `id: string`, `name: string`
+
+**戻り値:** `{ tag: { id, name } }` | `{ conflict: true, tag: { id, name } }` | `{ error: string }`
+
+| 戻り値 | 条件 |
+|--------|------|
+| `{ tag }` | 正常更新（名前が変わらない場合も現在のカテゴリを返す） |
+| `{ conflict: true, tag }` | 別カテゴリが同名で既に存在する（既存カテゴリを返す） |
+| `{ error: "タグ名が不正です" }` | 名前が空、または 50 文字超 |
+| `{ error: "タグが見つかりません" }` | 指定 ID が存在しない |
+| `{ error: "権限がありません" }` | 他ユーザーのカテゴリ |
+| `{ error: "タグの更新に失敗しました" }` | P2002 以外の予期しない DB エラー |
 
 **未認証時:** `/sign-in` へ redirect
 

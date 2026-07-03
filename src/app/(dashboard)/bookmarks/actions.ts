@@ -17,6 +17,7 @@ import {
   createTag as libCreateTag,
   deleteTag as libDeleteTag,
   reorderTags as libReorderTags,
+  updateTag as libUpdateTag,
 } from "@/lib/tags";
 
 export async function createBookmark(data: BookmarkData): Promise<{ error?: string }> {
@@ -70,6 +71,18 @@ export async function createTag(
   if (!session) redirect("/sign-in");
 
   const result = await libCreateTag(session.user.id, name);
+  if (result.tag && !result.conflict) revalidatePath("/bookmarks");
+  return result;
+}
+
+export async function updateTag(
+  id: string,
+  name: string,
+): Promise<{ tag?: { id: string; name: string }; conflict?: boolean; error?: string }> {
+  const session = await getSession();
+  if (!session) redirect("/sign-in");
+
+  const result = await libUpdateTag(session.user.id, id, name);
   if (result.tag && !result.conflict) revalidatePath("/bookmarks");
   return result;
 }

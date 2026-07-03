@@ -3,7 +3,7 @@
 import { Prisma } from "@prisma/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createTag, deleteTag, getTags, getTagsWithCount, reorderTags } from "./tags";
+import { createTag, deleteTag, getTags, getTagsWithCount, reorderTags, updateTag } from "./tags";
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
@@ -27,6 +27,7 @@ import { prisma } from "@/lib/prisma";
 const mockTagFindUnique = vi.mocked(prisma.tag.findUnique);
 const mockTagFindMany = vi.mocked(prisma.tag.findMany);
 const mockTagCreate = vi.mocked(prisma.tag.create);
+const mockTagUpdate = vi.mocked(prisma.tag.update);
 const mockTagDelete = vi.mocked(prisma.tag.delete);
 const mockTagAggregate = vi.mocked(prisma.tag.aggregate);
 const mockTagCount = vi.mocked(prisma.tag.count);
@@ -111,6 +112,94 @@ describe("createTag", () => {
     const result = await createTag(userId, "React");
 
     expect(result).toEqual({ conflict: true, tag: { id: "tag_1", name: "React" } });
+  });
+});
+
+describe("updateTag", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("正常系: タグ名を更新して { tag } を返す", async () => {
+    mockTagFindUnique
+      .mockResolvedValueOnce(tag as never) // 対象タグ取得
+      .mockResolvedValueOnce(null); // 重複チェック
+    mockTagUpdate.mockResolvedValue({ id: "tag_1", name: "Vue" } as never);
+
+    const result = await updateTag(userId, "tag_1", "Vue");
+
+    expect(result).toEqual({ tag: { id: "tag_1", name: "Vue" } });
+    expect(mockTagUpdate).toHaveBeenCalledWith({
+      where: { id: "tag_1" },
+      data: { name: "Vue" },
+      select: { id: true, name: true },
+    });
+  });
+
+  it("名前が空の場合は error を返す", async () => {
+    const result = await updateTag(userId, "tag_1", "");
+
+    expect(result).toEqual({ error: "タグ名が不正です" });
+    expect(mockTagUpdate).not.toHaveBeenCalled();
+  });
+
+  it("名前が51文字以上の場合は error を返す", async () => {
+    const result = await updateTag(userId, "tag_1", "a".repeat(51));
+
+    expect(result).toEqual({ error: "タグ名が不正です" });
+    expect(mockTagUpdate).not.toHaveBeenCalled();
+  });
+
+  it("存在しないタグは error を返す", async () => {
+    mockTagFindUnique.mockResolvedValue(null);
+
+    const result = await updateTag(userId, "tag_not_exist", "Vue");
+
+    expect(result).toEqual({ error: "タグが見つかりません" });
+    expect(mockTagUpdate).not.toHaveBeenCalled();
+  });
+
+  it("他ユーザーのタグは error を返す", async () => {
+    mockTagFindUnique.mockResolvedValue(otherTag as never);
+
+    const result = await updateTag(userId, "tag_1", "Vue");
+
+    expect(result).toEqual({ error: "権限がありません" });
+    expect(mockTagUpdate).not.toHaveBeenCalled();
+  });
+
+  it("同名（変更なし）の場合は更新せず { tag } を返す", async () => {
+    mockTagFindUnique.mockResolvedValue(tag as never);
+
+    const result = await updateTag(userId, "tag_1", "React");
+
+    expect(result).toEqual({ tag: { id: "tag_1", name: "React" } });
+    expect(mockTagUpdate).not.toHaveBeenCalled();
+  });
+
+  it("別タグと同名に変更しようとすると { conflict: true, tag } を返す", async () => {
+    mockTagFindUnique
+      .mockResolvedValueOnce(tag as never) // 対象タグ取得
+      .mockResolvedValueOnce({ id: "tag_2", name: "Vue" } as never); // 別タグが同名で存在
+
+    const result = await updateTag(userId, "tag_1", "Vue");
+
+    expect(result).toEqual({ conflict: true, tag: { id: "tag_2", name: "Vue" } });
+    expect(mockTagUpdate).not.toHaveBeenCalled();
+  });
+
+  it("P2002 レース条件の場合は { conflict: true, tag } を返す", async () => {
+    mockTagFindUnique
+      .mockResolvedValueOnce(tag as never) // 対象タグ取得
+      .mockResolvedValueOnce(null) // 重複チェックは通過
+      .mockResolvedValueOnce({ id: "tag_2", name: "Vue" } as never); // update 後の再取得
+    const p2002 = new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
+      code: "P2002",
+      clientVersion: "7.5.0",
+    });
+    mockTagUpdate.mockRejectedValue(p2002);
+
+    const result = await updateTag(userId, "tag_1", "Vue");
+
+    expect(result).toEqual({ conflict: true, tag: { id: "tag_2", name: "Vue" } });
   });
 });
 

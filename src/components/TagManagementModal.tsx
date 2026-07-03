@@ -5,22 +5,33 @@ import { getTagColor } from "@/lib/tag-colors";
 
 type Tag = { id: string; name: string; bookmarkCount: number };
 
+type TagResult = { tag?: { id: string; name: string }; conflict?: boolean; error?: string };
+
 type Props = {
   initialTags: Tag[];
   onClose: () => void;
-  onCreateTag: (
-    name: string,
-  ) => Promise<{ tag?: { id: string; name: string }; conflict?: boolean; error?: string }>;
+  onCreateTag: (name: string) => Promise<TagResult>;
+  onUpdateTag: (id: string, name: string) => Promise<TagResult>;
   onDeleteTag: (id: string) => Promise<{ error?: string }>;
 };
 
-export function TagManagementModal({ initialTags, onClose, onCreateTag, onDeleteTag }: Props) {
+export function TagManagementModal({
+  initialTags,
+  onClose,
+  onCreateTag,
+  onUpdateTag,
+  onDeleteTag,
+}: Props) {
   const [tags, setTags] = useState<Tag[]>(initialTags);
   const [inputValue, setInputValue] = useState("");
   const [creating, setCreating] = useState(false);
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
+  const [savingId, setSavingId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const editInputRef = useRef<HTMLInputElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -34,6 +45,10 @@ export function TagManagementModal({ initialTags, onClose, onCreateTag, onDelete
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  useEffect(() => {
+    if (editingId) editInputRef.current?.focus();
+  }, [editingId]);
 
   function handleOverlayClick(e: React.MouseEvent) {
     if (e.target === overlayRef.current) onClose();
@@ -66,6 +81,45 @@ export function TagManagementModal({ initialTags, onClose, onCreateTag, onDelete
     } finally {
       setCreating(false);
       inputRef.current?.focus();
+    }
+  }
+
+  function handleStartEdit(tag: Tag) {
+    setEditingId(tag.id);
+    setEditValue(tag.name);
+    setError("");
+  }
+
+  function handleCancelEdit() {
+    setEditingId(null);
+    setEditValue("");
+    setError("");
+  }
+
+  async function handleSaveEdit(id: string) {
+    const name = editValue.trim();
+    if (!name) return;
+
+    setSavingId(id);
+    setError("");
+    try {
+      const result = await onUpdateTag(id, name);
+      if (result.conflict) {
+        setError("同名のカテゴリが既に存在します");
+        return;
+      }
+      if (result.error || !result.tag) {
+        setError(result.error ?? "カテゴリの更新に失敗しました");
+        return;
+      }
+      const updated = result.tag;
+      setTags((prev) => prev.map((t) => (t.id === id ? { ...t, name: updated.name } : t)));
+      setEditingId(null);
+      setEditValue("");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "カテゴリの更新に失敗しました");
+    } finally {
+      setSavingId(null);
     }
   }
 
@@ -163,27 +217,84 @@ export function TagManagementModal({ initialTags, onClose, onCreateTag, onDelete
           <ul className="max-h-80 overflow-y-auto divide-y divide-zinc-100 rounded-lg border border-zinc-200">
             {tags.map((tag) => {
               const color = getTagColor(tag.name);
+              const isEditing = editingId === tag.id;
+              const isSaving = savingId === tag.id;
               return (
                 <li
                   key={tag.id}
-                  className="flex items-center justify-between bg-white px-4 py-3 hover:bg-zinc-50"
+                  className="flex items-center justify-between gap-2 bg-white px-4 py-3 hover:bg-zinc-50"
                 >
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${color.bg} ${color.text}`}
-                    >
-                      {tag.name}
-                    </span>
-                    <span className="text-xs text-zinc-400">{tag.bookmarkCount}件</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(tag.id)}
-                    disabled={deletingIds.has(tag.id)}
-                    className="cursor-pointer rounded border border-red-300 px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
-                  >
-                    {deletingIds.has(tag.id) ? "削除中..." : "削除"}
-                  </button>
+                  {isEditing ? (
+                    <>
+                      <input
+                        ref={editInputRef}
+                        type="text"
+                        value={editValue}
+                        onChange={(e) => {
+                          setEditValue(e.target.value);
+                          setError("");
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleSaveEdit(tag.id);
+                          } else if (e.key === "Escape") {
+                            e.stopPropagation();
+                            handleCancelEdit();
+                          }
+                        }}
+                        maxLength={50}
+                        disabled={isSaving}
+                        className="min-w-0 flex-1 rounded-md border border-zinc-300 px-3 py-1 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 disabled:opacity-50"
+                      />
+                      <div className="flex shrink-0 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleSaveEdit(tag.id)}
+                          disabled={isSaving || editValue.trim().length === 0}
+                          className="cursor-pointer rounded-md bg-zinc-900 px-3 py-1 text-xs font-medium text-white hover:bg-zinc-700 disabled:opacity-50"
+                        >
+                          {isSaving ? "保存中..." : "保存"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleCancelEdit}
+                          disabled={isSaving}
+                          className="cursor-pointer rounded border border-zinc-300 px-3 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
+                        >
+                          キャンセル
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span
+                          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${color.bg} ${color.text}`}
+                        >
+                          {tag.name}
+                        </span>
+                        <span className="text-xs text-zinc-400">{tag.bookmarkCount}件</span>
+                      </div>
+                      <div className="flex shrink-0 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleStartEdit(tag)}
+                          className="cursor-pointer rounded border border-zinc-300 px-3 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-50"
+                        >
+                          編集
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(tag.id)}
+                          disabled={deletingIds.has(tag.id)}
+                          className="cursor-pointer rounded border border-red-300 px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+                        >
+                          {deletingIds.has(tag.id) ? "削除中..." : "削除"}
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </li>
               );
             })}

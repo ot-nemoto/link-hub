@@ -11,6 +11,7 @@ import {
   reorderBookmarks,
   reorderTags,
   updateBookmark,
+  updateTag,
 } from "./actions";
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
@@ -29,6 +30,7 @@ vi.mock("@/lib/bookmarks", () => ({
 
 vi.mock("@/lib/tags", () => ({
   createTag: vi.fn(),
+  updateTag: vi.fn(),
   deleteTag: vi.fn(),
   reorderTags: vi.fn(),
 }));
@@ -53,6 +55,7 @@ const mockLibReorderBookmarks = vi.mocked(libBookmarks.reorderBookmarks);
 const mockLibDeleteBookmark = vi.mocked(libBookmarks.deleteBookmark);
 const mockLibDeleteBookmarks = vi.mocked(libBookmarks.deleteBookmarks);
 const mockLibCreateTag = vi.mocked(libTags.createTag);
+const mockLibUpdateTag = vi.mocked(libTags.updateTag);
 const mockLibDeleteTag = vi.mocked(libTags.deleteTag);
 const mockLibReorderTags = vi.mocked(libTags.reorderTags);
 
@@ -229,6 +232,39 @@ describe("createTag", () => {
     await expect(createTag("React")).rejects.toThrow("NEXT_REDIRECT");
     expect(mockRedirect).toHaveBeenCalledWith("/sign-in");
     expect(mockLibCreateTag).not.toHaveBeenCalled();
+  });
+});
+
+describe("updateTag", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("正常系: lib を呼び revalidatePath して結果を返す", async () => {
+    mockGetSession.mockResolvedValue(session);
+    mockLibUpdateTag.mockResolvedValue({ tag: { id: "tag_1", name: "Vue" } });
+
+    const result = await updateTag("tag_1", "Vue");
+
+    expect(mockLibUpdateTag).toHaveBeenCalledWith("user_1", "tag_1", "Vue");
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/bookmarks");
+    expect(result).toEqual({ tag: { id: "tag_1", name: "Vue" } });
+  });
+
+  it("conflict の場合は revalidatePath を呼ばない", async () => {
+    mockGetSession.mockResolvedValue(session);
+    mockLibUpdateTag.mockResolvedValue({ conflict: true, tag: { id: "tag_2", name: "Vue" } });
+
+    const result = await updateTag("tag_1", "Vue");
+
+    expect(mockRevalidatePath).not.toHaveBeenCalled();
+    expect(result).toEqual({ conflict: true, tag: { id: "tag_2", name: "Vue" } });
+  });
+
+  it("未認証の場合 redirect を呼ぶ", async () => {
+    mockGetSession.mockResolvedValue(null);
+
+    await expect(updateTag("tag_1", "Vue")).rejects.toThrow("NEXT_REDIRECT");
+    expect(mockRedirect).toHaveBeenCalledWith("/sign-in");
+    expect(mockLibUpdateTag).not.toHaveBeenCalled();
   });
 });
 

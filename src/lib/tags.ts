@@ -59,6 +59,46 @@ export async function createTag(
   }
 }
 
+export async function updateTag(
+  userId: string,
+  id: string,
+  name: string,
+): Promise<{ tag?: { id: string; name: string }; conflict?: boolean; error?: string }> {
+  if (!name || name.length > 50) return { error: "タグ名が不正です" };
+
+  const tag = await prisma.tag.findUnique({ where: { id } });
+  if (!tag) return { error: "タグが見つかりません" };
+  if (tag.userId !== userId) return { error: "権限がありません" };
+
+  if (tag.name === name) return { tag: { id: tag.id, name: tag.name } };
+
+  const existing = await prisma.tag.findUnique({
+    where: { userId_name: { userId, name } },
+  });
+  if (existing && existing.id !== id) {
+    return { conflict: true, tag: { id: existing.id, name: existing.name } };
+  }
+
+  try {
+    const updated = await prisma.tag.update({
+      where: { id },
+      data: { name },
+      select: { id: true, name: true },
+    });
+    return { tag: updated };
+  } catch (e) {
+    // findUnique → update の間に別リクエストが同名タグを作成した場合（P2002）は conflict として扱う
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+      const conflicted = await prisma.tag.findUnique({
+        where: { userId_name: { userId, name } },
+        select: { id: true, name: true },
+      });
+      if (conflicted) return { conflict: true, tag: { id: conflicted.id, name: conflicted.name } };
+    }
+    return { error: "タグの更新に失敗しました" };
+  }
+}
+
 export async function reorderTags(userId: string, ids: string[]): Promise<{ error?: string }> {
   const count = await prisma.tag.count({ where: { id: { in: ids }, userId } });
   if (count !== ids.length) return { error: "権限がありません" };
