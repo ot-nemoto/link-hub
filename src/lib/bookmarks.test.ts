@@ -212,11 +212,8 @@ describe("updateBookmark", () => {
 
     await updateBookmark(userId, "bm_1", { ...bookmarkData, hideOgImage: undefined });
 
-    expect(mockBookmarkUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.not.objectContaining({ hideOgImage: expect.anything() }),
-      }),
-    );
+    const callArg = mockBookmarkUpdate.mock.calls[0][0];
+    expect(callArg.data).not.toHaveProperty("hideOgImage");
   });
 });
 
