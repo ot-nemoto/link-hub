@@ -9,13 +9,11 @@ export function SortableBookmarkItem({
   isSearching,
   onEdit,
   onDelete,
-  domainLabel,
 }: {
   bm: Bookmark;
   isSearching: boolean;
   onEdit: (bm: Bookmark) => void;
   onDelete: (bm: Bookmark) => void;
-  domainLabel?: string;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: bm.id,
@@ -46,7 +44,7 @@ export function SortableBookmarkItem({
           <DragHandleIcon />
         </button>
       )}
-      <BookmarkItemContent bm={bm} onEdit={onEdit} onDelete={onDelete} domainLabel={domainLabel} />
+      <BookmarkItemContent bm={bm} onEdit={onEdit} onDelete={onDelete} />
     </li>
   );
 }
