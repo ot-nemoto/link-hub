@@ -3,6 +3,8 @@
 import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useState } from "react";
+import { writeCollapsedCookie } from "@/lib/collapsed-cookie";
+import { groupByConsecutiveDomain } from "@/lib/domain-groups";
 import { getTagColor } from "@/lib/tag-colors";
 import { CategoryDropZone } from "./CategoryDropZone";
 import { DragHandleIcon } from "./DragHandleIcon";
@@ -14,6 +16,7 @@ export function CategoryGroup({
   tag,
   bookmarks,
   isSearching,
+  initialCollapsed,
   onEdit,
   onDelete,
 }: {
@@ -21,10 +24,11 @@ export function CategoryGroup({
   tag: TagItem | null;
   bookmarks: Bookmark[];
   isSearching: boolean;
+  initialCollapsed: boolean;
   onEdit: (bm: Bookmark) => void;
   onDelete: (bm: Bookmark) => void;
 }) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState<boolean>(initialCollapsed);
   const color = tag ? getTagColor(tag.name) : null;
   const isSortable = tag !== null;
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -32,6 +36,16 @@ export function CategoryGroup({
     disabled: !isSortable,
     data: { type: "category" },
   });
+
+  const toggleCollapsed = () => {
+    setCollapsed((prev) => {
+      const next = !prev;
+      writeCollapsedCookie(categoryKey, next);
+      return next;
+    });
+  };
+
+  const segments = groupByConsecutiveDomain(bookmarks);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -60,7 +74,7 @@ export function CategoryGroup({
         )}
         <button
           type="button"
-          onClick={() => setCollapsed((prev) => !prev)}
+          onClick={toggleCollapsed}
           className="flex flex-1 cursor-pointer items-center gap-2"
         >
           <span
@@ -95,15 +109,42 @@ export function CategoryGroup({
             strategy={verticalListSortingStrategy}
           >
             <ul className="flex flex-col gap-2">
-              {bookmarks.map((bm) => (
-                <SortableBookmarkItem
-                  key={bm.id}
-                  bm={bm}
-                  isSearching={isSearching}
-                  onEdit={onEdit}
-                  onDelete={onDelete}
-                />
-              ))}
+              {segments.flatMap((seg) => {
+                if (seg.bookmarks.length >= 2) {
+                  return [
+                    <li
+                      key={`domain-${seg.bookmarks[0].id}`}
+                      className="flex flex-col gap-2 border-l-2 border-zinc-300 pl-3"
+                    >
+                      <div className="flex items-center gap-2 text-xs text-zinc-500">
+                        <span className="font-medium">{seg.domain}</span>
+                        <span className="text-zinc-400">{seg.bookmarks.length}</span>
+                      </div>
+                      <ul className="flex flex-col gap-2">
+                        {seg.bookmarks.map((bm) => (
+                          <SortableBookmarkItem
+                            key={bm.id}
+                            bm={bm}
+                            isSearching={isSearching}
+                            onEdit={onEdit}
+                            onDelete={onDelete}
+                          />
+                        ))}
+                      </ul>
+                    </li>,
+                  ];
+                }
+                return seg.bookmarks.map((bm) => (
+                  <SortableBookmarkItem
+                    key={bm.id}
+                    bm={bm}
+                    isSearching={isSearching}
+                    onEdit={onEdit}
+                    onDelete={onDelete}
+                    domainLabel={seg.domain || undefined}
+                  />
+                ));
+              })}
               <CategoryDropZone categoryKey={categoryKey} />
             </ul>
           </SortableContext>

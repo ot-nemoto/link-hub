@@ -28,16 +28,17 @@ model User {
 }
 
 model Bookmark {
-  id        String   @id @default(cuid())
-  url       String
-  title     String
-  memo      String?
-  ogImage   String?  @map("og_image")
-  sortOrder Int      @default(0) @map("sort_order")
-  userId    String   @map("user_id")
-  tagId     String?  @map("tag_id")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id          String   @id @default(cuid())
+  url         String
+  title       String
+  memo        String?
+  ogImage     String?  @map("og_image")
+  hideOgImage Boolean  @default(false) @map("hide_og_image")
+  sortOrder   Int      @default(0) @map("sort_order")
+  userId      String   @map("user_id")
+  tagId       String?  @map("tag_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   tag  Tag? @relation(fields: [tagId], references: [id], onDelete: SetNull)
@@ -83,6 +84,7 @@ erDiagram
         String title
         String memo "nullable"
         String ogImage "nullable"
+        Boolean hideOgImage
         Int sortOrder
         String userId FK
         String tagId FK "nullable"
@@ -126,6 +128,7 @@ erDiagram
 | title | String | タイトル（必須、最大 200 文字） |
 | memo | String? | メモ（任意、最大 1000 文字） |
 | ogImage | String? | OGP 画像 URL（URL 入力時に自動取得、任意） |
+| hideOgImage | Boolean | OGP 画像を一覧で非表示にするか（デフォルト false）。画像 URL は保持し表示のみ切り替える |
 | sortOrder | Int | 表示順（デフォルト 0、D&D による並び替えで更新） |
 | userId | String | 外部キー → User.id（User 削除時に CASCADE） |
 | tagId | String? | 外部キー → Tag.id（Tag 削除時に SET NULL）。カテゴリ分類用。null は「未分類」 |

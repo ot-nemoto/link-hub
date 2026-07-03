@@ -8,29 +8,20 @@ import { fetchOgp } from "./fetchOgp";
 
 type Tag = { id: string; name: string };
 
+type BookmarkFormData = {
+  url: string;
+  title: string;
+  memo: string;
+  ogImage?: string;
+  tagId?: string | null;
+  hideOgImage?: boolean;
+};
+
 type Props = {
   availableTags: Tag[];
-  defaultValues?: {
-    url: string;
-    title: string;
-    memo: string;
-    ogImage?: string;
-    tagId?: string | null;
-  };
-  action: (data: {
-    url: string;
-    title: string;
-    memo: string;
-    ogImage?: string;
-    tagId?: string | null;
-  }) => Promise<{ error?: string }>;
-  onSuccess?: (data: {
-    url: string;
-    title: string;
-    memo: string;
-    ogImage?: string;
-    tagId?: string | null;
-  }) => void;
+  defaultValues?: BookmarkFormData;
+  action: (data: BookmarkFormData) => Promise<{ error?: string }>;
+  onSuccess?: (data: BookmarkFormData) => void;
   onCancel?: () => void;
 };
 
@@ -40,8 +31,10 @@ export function BookmarkForm({ availableTags, defaultValues, action, onSuccess, 
   const [submitting, setSubmitting] = useState(false);
   const [title, setTitle] = useState(defaultValues?.title ?? "");
   const [ogImage, setOgImage] = useState(defaultValues?.ogImage ?? "");
+  const [hideOgImage, setHideOgImage] = useState(defaultValues?.hideOgImage ?? false);
   const [fetchingOgp, setFetchingOgp] = useState(false);
   const [selectedTagId, setSelectedTagId] = useState<string | null>(defaultValues?.tagId ?? null);
+  const isEditing = defaultValues !== undefined;
 
   const titleRef = useRef(title);
   const ogImageRef = useRef(ogImage);
@@ -82,6 +75,7 @@ export function BookmarkForm({ availableTags, defaultValues, action, onSuccess, 
       memo: (form.elements.namedItem("memo") as HTMLTextAreaElement).value.trim(),
       ogImage: ogImage || undefined,
       tagId: selectedTagId,
+      hideOgImage,
     };
 
     const newErrors: Record<string, string> = {};
@@ -176,6 +170,31 @@ export function BookmarkForm({ availableTags, defaultValues, action, onSuccess, 
         />
         {errors.memo && <p className="mt-1 text-xs text-red-500">{errors.memo}</p>}
       </div>
+
+      {isEditing && ogImage && (
+        <div>
+          <span className="block text-sm font-medium text-zinc-700">OGP画像</span>
+          <div className="mt-1 flex items-center gap-3">
+            <img
+              src={ogImage}
+              alt=""
+              referrerPolicy="no-referrer"
+              className={`h-16 w-28 shrink-0 rounded border border-zinc-200 object-contain ${
+                hideOgImage ? "opacity-40" : ""
+              }`}
+            />
+            <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-700">
+              <input
+                type="checkbox"
+                checked={hideOgImage}
+                onChange={(e) => setHideOgImage(e.target.checked)}
+                className="h-4 w-4 cursor-pointer rounded border-zinc-300"
+              />
+              一覧に表示しない
+            </label>
+          </div>
+        </div>
+      )}
 
       <div>
         <label htmlFor="category" className="block text-sm font-medium text-zinc-700">

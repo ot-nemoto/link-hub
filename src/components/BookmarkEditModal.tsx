@@ -13,6 +13,7 @@ type Props = {
     memo: string;
     ogImage?: string;
     tagId?: string | null;
+    hideOgImage?: boolean;
   };
   action: (data: {
     url: string;

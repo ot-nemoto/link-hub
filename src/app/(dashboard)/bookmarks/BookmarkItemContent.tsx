@@ -4,10 +4,12 @@ export function BookmarkItemContent({
   bm,
   onEdit,
   onDelete,
+  domainLabel,
 }: {
   bm: Bookmark;
   onEdit: (bm: Bookmark) => void;
   onDelete: (bm: Bookmark) => void;
+  domainLabel?: string;
 }) {
   return (
     <>
@@ -23,13 +25,16 @@ export function BookmarkItemContent({
         <p className="truncate text-xs text-zinc-400">{bm.url}</p>
         {bm.memo && <p className="truncate text-sm text-zinc-600">{bm.memo}</p>}
       </div>
-      {bm.ogImage && (
+      {bm.ogImage && !bm.hideOgImage && (
         <img
           src={bm.ogImage}
           alt=""
           className="h-20 w-36 shrink-0 rounded object-contain"
           referrerPolicy="no-referrer"
         />
+      )}
+      {domainLabel && (
+        <span className="hidden shrink-0 text-xs text-zinc-400 sm:inline">{domainLabel}</span>
       )}
       <div className="flex shrink-0 gap-2">
         <button
