@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { BookmarkAddModal } from "@/components/BookmarkAddModal";
 import { BookmarkEditModal } from "@/components/BookmarkEditModal";
 import { TagManagementModal } from "@/components/TagManagementModal";
+import { groupByConsecutiveDomain } from "@/lib/domain-groups";
 import { getTagColor } from "@/lib/tag-colors";
 import {
   createBookmark,
@@ -30,10 +31,12 @@ export function BookmarkList({
   bookmarks: initial,
   allTags,
   tagsWithCount,
+  initialCollapsed,
 }: {
   bookmarks: Bookmark[];
   allTags: TagItem[];
   tagsWithCount: TagWithCount[];
+  initialCollapsed: Record<string, boolean>;
 }) {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
@@ -286,6 +289,7 @@ export function BookmarkList({
                 tag={group.tag}
                 bookmarks={group.bookmarks}
                 isSearching={isSearching}
+                initialCollapsed={initialCollapsed[group.key] ?? false}
                 onEdit={(bm) => setEditingBookmarkId(bm.id)}
                 onDelete={handleDelete}
               />
@@ -304,37 +308,101 @@ export function BookmarkList({
         </DndContext>
       ) : (
         <div>
-          {groupedBookmarks.map((group) => (
-            <div key={group.key} id={`category-${group.key}`} className="mb-6 scroll-mt-28">
-              <div className="mb-2 flex items-center gap-2 border-b border-zinc-200 pb-1.5">
-                <span
-                  className={`inline-block h-2.5 w-2.5 rounded-full ${
-                    group.tag ? getTagColor(group.tag.name).activeBg : "bg-zinc-400"
-                  }`}
-                />
-                <span
-                  className={`text-sm font-medium ${group.tag ? "text-zinc-900" : "text-zinc-500"}`}
-                >
-                  {group.tag ? group.tag.name : "未分類"}
-                </span>
-                <span className="text-xs text-zinc-400">{group.bookmarks.length}</span>
-              </div>
-              <ul className="flex flex-col gap-2 pl-5">
-                {group.bookmarks.map((bm) => (
-                  <li
-                    key={bm.id}
-                    className="flex items-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-3"
-                  >
-                    <BookmarkItemContent
-                      bm={bm}
-                      onEdit={(b) => setEditingBookmarkId(b.id)}
-                      onDelete={handleDelete}
+          {groupedBookmarks.map((group) => {
+            const collapsed = initialCollapsed[group.key] ?? false;
+            const color = group.tag ? getTagColor(group.tag.name) : null;
+            const isSortable = group.tag !== null;
+            const segments = groupByConsecutiveDomain(group.bookmarks);
+            return (
+              <div key={group.key} id={`category-${group.key}`} className="mb-6 scroll-mt-28">
+                <div className="mb-2 flex w-full items-center gap-2 border-b border-zinc-200 pb-1.5">
+                  {isSortable && (
+                    <span className="shrink-0 text-zinc-400">
+                      <DragHandleIcon />
+                    </span>
+                  )}
+                  <div className="flex flex-1 items-center gap-2">
+                    <span
+                      className={`inline-block h-2.5 w-2.5 rounded-full ${color ? color.activeBg : "bg-zinc-400"}`}
                     />
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+                    <span
+                      className={`text-sm font-medium ${group.tag ? "text-zinc-900" : "text-zinc-500"}`}
+                    >
+                      {group.tag ? group.tag.name : "未分類"}
+                    </span>
+                    <span className="text-xs text-zinc-400">{group.bookmarks.length}</span>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                      className={`ml-auto text-zinc-400 transition-transform ${collapsed ? "-rotate-90" : ""}`}
+                    >
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                  </div>
+                </div>
+                {!collapsed && (
+                  <ul className="flex flex-col gap-2 pl-5">
+                    {segments.flatMap((seg) => {
+                      if (seg.bookmarks.length >= 2) {
+                        return [
+                          <li
+                            key={`domain-${seg.bookmarks[0].id}`}
+                            className="flex flex-col gap-2 border-l-2 border-zinc-300 pl-3"
+                          >
+                            <div className="flex items-center gap-2 text-xs text-zinc-500">
+                              <span className="font-medium">{seg.domain}</span>
+                              <span className="text-zinc-400">{seg.bookmarks.length}</span>
+                            </div>
+                            <ul className="flex flex-col gap-2">
+                              {seg.bookmarks.map((bm) => (
+                                <li
+                                  key={bm.id}
+                                  className="flex items-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-3 hover:border-zinc-400 hover:bg-zinc-50"
+                                >
+                                  <span className="shrink-0 text-zinc-400">
+                                    <DragHandleIcon />
+                                  </span>
+                                  <BookmarkItemContent
+                                    bm={bm}
+                                    onEdit={(b) => setEditingBookmarkId(b.id)}
+                                    onDelete={handleDelete}
+                                  />
+                                </li>
+                              ))}
+                            </ul>
+                          </li>,
+                        ];
+                      }
+                      return seg.bookmarks.map((bm) => (
+                        <li
+                          key={bm.id}
+                          className="flex items-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-3 hover:border-zinc-400 hover:bg-zinc-50"
+                        >
+                          <span className="shrink-0 text-zinc-400">
+                            <DragHandleIcon />
+                          </span>
+                          <BookmarkItemContent
+                            bm={bm}
+                            onEdit={(b) => setEditingBookmarkId(b.id)}
+                            onDelete={handleDelete}
+                            domainLabel={seg.domain || undefined}
+                          />
+                        </li>
+                      ));
+                    })}
+                  </ul>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
