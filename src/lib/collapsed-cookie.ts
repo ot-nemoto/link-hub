@@ -6,11 +6,20 @@ const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
  * Cookie の生値（`encodeURIComponent(JSON)`）を開閉状態マップにパースする。
  * サーバー・クライアント双方から利用する純粋関数。
  */
+const RESERVED_KEYS = new Set(["__proto__", "constructor", "prototype"]);
+
 export function parseCollapsedCookie(raw: string | undefined | null): Record<string, boolean> {
   if (!raw) return {};
   try {
     const parsed = JSON.parse(decodeURIComponent(raw));
-    return parsed && typeof parsed === "object" ? (parsed as Record<string, boolean>) : {};
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+    const result: Record<string, boolean> = {};
+    for (const [key, value] of Object.entries(parsed)) {
+      if (typeof value === "boolean" && !RESERVED_KEYS.has(key)) {
+        result[key] = value;
+      }
+    }
+    return result;
   } catch {
     return {};
   }

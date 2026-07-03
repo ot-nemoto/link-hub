@@ -17,5 +17,16 @@ describe("parseCollapsedCookie", () => {
     expect(parseCollapsedCookie("not-json")).toEqual({});
     expect(parseCollapsedCookie(encodeURIComponent("123"))).toEqual({});
     expect(parseCollapsedCookie(encodeURIComponent('"string"'))).toEqual({});
+    expect(parseCollapsedCookie(encodeURIComponent("[true,false]"))).toEqual({});
+  });
+
+  it("boolean 以外の値を持つキーは除外する", () => {
+    const raw = encodeURIComponent(JSON.stringify({ a: true, b: "yes", c: 1, d: null, e: false }));
+    expect(parseCollapsedCookie(raw)).toEqual({ a: true, e: false });
+  });
+
+  it("予約キー（__proto__ 等）は除外する", () => {
+    const raw = encodeURIComponent('{"__proto__":true,"constructor":true,"a":true}');
+    expect(parseCollapsedCookie(raw)).toEqual({ a: true });
   });
 });
