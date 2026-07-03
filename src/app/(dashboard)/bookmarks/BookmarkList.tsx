@@ -108,11 +108,26 @@ export function BookmarkList({
   })();
 
   const handleDelete = useCallback(
-    (bm: Bookmark) => {
+    async (bm: Bookmark) => {
       // ソフトデリート: アクティブ一覧から外し、楽観的にゴミ箱の先頭へ移す
       setItems((prev) => prev.filter((b) => b.id !== bm.id));
       setDeletedItems((prev) => [bm, ...prev]);
-      void deleteBookmark(bm.id, {}).then(() => router.refresh());
+
+      const rollback = () => {
+        setDeletedItems((prev) => prev.filter((b) => b.id !== bm.id));
+        setItems((prev) => [...prev, bm]);
+      };
+
+      try {
+        const result = await deleteBookmark(bm.id, {});
+        if (result?.error) {
+          rollback();
+          return;
+        }
+        router.refresh();
+      } catch {
+        rollback();
+      }
     },
     [router],
   );
