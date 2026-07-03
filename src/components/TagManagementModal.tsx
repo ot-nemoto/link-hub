@@ -35,12 +35,22 @@ export function TagManagementModal({
   const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // capture フェーズで拾い、伝播を止めて overlay/input の重複ハンドラより先に処理する。
+    // 編集中はキャンセル（モーダルは閉じない）、それ以外は閉じる。
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+      if (e.key !== "Escape") return;
+      e.stopPropagation();
+      if (editingId) {
+        setEditingId(null);
+        setEditValue("");
+        setError("");
+      } else {
+        onClose();
+      }
     }
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
+    document.addEventListener("keydown", handleKeyDown, true);
+    return () => document.removeEventListener("keydown", handleKeyDown, true);
+  }, [onClose, editingId]);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -238,9 +248,6 @@ export function TagManagementModal({
                           if (e.key === "Enter") {
                             e.preventDefault();
                             handleSaveEdit(tag.id);
-                          } else if (e.key === "Escape") {
-                            e.stopPropagation();
-                            handleCancelEdit();
                           }
                         }}
                         maxLength={50}
