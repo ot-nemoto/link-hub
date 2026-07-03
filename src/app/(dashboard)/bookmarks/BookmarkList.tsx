@@ -396,7 +396,6 @@ export function BookmarkList({
                             bm={bm}
                             onEdit={(b) => setEditingBookmarkId(b.id)}
                             onDelete={handleDelete}
-                            domainLabel={seg.domain || undefined}
                           />
                         </li>
                       ));

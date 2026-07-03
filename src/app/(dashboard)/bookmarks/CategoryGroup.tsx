@@ -141,7 +141,6 @@ export function CategoryGroup({
                     isSearching={isSearching}
                     onEdit={onEdit}
                     onDelete={onDelete}
-                    domainLabel={seg.domain || undefined}
                   />
                 ));
               })}
