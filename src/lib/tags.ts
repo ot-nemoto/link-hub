@@ -14,7 +14,11 @@ export async function getTagsWithCount(userId: string) {
   const rawTags = await prisma.tag.findMany({
     where: { userId },
     orderBy: { sortOrder: "asc" },
-    select: { id: true, name: true, _count: { select: { bookmarks: true } } },
+    select: {
+      id: true,
+      name: true,
+      _count: { select: { bookmarks: { where: { deletedAt: null } } } },
+    },
   });
 
   return rawTags.map(({ _count, ...tag }) => ({

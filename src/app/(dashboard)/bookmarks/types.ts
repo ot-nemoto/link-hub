@@ -14,8 +14,3 @@ export type Bookmark = {
 
 export type TagItem = { id: string; name: string };
 export type TagWithCount = { id: string; name: string; bookmarkCount: number };
-
-export type PendingDelete = {
-  bookmarks: Bookmark[];
-  timerId: ReturnType<typeof setTimeout>;
-};

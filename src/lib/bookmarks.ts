@@ -12,6 +12,7 @@ export type BookmarkData = {
 export async function getBookmarks(userId: string, query?: string) {
   const where = {
     userId,
+    deletedAt: null,
     ...(query && {
       OR: [
         { title: { contains: query, mode: "insensitive" as const } },
@@ -24,6 +25,16 @@ export async function getBookmarks(userId: string, query?: string) {
   return prisma.bookmark.findMany({
     where,
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    include: {
+      tag: { select: { id: true, name: true } },
+    },
+  });
+}
+
+export async function getDeletedBookmarks(userId: string) {
+  return prisma.bookmark.findMany({
+    where: { userId, deletedAt: { not: null } },
+    orderBy: { deletedAt: "desc" },
     include: {
       tag: { select: { id: true, name: true } },
     },
@@ -145,14 +156,36 @@ export async function deleteBookmark(userId: string, id: string): Promise<{ erro
   if (!bookmark) return { error: "ブックマークが見つかりません" };
   if (bookmark.userId !== userId) return { error: "権限がありません" };
 
-  await prisma.bookmark.delete({ where: { id } });
+  // ソフトデリート: 物理削除せず deletedAt を設定してゴミ箱に移す
+  await prisma.bookmark.update({ where: { id }, data: { deletedAt: new Date() } });
 
   return {};
 }
 
 export async function deleteBookmarks(userId: string, ids: string[]): Promise<{ error?: string }> {
-  await prisma.bookmark.deleteMany({
+  await prisma.bookmark.updateMany({
     where: { id: { in: ids }, userId },
+    data: { deletedAt: new Date() },
+  });
+
+  return {};
+}
+
+export async function restoreBookmark(userId: string, id: string): Promise<{ error?: string }> {
+  const bookmark = await prisma.bookmark.findUnique({ where: { id } });
+  if (!bookmark) return { error: "ブックマークが見つかりません" };
+  if (bookmark.userId !== userId) return { error: "権限がありません" };
+
+  // deletedAt を null に戻す。tagId は保持されているため元のカテゴリに復帰する
+  await prisma.bookmark.update({ where: { id }, data: { deletedAt: null } });
+
+  return {};
+}
+
+export async function emptyTrash(userId: string): Promise<{ error?: string }> {
+  // ゴミ箱内（deletedAt が非 null）のブックマークを物理削除する
+  await prisma.bookmark.deleteMany({
+    where: { userId, deletedAt: { not: null } },
   });
 
   return {};

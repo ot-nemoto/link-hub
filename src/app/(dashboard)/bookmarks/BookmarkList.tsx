@@ -3,7 +3,7 @@
 import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { BookmarkAddModal } from "@/components/BookmarkAddModal";
 import { BookmarkEditModal } from "@/components/BookmarkEditModal";
 import { TagManagementModal } from "@/components/TagManagementModal";
@@ -13,28 +13,29 @@ import {
   createBookmark,
   createTag,
   deleteBookmark,
-  deleteBookmarks,
   deleteTag,
+  emptyTrash,
+  restoreBookmark,
   updateBookmark,
   updateTag,
 } from "./actions";
 import { BookmarkItemContent } from "./BookmarkItemContent";
 import { CategoryGroup } from "./CategoryGroup";
 import { DragHandleIcon } from "./DragHandleIcon";
-import type { Bookmark, PendingDelete, TagItem, TagWithCount } from "./types";
+import { TRASH_COLLAPSE_KEY, TrashGroup } from "./TrashGroup";
+import type { Bookmark, TagItem, TagWithCount } from "./types";
 import { UNCATEGORIZED_KEY } from "./types";
-import { UndoSnackbar } from "./UndoSnackbar";
 import { useDragAndDrop } from "./useDragAndDrop";
-
-const UNDO_TIMEOUT_MS = 5000;
 
 export function BookmarkList({
   bookmarks: initial,
+  deletedBookmarks,
   allTags,
   tagsWithCount,
   initialCollapsed,
 }: {
   bookmarks: Bookmark[];
+  deletedBookmarks: Bookmark[];
   allTags: TagItem[];
   tagsWithCount: TagWithCount[];
   initialCollapsed: Record<string, boolean>;
@@ -43,13 +44,12 @@ export function BookmarkList({
   const [mounted, setMounted] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [items, setItems] = useState<Bookmark[]>(initial);
+  const [deletedItems, setDeletedItems] = useState<Bookmark[]>(deletedBookmarks);
   const [allTagsState, setAllTagsState] = useState<TagItem[]>(allTags);
   const [tagsWithCountState, setTagsWithCountState] = useState<TagWithCount[]>(tagsWithCount);
   const [isTagModalOpen, setIsTagModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingBookmarkId, setEditingBookmarkId] = useState<string | null>(null);
-  const [pending, setPending] = useState<PendingDelete | null>(null);
-  const pendingRef = useRef<PendingDelete | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -58,16 +58,14 @@ export function BookmarkList({
     setItems(initial);
   }, [initial]);
   useEffect(() => {
+    setDeletedItems(deletedBookmarks);
+  }, [deletedBookmarks]);
+  useEffect(() => {
     setAllTagsState(allTags);
   }, [allTags]);
   useEffect(() => {
     setTagsWithCountState(tagsWithCount);
   }, [tagsWithCount]);
-  useEffect(() => {
-    return () => {
-      if (pendingRef.current) clearTimeout(pendingRef.current.timerId);
-    };
-  }, []);
 
   const isSearching = searchQuery.trim().length > 0;
 
@@ -109,53 +107,36 @@ export function BookmarkList({
     return groups;
   })();
 
-  const commitPending = useCallback(
-    async (p: PendingDelete) => {
-      const ids = p.bookmarks.map((b) => b.id);
-      if (ids.length === 1) {
-        await deleteBookmark(ids[0], {});
-      } else {
-        await deleteBookmarks(ids);
-      }
-      setPending(null);
-      pendingRef.current = null;
-      router.refresh();
+  const handleDelete = useCallback(
+    (bm: Bookmark) => {
+      // ソフトデリート: アクティブ一覧から外し、楽観的にゴミ箱の先頭へ移す
+      setItems((prev) => prev.filter((b) => b.id !== bm.id));
+      setDeletedItems((prev) => [bm, ...prev]);
+      void deleteBookmark(bm.id, {}).then(() => router.refresh());
     },
     [router],
   );
 
-  const startPending = useCallback(
-    (bookmarks: Bookmark[]) => {
-      if (pendingRef.current) {
-        clearTimeout(pendingRef.current.timerId);
-        void commitPending(pendingRef.current);
-      }
-      const timerId = setTimeout(() => {
-        if (pendingRef.current) void commitPending(pendingRef.current);
-      }, UNDO_TIMEOUT_MS);
-      const next = { bookmarks, timerId };
-      setPending(next);
-      pendingRef.current = next;
-    },
-    [commitPending],
-  );
-
-  const handleDelete = useCallback(
+  const handleRestore = useCallback(
     (bm: Bookmark) => {
-      setItems((prev) => prev.filter((b) => b.id !== bm.id));
-      startPending([bm]);
+      setDeletedItems((prev) => prev.filter((b) => b.id !== bm.id));
+      setItems((prev) => [...prev, bm]);
+      void restoreBookmark(bm.id).then(() => router.refresh());
     },
-    [startPending],
+    [router],
   );
 
-  const handleUndo = useCallback(() => {
-    if (!pendingRef.current) return;
-    clearTimeout(pendingRef.current.timerId);
-    const { bookmarks } = pendingRef.current;
-    setPending(null);
-    pendingRef.current = null;
-    setItems((prev) => [...prev, ...bookmarks]);
-  }, []);
+  const handleEmptyTrash = useCallback(() => {
+    if (
+      !window.confirm(
+        "ゴミ箱内のブックマークをすべて完全に削除します。この操作は取り消せません。よろしいですか？",
+      )
+    ) {
+      return;
+    }
+    setDeletedItems([]);
+    void emptyTrash().then(() => router.refresh());
+  }, [router]);
 
   const {
     sensors,
@@ -408,14 +389,12 @@ export function BookmarkList({
         </div>
       )}
 
-      {pending && (
-        <UndoSnackbar
-          message={
-            pending.bookmarks.length === 1
-              ? "削除しました"
-              : `${pending.bookmarks.length}件削除しました`
-          }
-          onUndo={handleUndo}
+      {deletedItems.length > 0 && (
+        <TrashGroup
+          bookmarks={deletedItems}
+          initialCollapsed={initialCollapsed[TRASH_COLLAPSE_KEY] ?? true}
+          onRestore={handleRestore}
+          onEmptyTrash={handleEmptyTrash}
         />
       )}
 
