@@ -116,6 +116,20 @@ flowchart TD
 - 保存後はモーダルを閉じて一覧を更新（楽観的更新）
 - ESC キー・オーバーレイクリック・× ボタン・キャンセルボタンで閉じる
 
+### 設定モーダル
+
+- ヘッダーの設定ボタン（歯車アイコン）で開く
+- 「API キー」セクションで外部 REST API（`GET /api/bookmarks`）用の API キーを管理する
+- **キーの実値はクライアントに渡さない**。サーバー（`layout.tsx`）が「キーの有無（boolean）」のみを渡し、モーダルは開いたときに実値を取得しない（ローディングやレイアウトのちらつきがない）
+- 表示状態は3つ：
+  - **未発行**: 「生成する」ボタンのみ
+  - **生成・再生成直後**: 実値を入力欄に表示（`type="password"` でマスク・「表示/隠す」トグルで切替）＋「再生成」「失効」。この場で控えないと再表示できない旨を案内する
+  - **発行済み（実値非保持）**: マスクされたプレースホルダ（`type="password"`）＋「再生成」「失効」。実値の再表示・コピーは不可
+- 「再生成」で新しいキーを発行（旧キーは無効）、「失効」は確認ダイアログを経てキーを無効化（未発行状態に戻す）
+- 生成・失効の後は `router.refresh()` でサーバー側の「キー有無」を更新し、閉じて再度開いたときの初期表示（未発行 / 発行済み）を同期する
+- ESC キー・オーバーレイクリック・× ボタンで閉じる
+- `createPortal` で `document.body` 直下に描画し、`sticky` ヘッダーの stacking context に潜らないようにする
+
 ## 各画面の表示状態
 
 ### ブックマーク一覧（`/bookmarks`）
@@ -200,7 +214,9 @@ src/components/
 | `DragHandleIcon` | `bookmarks/DragHandleIcon.tsx` | Component | ドラッグハンドルの SVG アイコン |
 | `DeleteButton` | `bookmarks/DeleteButton.tsx` | Client Component | 削除ボタン。`useActionState` で Server Action を呼び出し |
 | `LogoutButton` | `LogoutButton.tsx` | Client Component | ログアウトボタン。Clerk 7 + React 19 対応のため `useClerk` フックで実装 |
-| `Header` | `components/Header.tsx` | Client Component | ヘッダー。アプリ名・メールアドレス・ログアウトボタンを表示 |
+| `Header` | `components/Header.tsx` | Component | ヘッダー。アプリ名・メールアドレス・設定ボタン・ログアウトボタンを表示 |
+| `SettingsButton` | `components/SettingsButton.tsx` | Client Component | ヘッダーの設定ボタン（歯車アイコン）。クリックで `SettingsModal` を開く |
+| `SettingsModal` | `components/SettingsModal.tsx` | Client Component | 設定モーダル。API キーの生成/再生成/失効・表示/隠す（`createPortal` で body 直下に描画） |
 | `BookmarkAddModal` | `components/BookmarkAddModal.tsx` | Client Component | ブックマーク追加モーダル。`BookmarkForm` をラップ |
 | `BookmarkEditModal` | `components/BookmarkEditModal.tsx` | Client Component | ブックマーク編集モーダル。`BookmarkForm` をラップ |
 | `TagManagementModal` | `components/TagManagementModal.tsx` | Client Component | カテゴリ管理モーダル。カテゴリの作成・編集・削除・一覧表示 |

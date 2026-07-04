@@ -25,6 +25,7 @@ link-hub/
 │   │   ├── (dashboard)/       # 認証済み画面グループ
 │   │   │   ├── layout.tsx     # ヘッダー・ログアウトボタン
 │   │   │   ├── LogoutButton.tsx
+│   │   │   ├── api-key-actions.ts   # API キー生成・失効の Server Actions
 │   │   │   └── bookmarks/          # ブックマーク関連画面
 │   │   │       ├── page.tsx            # 一覧（Server Component）
 │   │   │       ├── actions.ts          # Server Actions（書き込み操作を集約）
@@ -40,16 +41,22 @@ link-hub/
 │   │   │       ├── useDragAndDrop.ts       # D&D ロジックカスタムフック
 │   │   │       ├── types.ts                # 共通型定義
 │   │   │       └── fetchOgp.ts
+│   │   └── api/                 # 外部連携用 REST API
+│   │       └── bookmarks/route.ts  # GET /api/bookmarks（API キー認証）
 │   ├── components/
 │   │   ├── Header.tsx             # ヘッダー
 │   │   ├── BookmarkAddModal.tsx   # ブックマーク追加モーダル
 │   │   ├── BookmarkEditModal.tsx  # ブックマーク編集モーダル
 │   │   ├── TagManagementModal.tsx # カテゴリ管理モーダル
+│   │   ├── SettingsButton.tsx     # 設定モーダルを開くボタン（歯車アイコン）
+│   │   ├── SettingsModal.tsx      # 設定モーダル（API キー表示・生成）
 │   │   └── icons/
 │   │       └── AppIcon.tsx
 │   ├── lib/
 │   │   ├── prisma.ts          # Prisma クライアント
 │   │   ├── auth.ts            # 認証ヘルパー
+│   │   ├── api-auth.ts        # API キー認証（Bearer → User）
+│   │   ├── api-key.ts         # API キー生成・取得（Prisma）
 │   │   ├── bookmarks.ts       # ブックマーク操作（Prisma）
 │   │   ├── tags.ts            # カテゴリ操作（Prisma）
 │   │   └── tag-colors.ts      # カテゴリカラー生成
