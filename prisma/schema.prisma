@@ -21,17 +21,18 @@ model User {
 }
 
 model Bookmark {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   url         String
   title       String
   memo        String?
-  ogImage     String?  @map("og_image")
-  hideOgImage Boolean  @default(false) @map("hide_og_image")
-  sortOrder   Int      @default(0) @map("sort_order")
-  userId      String   @map("user_id")
-  tagId       String?  @map("tag_id")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  ogImage     String?   @map("og_image")
+  hideOgImage Boolean   @default(false) @map("hide_og_image")
+  sortOrder   Int       @default(0) @map("sort_order")
+  userId      String    @map("user_id")
+  tagId       String?   @map("tag_id")
+  deletedAt   DateTime? @map("deleted_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   tag  Tag? @relation(fields: [tagId], references: [id], onDelete: SetNull)

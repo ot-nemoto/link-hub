@@ -68,8 +68,12 @@ flowchart TD
 - カテゴリ未設定のブックマークは「未分類」グループに表示される
 - ブックマークが 0 件の場合は「まだブックマークがありません」を表示
 - 各ブックマークに編集ボタン・削除ボタンを表示
-- 削除ボタンをクリックすると即座に UI から非表示になり（楽観的更新）、5 秒後に DB から削除確定する（確認ダイアログは表示しない）
-- 5 秒以内に Undo した場合は削除を取り消す
+- 削除ボタンをクリックすると即座にゴミ箱へ移動する（ソフトデリート・確認ダイアログなし・Undo なし）
+- カテゴリ一覧の末尾に「ゴミ箱」グループを表示する（ゴミ箱が空でないときのみ）
+  - デフォルトで折りたたみ（閉じた）状態。開閉状態は他カテゴリと同様に Cookie（キー `__trash__`）に保存
+  - 各行に「復元」ボタンを表示（編集・削除・D&D は無効）。復元すると元のカテゴリに戻る
+  - ヘッダーの「全削除」ボタンでゴミ箱内を完全削除する（不可逆のため確認ダイアログを表示）
+- カテゴリの件数バッジはアクティブ（未削除）のブックマークのみを数える
 - ヘッダーエリア（検索窓・「カテゴリ管理」ボタン・「追加」ボタン）は1行に横並びで表示し、`sticky` で画面上部に固定する
 - ヘッダーエリアの下にカテゴリナビゲーションバーを表示する（色丸・カテゴリ名・件数を横並び表示、クリックで対応カテゴリグループまで自動スクロール）
 - リスト行に OGP サムネイル（og_image）を表示する（`hideOgImage` が `true` のブックマークは非表示）
@@ -165,9 +169,9 @@ src/app/
 │       ├── SortableBookmarkItem.tsx # ソート可能なブックマーク行
 │       ├── CategoryGroup.tsx       # カテゴリグループ（折りたたみ・D&D）
 │       ├── CategoryDropZone.tsx    # カテゴリ内ドロップゾーン
+│       ├── TrashGroup.tsx          # ゴミ箱グループ（復元・全削除）
 │       ├── DragHandleIcon.tsx      # ドラッグハンドルアイコン
 │       ├── DeleteButton.tsx        # 削除ボタン（useActionState）
-│       ├── UndoSnackbar.tsx        # 削除 Undo スナックバー
 │       ├── useDragAndDrop.ts       # D&D ロジックカスタムフック
 │       ├── types.ts                # 共通型定義
 │       ├── actions.ts             # Server Actions
@@ -187,15 +191,15 @@ src/components/
 | コンポーネント | ファイル | 種別 | 説明 |
 |--------------|---------|------|------|
 | `BookmarkForm` | `bookmarks/BookmarkForm.tsx` | Client Component | ブックマーク登録・編集フォーム。バリデーション・送信処理・OGP 自動取得・カテゴリ選択を担当 |
-| `BookmarkList` | `bookmarks/BookmarkList.tsx` | Client Component | ブックマーク一覧。カテゴリグルーピング・検索・削除操作・楽観的削除/Undo 管理を担当 |
+| `BookmarkList` | `bookmarks/BookmarkList.tsx` | Client Component | ブックマーク一覧。カテゴリグルーピング・検索・削除（ゴミ箱移動）・復元・全削除の管理を担当 |
 | `BookmarkItemContent` | `bookmarks/BookmarkItemContent.tsx` | Component | ブックマーク行の表示内容（タイトル・URL・メモ・OGP画像・編集/削除ボタン） |
 | `SortableBookmarkItem` | `bookmarks/SortableBookmarkItem.tsx` | Component | ソート可能なブックマーク行。`useSortable` で D&D 対応 |
 | `CategoryGroup` | `bookmarks/CategoryGroup.tsx` | Client Component | カテゴリグループ。折りたたみ・D&D 対応のカテゴリヘッダーとブックマークリスト |
 | `CategoryDropZone` | `bookmarks/CategoryDropZone.tsx` | Component | カテゴリ内の空ドロップゾーン。カテゴリ間ブックマーク移動時の drop target |
+| `TrashGroup` | `bookmarks/TrashGroup.tsx` | Client Component | ゴミ箱グループ。削除済みブックマークの復元・全削除・折りたたみ表示 |
 | `DragHandleIcon` | `bookmarks/DragHandleIcon.tsx` | Component | ドラッグハンドルの SVG アイコン |
 | `DeleteButton` | `bookmarks/DeleteButton.tsx` | Client Component | 削除ボタン。`useActionState` で Server Action を呼び出し |
 | `LogoutButton` | `LogoutButton.tsx` | Client Component | ログアウトボタン。Clerk 7 + React 19 対応のため `useClerk` フックで実装 |
-| `UndoSnackbar` | `bookmarks/UndoSnackbar.tsx` | Client Component | 削除後 5 秒間表示する Undo スナックバー |
 | `Header` | `components/Header.tsx` | Client Component | ヘッダー。アプリ名・メールアドレス・ログアウトボタンを表示 |
 | `BookmarkAddModal` | `components/BookmarkAddModal.tsx` | Client Component | ブックマーク追加モーダル。`BookmarkForm` をラップ |
 | `BookmarkEditModal` | `components/BookmarkEditModal.tsx` | Client Component | ブックマーク編集モーダル。`BookmarkForm` をラップ |

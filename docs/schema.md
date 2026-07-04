@@ -33,12 +33,13 @@ model Bookmark {
   title       String
   memo        String?
   ogImage     String?  @map("og_image")
-  hideOgImage Boolean  @default(false) @map("hide_og_image")
-  sortOrder   Int      @default(0) @map("sort_order")
-  userId      String   @map("user_id")
-  tagId       String?  @map("tag_id")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  hideOgImage Boolean   @default(false) @map("hide_og_image")
+  sortOrder   Int       @default(0) @map("sort_order")
+  userId      String    @map("user_id")
+  tagId       String?   @map("tag_id")
+  deletedAt   DateTime? @map("deleted_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   tag  Tag? @relation(fields: [tagId], references: [id], onDelete: SetNull)
@@ -88,6 +89,7 @@ erDiagram
         Int sortOrder
         String userId FK
         String tagId FK "nullable"
+        DateTime deletedAt "nullable"
         DateTime createdAt
         DateTime updatedAt
     }
@@ -132,6 +134,7 @@ erDiagram
 | sortOrder | Int | 表示順（デフォルト 0、D&D による並び替えで更新） |
 | userId | String | 外部キー → User.id（User 削除時に CASCADE） |
 | tagId | String? | 外部キー → Tag.id（Tag 削除時に SET NULL）。カテゴリ分類用。null は「未分類」 |
+| deletedAt | DateTime? | ソフトデリート日時。非 null は「ゴミ箱」。一覧取得は `deletedAt IS NULL` のみ対象 |
 | createdAt | DateTime | 作成日時 |
 | updatedAt | DateTime | 更新日時 |
 

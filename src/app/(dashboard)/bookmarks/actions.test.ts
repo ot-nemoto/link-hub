@@ -7,9 +7,11 @@ import {
   deleteBookmark,
   deleteBookmarks,
   deleteTag,
+  emptyTrash,
   moveBookmark,
   reorderBookmarks,
   reorderTags,
+  restoreBookmark,
   updateBookmark,
   updateTag,
 } from "./actions";
@@ -26,6 +28,8 @@ vi.mock("@/lib/bookmarks", () => ({
   reorderBookmarks: vi.fn(),
   deleteBookmark: vi.fn(),
   deleteBookmarks: vi.fn(),
+  restoreBookmark: vi.fn(),
+  emptyTrash: vi.fn(),
 }));
 
 vi.mock("@/lib/tags", () => ({
@@ -54,6 +58,8 @@ const mockLibMoveBookmark = vi.mocked(libBookmarks.moveBookmark);
 const mockLibReorderBookmarks = vi.mocked(libBookmarks.reorderBookmarks);
 const mockLibDeleteBookmark = vi.mocked(libBookmarks.deleteBookmark);
 const mockLibDeleteBookmarks = vi.mocked(libBookmarks.deleteBookmarks);
+const mockLibRestoreBookmark = vi.mocked(libBookmarks.restoreBookmark);
+const mockLibEmptyTrash = vi.mocked(libBookmarks.emptyTrash);
 const mockLibCreateTag = vi.mocked(libTags.createTag);
 const mockLibUpdateTag = vi.mocked(libTags.updateTag);
 const mockLibDeleteTag = vi.mocked(libTags.deleteTag);
@@ -199,6 +205,52 @@ describe("deleteBookmarks", () => {
     await expect(deleteBookmarks(["bm_1"])).rejects.toThrow("NEXT_REDIRECT");
     expect(mockRedirect).toHaveBeenCalledWith("/sign-in");
     expect(mockLibDeleteBookmarks).not.toHaveBeenCalled();
+  });
+});
+
+describe("restoreBookmark", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("正常系: lib を呼び revalidatePath して結果を返す", async () => {
+    mockGetSession.mockResolvedValue(session);
+    mockLibRestoreBookmark.mockResolvedValue({});
+
+    const result = await restoreBookmark("bm_1");
+
+    expect(mockLibRestoreBookmark).toHaveBeenCalledWith("user_1", "bm_1");
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/bookmarks");
+    expect(result).toEqual({});
+  });
+
+  it("未認証の場合 redirect を呼ぶ", async () => {
+    mockGetSession.mockResolvedValue(null);
+
+    await expect(restoreBookmark("bm_1")).rejects.toThrow("NEXT_REDIRECT");
+    expect(mockRedirect).toHaveBeenCalledWith("/sign-in");
+    expect(mockLibRestoreBookmark).not.toHaveBeenCalled();
+  });
+});
+
+describe("emptyTrash", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("正常系: lib を呼び revalidatePath して結果を返す", async () => {
+    mockGetSession.mockResolvedValue(session);
+    mockLibEmptyTrash.mockResolvedValue({});
+
+    const result = await emptyTrash();
+
+    expect(mockLibEmptyTrash).toHaveBeenCalledWith("user_1");
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/bookmarks");
+    expect(result).toEqual({});
+  });
+
+  it("未認証の場合 redirect を呼ぶ", async () => {
+    mockGetSession.mockResolvedValue(null);
+
+    await expect(emptyTrash()).rejects.toThrow("NEXT_REDIRECT");
+    expect(mockRedirect).toHaveBeenCalledWith("/sign-in");
+    expect(mockLibEmptyTrash).not.toHaveBeenCalled();
   });
 });
 
