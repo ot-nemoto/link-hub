@@ -64,13 +64,20 @@ export function SettingsModal({
       return;
     }
     setPending(true);
+    setError(null);
     try {
-      await revokeApiKey();
+      const r = await revokeApiKey();
+      if (r.error) {
+        setError(r.error);
+        return;
+      }
       setHasApiKey(false);
       setApiKey(null);
       setVisible(false);
       // サーバー側の hasApiKey を更新（閉じて再度開いたときの初期状態を同期）
       router.refresh();
+    } catch {
+      setError("API キーの失効に失敗しました");
     } finally {
       setPending(false);
     }
