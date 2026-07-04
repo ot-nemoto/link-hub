@@ -216,7 +216,7 @@ src/components/
 | `LogoutButton` | `LogoutButton.tsx` | Client Component | ログアウトボタン。Clerk 7 + React 19 対応のため `useClerk` フックで実装 |
 | `Header` | `components/Header.tsx` | Component | ヘッダー。アプリ名・メールアドレス・設定ボタン・ログアウトボタンを表示 |
 | `SettingsButton` | `components/SettingsButton.tsx` | Client Component | ヘッダーの設定ボタン（歯車アイコン）。クリックで `SettingsModal` を開く |
-| `SettingsModal` | `components/SettingsModal.tsx` | Client Component | 設定モーダル。API キーの表示・生成/再生成・コピー（`createPortal` で body 直下に描画） |
+| `SettingsModal` | `components/SettingsModal.tsx` | Client Component | 設定モーダル。API キーの生成/再生成/失効・表示/隠す（`createPortal` で body 直下に描画） |
 | `BookmarkAddModal` | `components/BookmarkAddModal.tsx` | Client Component | ブックマーク追加モーダル。`BookmarkForm` をラップ |
 | `BookmarkEditModal` | `components/BookmarkEditModal.tsx` | Client Component | ブックマーク編集モーダル。`BookmarkForm` をラップ |
 | `TagManagementModal` | `components/TagManagementModal.tsx` | Client Component | カテゴリ管理モーダル。カテゴリの作成・編集・削除・一覧表示 |
