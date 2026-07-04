@@ -19,6 +19,7 @@ export function SettingsModal({
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [visible, setVisible] = useState(false);
   const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -35,14 +36,20 @@ export function SettingsModal({
 
   async function handleGenerate() {
     setPending(true);
+    setError(null);
     try {
       const r = await generateApiKey();
-      if (!r.apiKey) return;
+      if (r.error || !r.apiKey) {
+        setError(r.error ?? "API キーの生成に失敗しました");
+        return;
+      }
       setHasApiKey(true);
       setApiKey(r.apiKey);
       setVisible(true);
       // サーバー側の hasApiKey を更新（閉じて再度開いたときの初期状態を同期）
       router.refresh();
+    } catch {
+      setError("API キーの生成に失敗しました");
     } finally {
       setPending(false);
     }
@@ -119,6 +126,9 @@ export function SettingsModal({
           </p>
 
           <div className="space-y-3">
+            {error && (
+              <p className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>
+            )}
             {!hasApiKey ? (
               <button
                 type="button"
