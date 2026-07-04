@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 export const metadata: Metadata = { title: "ブックマーク一覧" };
 
 import { getSession } from "@/lib/auth";
-import { getBookmarks } from "@/lib/bookmarks";
+import { getBookmarks, getDeletedBookmarks } from "@/lib/bookmarks";
 import { COLLAPSED_COOKIE_NAME, parseCollapsedCookie } from "@/lib/collapsed-cookie";
 import { getTags, getTagsWithCount } from "@/lib/tags";
 import { BookmarkList } from "./BookmarkList";
@@ -14,8 +14,9 @@ export default async function BookmarksPage() {
   const session = await getSession();
   if (!session) redirect("/sign-in");
 
-  const [bookmarks, tags, tagsWithCount, cookieStore] = await Promise.all([
+  const [bookmarks, deletedBookmarks, tags, tagsWithCount, cookieStore] = await Promise.all([
     getBookmarks(session.user.id),
+    getDeletedBookmarks(session.user.id),
     getTags(session.user.id),
     getTagsWithCount(session.user.id),
     cookies(),
@@ -27,6 +28,7 @@ export default async function BookmarksPage() {
     <div>
       <BookmarkList
         bookmarks={bookmarks}
+        deletedBookmarks={deletedBookmarks}
         allTags={tags}
         tagsWithCount={tagsWithCount}
         initialCollapsed={initialCollapsed}

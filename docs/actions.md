@@ -8,13 +8,17 @@
 | `updateBookmark(id, data)` | ブックマーク更新 | `src/app/(dashboard)/bookmarks/actions.ts` |
 | `moveBookmark(id, tagId, sortOrder, options?)` | ブックマークのカテゴリ移動・並び順更新 | `src/app/(dashboard)/bookmarks/actions.ts` |
 | `reorderBookmarks(ids, options?)` | ブックマークの並び順更新 | `src/app/(dashboard)/bookmarks/actions.ts` |
-| `deleteBookmark(id, prevState)` | ブックマーク削除 | `src/app/(dashboard)/bookmarks/actions.ts` |
-| `deleteBookmarks(ids)` | ブックマーク一括削除 | `src/app/(dashboard)/bookmarks/actions.ts` |
+| `deleteBookmark(id, prevState)` | ブックマーク削除（ソフトデリート＝ゴミ箱へ移動） | `src/app/(dashboard)/bookmarks/actions.ts` |
+| `deleteBookmarks(ids)` | ブックマーク一括削除（ソフトデリート） | `src/app/(dashboard)/bookmarks/actions.ts` |
+| `restoreBookmark(id)` | ゴミ箱からブックマークを復元 | `src/app/(dashboard)/bookmarks/actions.ts` |
+| `emptyTrash()` | ゴミ箱内を完全削除（物理削除） | `src/app/(dashboard)/bookmarks/actions.ts` |
 | `createTag(name)` | カテゴリ新規作成 | `src/app/(dashboard)/bookmarks/actions.ts` |
 | `updateTag(id, name)` | カテゴリ名の更新 | `src/app/(dashboard)/bookmarks/actions.ts` |
 | `reorderTags(ids, options?)` | カテゴリの並び順更新 | `src/app/(dashboard)/bookmarks/actions.ts` |
 | `deleteTag(id)` | カテゴリ削除 | `src/app/(dashboard)/bookmarks/actions.ts` |
 | `fetchOgp(url)` | URL から OGP 情報を取得 | `src/app/(dashboard)/bookmarks/fetchOgp.ts` |
+| `generateApiKey()` | API キーの生成・再生成 | `src/app/(dashboard)/api-key-actions.ts` |
+| `revokeApiKey()` | API キーの失効（無効化） | `src/app/(dashboard)/api-key-actions.ts` |
 
 ---
 
@@ -99,7 +103,7 @@
 
 ### `deleteBookmark(id, prevState)`
 
-ブックマークを削除する。
+ブックマークを**ソフトデリート**する（物理削除せず `deletedAt` を設定してゴミ箱へ移す）。
 
 **引数:** `id: string`, `prevState: { error?: string }`
 
@@ -115,9 +119,37 @@
 
 ### `deleteBookmarks(ids)`
 
-複数ブックマークを一括削除する。自ユーザーのもの以外は削除されない。
+複数ブックマークを一括で**ソフトデリート**する。自ユーザーのもの以外は対象外。
 
 **引数:** `ids: string[]`
+
+**戻り値:** `{}` | `{ error: string }`
+
+**未認証時:** `/sign-in` へ redirect
+
+---
+
+### `restoreBookmark(id)`
+
+ゴミ箱内のブックマークを復元する（`deletedAt` を null に戻す）。tagId は保持されているため元のカテゴリに復帰する。
+
+**引数:** `id: string`
+
+**戻り値:** `{}` | `{ error: string }`
+
+| エラー | 条件 |
+|--------|------|
+| 未認証 | `/sign-in` へ redirect |
+| `"ブックマークが見つかりません"` | 指定 ID が存在しない |
+| `"権限がありません"` | 他ユーザーのブックマーク |
+
+---
+
+### `emptyTrash()`
+
+ゴミ箱内（`deletedAt` が非 null）の自ユーザーのブックマークを**物理削除**する（不可逆）。
+
+**引数:** なし
 
 **戻り値:** `{}` | `{ error: string }`
 
@@ -214,3 +246,33 @@
 |--------|------|
 | `{ title, image }` | 正常取得（image は絶対 URL に解決済み） |
 | `{ error: "取得できませんでした" }` | URLバリデーション失敗・fetch 失敗・タイムアウト（3秒）・レスポンス異常 |
+
+---
+
+## API キー操作（`src/app/(dashboard)/api-key-actions.ts`）
+
+外部 REST API（[`docs/api.md`](api.md)）の認証で使用する API キーの生成・取得。
+
+### `generateApiKey()`
+
+現在のユーザーの API キーを新規発行（再生成）する。既存キーは上書きされ無効になる（1 ユーザー 1 キー）。キーは `crypto.randomUUID()`（UUID v4）で生成する。
+
+**引数:** なし
+
+**戻り値:** `{ apiKey: string }`（生成した実値。クライアントには生成・再生成の直後のみ渡す）
+
+**未認証時:** `/sign-in` へ redirect
+
+> キーの実値をクライアントへ渡すのは生成・再生成の応答時のみ。既存キーの有無はサーバー（`layout.tsx`）で `lib/api-key.ts` の `getApiKey` を用いて boolean として算出し、実値はクライアントに渡さない。
+
+---
+
+### `revokeApiKey()`
+
+現在のユーザーの API キーを失効させる（`apiKey` を null に戻す）。以降そのキーでの API 認証は失敗する。
+
+**引数:** なし
+
+**戻り値:** `{ apiKey: null }`
+
+**未認証時:** `/sign-in` へ redirect

@@ -63,13 +63,17 @@ flowchart TD
 - カテゴリ内で連続する同一ドメインのブックマークをドメインサブグループとして表示する
   - 連続する同一ドメインが2件以上の場合のみ、ドメインサブグループとして左レール（左縦線＋インデント）で範囲を囲み、上部にドメイン名・件数の見出しを表示する
   - 間に別ドメインが挟まる場合はサブグループ化しない（連続判定はカテゴリごとに独立）
-  - 同一ドメインが1件のみの場合は見出しを表示せず、行の右端にドメイン名を表示する
+  - 同一ドメインが1件のみの場合はサブグループ化せず、追加のラベルも表示しない（URL はタイトル下に表示される）
   - サブグループは表示時のレンダリングのみで、D&D で並び順が変わると動的に再計算される（並び順は尊重し D&D ロジックは変更しない）
 - カテゴリ未設定のブックマークは「未分類」グループに表示される
 - ブックマークが 0 件の場合は「まだブックマークがありません」を表示
 - 各ブックマークに編集ボタン・削除ボタンを表示
-- 削除ボタンをクリックすると即座に UI から非表示になり（楽観的更新）、5 秒後に DB から削除確定する（確認ダイアログは表示しない）
-- 5 秒以内に Undo した場合は削除を取り消す
+- 削除ボタンをクリックすると即座にゴミ箱へ移動する（ソフトデリート・確認ダイアログなし・Undo なし）
+- カテゴリ一覧の末尾に「ゴミ箱」グループを表示する（ゴミ箱が空でないときのみ）
+  - デフォルトで折りたたみ（閉じた）状態。開閉状態は他カテゴリと同様に Cookie（キー `__trash__`）に保存
+  - 各行に「復元」ボタンを表示（編集・削除・D&D は無効）。復元すると元のカテゴリに戻る
+  - ヘッダーの「全削除」ボタンでゴミ箱内を完全削除する（不可逆のため確認ダイアログを表示）
+- カテゴリの件数バッジはアクティブ（未削除）のブックマークのみを数える
 - ヘッダーエリア（検索窓・「カテゴリ管理」ボタン・「追加」ボタン）は1行に横並びで表示し、`sticky` で画面上部に固定する
 - ヘッダーエリアの下にカテゴリナビゲーションバーを表示する（色丸・カテゴリ名・件数を横並び表示、クリックで対応カテゴリグループまで自動スクロール）
 - リスト行に OGP サムネイル（og_image）を表示する（`hideOgImage` が `true` のブックマークは非表示）
@@ -111,6 +115,20 @@ flowchart TD
 - バリデーションは追加モーダルと同様
 - 保存後はモーダルを閉じて一覧を更新（楽観的更新）
 - ESC キー・オーバーレイクリック・× ボタン・キャンセルボタンで閉じる
+
+### 設定モーダル
+
+- ヘッダーの設定ボタン（歯車アイコン）で開く
+- 「API キー」セクションで外部 REST API（`GET /api/bookmarks`）用の API キーを管理する
+- **キーの実値はクライアントに渡さない**。サーバー（`layout.tsx`）が「キーの有無（boolean）」のみを渡し、モーダルは開いたときに実値を取得しない（ローディングやレイアウトのちらつきがない）
+- 表示状態は3つ：
+  - **未発行**: 「生成する」ボタンのみ
+  - **生成・再生成直後**: 実値を入力欄に表示（`type="password"` でマスク・「表示/隠す」トグルで切替）＋「再生成」「失効」。この場で控えないと再表示できない旨を案内する
+  - **発行済み（実値非保持）**: マスクされたプレースホルダ（`type="password"`）＋「再生成」「失効」。実値の再表示・コピーは不可
+- 「再生成」で新しいキーを発行（旧キーは無効）、「失効」は確認ダイアログを経てキーを無効化（未発行状態に戻す）
+- 生成・失効の後は `router.refresh()` でサーバー側の「キー有無」を更新し、閉じて再度開いたときの初期表示（未発行 / 発行済み）を同期する
+- ESC キー・オーバーレイクリック・× ボタンで閉じる
+- `createPortal` で `document.body` 直下に描画し、`sticky` ヘッダーの stacking context に潜らないようにする
 
 ## 各画面の表示状態
 
@@ -165,9 +183,9 @@ src/app/
 │       ├── SortableBookmarkItem.tsx # ソート可能なブックマーク行
 │       ├── CategoryGroup.tsx       # カテゴリグループ（折りたたみ・D&D）
 │       ├── CategoryDropZone.tsx    # カテゴリ内ドロップゾーン
+│       ├── TrashGroup.tsx          # ゴミ箱グループ（復元・全削除）
 │       ├── DragHandleIcon.tsx      # ドラッグハンドルアイコン
 │       ├── DeleteButton.tsx        # 削除ボタン（useActionState）
-│       ├── UndoSnackbar.tsx        # 削除 Undo スナックバー
 │       ├── useDragAndDrop.ts       # D&D ロジックカスタムフック
 │       ├── types.ts                # 共通型定義
 │       ├── actions.ts             # Server Actions
@@ -187,16 +205,18 @@ src/components/
 | コンポーネント | ファイル | 種別 | 説明 |
 |--------------|---------|------|------|
 | `BookmarkForm` | `bookmarks/BookmarkForm.tsx` | Client Component | ブックマーク登録・編集フォーム。バリデーション・送信処理・OGP 自動取得・カテゴリ選択を担当 |
-| `BookmarkList` | `bookmarks/BookmarkList.tsx` | Client Component | ブックマーク一覧。カテゴリグルーピング・検索・削除操作・楽観的削除/Undo 管理を担当 |
+| `BookmarkList` | `bookmarks/BookmarkList.tsx` | Client Component | ブックマーク一覧。カテゴリグルーピング・検索・削除（ゴミ箱移動）・復元・全削除の管理を担当 |
 | `BookmarkItemContent` | `bookmarks/BookmarkItemContent.tsx` | Component | ブックマーク行の表示内容（タイトル・URL・メモ・OGP画像・編集/削除ボタン） |
 | `SortableBookmarkItem` | `bookmarks/SortableBookmarkItem.tsx` | Component | ソート可能なブックマーク行。`useSortable` で D&D 対応 |
 | `CategoryGroup` | `bookmarks/CategoryGroup.tsx` | Client Component | カテゴリグループ。折りたたみ・D&D 対応のカテゴリヘッダーとブックマークリスト |
 | `CategoryDropZone` | `bookmarks/CategoryDropZone.tsx` | Component | カテゴリ内の空ドロップゾーン。カテゴリ間ブックマーク移動時の drop target |
+| `TrashGroup` | `bookmarks/TrashGroup.tsx` | Client Component | ゴミ箱グループ。削除済みブックマークの復元・全削除・折りたたみ表示 |
 | `DragHandleIcon` | `bookmarks/DragHandleIcon.tsx` | Component | ドラッグハンドルの SVG アイコン |
 | `DeleteButton` | `bookmarks/DeleteButton.tsx` | Client Component | 削除ボタン。`useActionState` で Server Action を呼び出し |
 | `LogoutButton` | `LogoutButton.tsx` | Client Component | ログアウトボタン。Clerk 7 + React 19 対応のため `useClerk` フックで実装 |
-| `UndoSnackbar` | `bookmarks/UndoSnackbar.tsx` | Client Component | 削除後 5 秒間表示する Undo スナックバー |
-| `Header` | `components/Header.tsx` | Client Component | ヘッダー。アプリ名・メールアドレス・ログアウトボタンを表示 |
+| `Header` | `components/Header.tsx` | Component | ヘッダー。アプリ名・メールアドレス・設定ボタン・ログアウトボタンを表示 |
+| `SettingsButton` | `components/SettingsButton.tsx` | Client Component | ヘッダーの設定ボタン（歯車アイコン）。クリックで `SettingsModal` を開く |
+| `SettingsModal` | `components/SettingsModal.tsx` | Client Component | 設定モーダル。API キーの生成/再生成/失効・表示/隠す（`createPortal` で body 直下に描画） |
 | `BookmarkAddModal` | `components/BookmarkAddModal.tsx` | Client Component | ブックマーク追加モーダル。`BookmarkForm` をラップ |
 | `BookmarkEditModal` | `components/BookmarkEditModal.tsx` | Client Component | ブックマーク編集モーダル。`BookmarkForm` をラップ |
 | `TagManagementModal` | `components/TagManagementModal.tsx` | Client Component | カテゴリ管理モーダル。カテゴリの作成・編集・削除・一覧表示 |

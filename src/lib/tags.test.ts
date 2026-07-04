@@ -62,6 +62,22 @@ describe("getTagsWithCount", () => {
 
     expect(result).toEqual([{ id: "tag_1", name: "React", bookmarkCount: 3 }]);
   });
+
+  it("件数は未削除（deletedAt: null）のブックマークのみカウントする", async () => {
+    mockTagFindMany.mockResolvedValue([
+      { id: "tag_1", name: "React", _count: { bookmarks: 1 } },
+    ] as never);
+
+    await getTagsWithCount(userId);
+
+    expect(mockTagFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        select: expect.objectContaining({
+          _count: { select: { bookmarks: { where: { deletedAt: null } } } },
+        }),
+      }),
+    );
+  });
 });
 
 describe("createTag", () => {

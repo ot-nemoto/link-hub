@@ -9,8 +9,10 @@ import {
   createBookmark as libCreateBookmark,
   deleteBookmark as libDeleteBookmark,
   deleteBookmarks as libDeleteBookmarks,
+  emptyTrash as libEmptyTrash,
   moveBookmark as libMoveBookmark,
   reorderBookmarks as libReorderBookmarks,
+  restoreBookmark as libRestoreBookmark,
   updateBookmark as libUpdateBookmark,
 } from "@/lib/bookmarks";
 import {
@@ -125,6 +127,24 @@ export async function deleteBookmarks(ids: string[]): Promise<{ error?: string }
   if (!session) redirect("/sign-in");
 
   const result = await libDeleteBookmarks(session.user.id, ids);
+  revalidatePath("/bookmarks");
+  return result;
+}
+
+export async function restoreBookmark(id: string): Promise<{ error?: string }> {
+  const session = await getSession();
+  if (!session) redirect("/sign-in");
+
+  const result = await libRestoreBookmark(session.user.id, id);
+  revalidatePath("/bookmarks");
+  return result;
+}
+
+export async function emptyTrash(): Promise<{ error?: string }> {
+  const session = await getSession();
+  if (!session) redirect("/sign-in");
+
+  const result = await libEmptyTrash(session.user.id);
   revalidatePath("/bookmarks");
   return result;
 }

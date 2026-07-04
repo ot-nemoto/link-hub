@@ -5,9 +5,12 @@ import {
   createBookmark,
   deleteBookmark,
   deleteBookmarks,
+  emptyTrash,
   getBookmarks,
+  getDeletedBookmarks,
   moveBookmark,
   reorderBookmarks,
+  restoreBookmark,
   updateBookmark,
 } from "./bookmarks";
 
@@ -18,6 +21,7 @@ vi.mock("@/lib/prisma", () => ({
       findUnique: vi.fn(),
       findMany: vi.fn(),
       update: vi.fn(),
+      updateMany: vi.fn(),
       delete: vi.fn(),
       deleteMany: vi.fn(),
       aggregate: vi.fn(),
@@ -39,6 +43,7 @@ const mockBookmarkCreate = vi.mocked(prisma.bookmark.create);
 const mockBookmarkFindUnique = vi.mocked(prisma.bookmark.findUnique);
 const mockBookmarkFindMany = vi.mocked(prisma.bookmark.findMany);
 const mockBookmarkUpdate = vi.mocked(prisma.bookmark.update);
+const mockBookmarkUpdateMany = vi.mocked(prisma.bookmark.updateMany);
 const mockBookmarkDelete = vi.mocked(prisma.bookmark.delete);
 const mockBookmarkDeleteMany = vi.mocked(prisma.bookmark.deleteMany);
 const mockBookmarkAggregate = vi.mocked(prisma.bookmark.aggregate);
@@ -57,6 +62,7 @@ const bookmark = {
   hideOgImage: false,
   sortOrder: 0,
   tagId: null,
+  deletedAt: null,
   createdAt: new Date(),
   updatedAt: new Date(),
 };
@@ -66,13 +72,13 @@ const bookmarkData = { url: "https://example.com", title: "Example", memo: "" };
 describe("getBookmarks", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("正常系: userId でフィルタして返す", async () => {
+  it("正常系: userId かつ未削除でフィルタして返す", async () => {
     mockBookmarkFindMany.mockResolvedValue([bookmark] as never);
 
     const result = await getBookmarks(userId);
 
     expect(mockBookmarkFindMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { userId } }),
+      expect.objectContaining({ where: { userId, deletedAt: null } }),
     );
     expect(result).toEqual([bookmark]);
   });
@@ -84,9 +90,25 @@ describe("getBookmarks", () => {
 
     expect(mockBookmarkFindMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({ OR: expect.any(Array) }),
+        where: expect.objectContaining({ deletedAt: null, OR: expect.any(Array) }),
       }),
     );
+  });
+});
+
+describe("getDeletedBookmarks", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("正常系: userId かつ削除済み（deletedAt != null）を返す", async () => {
+    const deleted = { ...bookmark, deletedAt: new Date() };
+    mockBookmarkFindMany.mockResolvedValue([deleted] as never);
+
+    const result = await getDeletedBookmarks(userId);
+
+    expect(mockBookmarkFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { userId, deletedAt: { not: null } } }),
+    );
+    expect(result).toEqual([deleted]);
   });
 });
 
@@ -302,14 +324,18 @@ describe("reorderBookmarks", () => {
 describe("deleteBookmark", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("正常系: ブックマークを削除して {} を返す", async () => {
+  it("正常系: ソフトデリート（deletedAt を設定）して {} を返す", async () => {
     mockBookmarkFindUnique.mockResolvedValue(bookmark as never);
-    mockBookmarkDelete.mockResolvedValue(bookmark);
+    mockBookmarkUpdate.mockResolvedValue(bookmark);
 
     const result = await deleteBookmark(userId, "bm_1");
 
     expect(result).toEqual({});
-    expect(mockBookmarkDelete).toHaveBeenCalledWith({ where: { id: "bm_1" } });
+    expect(mockBookmarkDelete).not.toHaveBeenCalled();
+    expect(mockBookmarkUpdate).toHaveBeenCalledWith({
+      where: { id: "bm_1" },
+      data: { deletedAt: expect.any(Date) },
+    });
   });
 
   it("存在しないブックマークは error を返す", async () => {
@@ -318,7 +344,7 @@ describe("deleteBookmark", () => {
     const result = await deleteBookmark(userId, "bm_not_exist");
 
     expect(result).toEqual({ error: "ブックマークが見つかりません" });
-    expect(mockBookmarkDelete).not.toHaveBeenCalled();
+    expect(mockBookmarkUpdate).not.toHaveBeenCalled();
   });
 
   it("他ユーザーのブックマークは error を返す", async () => {
@@ -327,31 +353,84 @@ describe("deleteBookmark", () => {
     const result = await deleteBookmark(userId, "bm_1");
 
     expect(result).toEqual({ error: "権限がありません" });
-    expect(mockBookmarkDelete).not.toHaveBeenCalled();
+    expect(mockBookmarkUpdate).not.toHaveBeenCalled();
   });
 });
 
 describe("deleteBookmarks", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("正常系: 指定 ID を削除して {} を返す", async () => {
-    mockBookmarkDeleteMany.mockResolvedValue({ count: 2 });
+  it("正常系: 指定 ID をソフトデリートして {} を返す", async () => {
+    mockBookmarkUpdateMany.mockResolvedValue({ count: 2 });
 
     const result = await deleteBookmarks(userId, ["bm_1", "bm_2"]);
 
     expect(result).toEqual({});
-    expect(mockBookmarkDeleteMany).toHaveBeenCalledWith({
+    expect(mockBookmarkDeleteMany).not.toHaveBeenCalled();
+    expect(mockBookmarkUpdateMany).toHaveBeenCalledWith({
       where: { id: { in: ["bm_1", "bm_2"] }, userId },
+      data: { deletedAt: expect.any(Date) },
     });
   });
 
-  it("userId フィルタにより他ユーザーのブックマークは削除されない", async () => {
-    mockBookmarkDeleteMany.mockResolvedValue({ count: 1 });
+  it("userId フィルタにより他ユーザーのブックマークは対象外", async () => {
+    mockBookmarkUpdateMany.mockResolvedValue({ count: 1 });
 
     await deleteBookmarks(userId, ["bm_1", "bm_other"]);
 
-    expect(mockBookmarkDeleteMany).toHaveBeenCalledWith({
+    expect(mockBookmarkUpdateMany).toHaveBeenCalledWith({
       where: { id: { in: ["bm_1", "bm_other"] }, userId },
+      data: { deletedAt: expect.any(Date) },
+    });
+  });
+});
+
+describe("restoreBookmark", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("正常系: deletedAt を null に戻して {} を返す", async () => {
+    mockBookmarkFindUnique.mockResolvedValue({ ...bookmark, deletedAt: new Date() } as never);
+    mockBookmarkUpdate.mockResolvedValue(bookmark);
+
+    const result = await restoreBookmark(userId, "bm_1");
+
+    expect(result).toEqual({});
+    expect(mockBookmarkUpdate).toHaveBeenCalledWith({
+      where: { id: "bm_1" },
+      data: { deletedAt: null },
+    });
+  });
+
+  it("存在しないブックマークは error を返す", async () => {
+    mockBookmarkFindUnique.mockResolvedValue(null);
+
+    const result = await restoreBookmark(userId, "bm_not_exist");
+
+    expect(result).toEqual({ error: "ブックマークが見つかりません" });
+    expect(mockBookmarkUpdate).not.toHaveBeenCalled();
+  });
+
+  it("他ユーザーのブックマークは error を返す", async () => {
+    mockBookmarkFindUnique.mockResolvedValue(otherBookmark as never);
+
+    const result = await restoreBookmark(userId, "bm_1");
+
+    expect(result).toEqual({ error: "権限がありません" });
+    expect(mockBookmarkUpdate).not.toHaveBeenCalled();
+  });
+});
+
+describe("emptyTrash", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("正常系: 削除済み（deletedAt != null）を物理削除して {} を返す", async () => {
+    mockBookmarkDeleteMany.mockResolvedValue({ count: 3 });
+
+    const result = await emptyTrash(userId);
+
+    expect(result).toEqual({});
+    expect(mockBookmarkDeleteMany).toHaveBeenCalledWith({
+      where: { userId, deletedAt: { not: null } },
     });
   });
 });

@@ -18,6 +18,7 @@ model User {
   clerkId   String     @unique @map("clerk_id")
   email     String     @unique
   name      String?
+  apiKey    String?    @unique @map("api_key")
   createdAt DateTime   @default(now()) @map("created_at")
   updatedAt DateTime   @updatedAt @map("updated_at")
 
@@ -33,12 +34,13 @@ model Bookmark {
   title       String
   memo        String?
   ogImage     String?  @map("og_image")
-  hideOgImage Boolean  @default(false) @map("hide_og_image")
-  sortOrder   Int      @default(0) @map("sort_order")
-  userId      String   @map("user_id")
-  tagId       String?  @map("tag_id")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  hideOgImage Boolean   @default(false) @map("hide_og_image")
+  sortOrder   Int       @default(0) @map("sort_order")
+  userId      String    @map("user_id")
+  tagId       String?   @map("tag_id")
+  deletedAt   DateTime? @map("deleted_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   tag  Tag? @relation(fields: [tagId], references: [id], onDelete: SetNull)
@@ -75,6 +77,7 @@ erDiagram
         String clerkId UK
         String email UK
         String name "nullable"
+        String apiKey UK "nullable"
         DateTime createdAt
         DateTime updatedAt
     }
@@ -88,6 +91,7 @@ erDiagram
         Int sortOrder
         String userId FK
         String tagId FK "nullable"
+        DateTime deletedAt "nullable"
         DateTime createdAt
         DateTime updatedAt
     }
@@ -116,6 +120,7 @@ erDiagram
 | clerkId | String | ユニーク。Clerk ユーザー ID（初回ログイン時に同期） |
 | email | String | ユニーク。メールアドレス |
 | name | String? | 表示名（任意） |
+| apiKey | String? | 外部 REST API 用の API キー（ユニーク・平文）。未発行は null。ヘッダーのモーダルで生成・再生成 |
 | createdAt | DateTime | 作成日時 |
 | updatedAt | DateTime | 更新日時 |
 
@@ -132,6 +137,7 @@ erDiagram
 | sortOrder | Int | 表示順（デフォルト 0、D&D による並び替えで更新） |
 | userId | String | 外部キー → User.id（User 削除時に CASCADE） |
 | tagId | String? | 外部キー → Tag.id（Tag 削除時に SET NULL）。カテゴリ分類用。null は「未分類」 |
+| deletedAt | DateTime? | ソフトデリート日時。非 null は「ゴミ箱」。一覧取得は `deletedAt IS NULL` のみ対象 |
 | createdAt | DateTime | 作成日時 |
 | updatedAt | DateTime | 更新日時 |
 
@@ -153,6 +159,7 @@ erDiagram
 |----------|------------|------|
 | users | `clerk_id` | Clerk ID による高速ルックアップ（UNIQUE） |
 | users | `email` | メールアドレス重複防止（UNIQUE） |
+| users | `api_key` | API キーによる認証時の高速ルックアップ（UNIQUE） |
 | bookmarks | `user_id` | ユーザー別ブックマーク取得の高速化 |
 | bookmarks | `tag_id` | カテゴリ別ブックマーク取得の高速化 |
 | tags | `(user_id, name)` | ユーザー内タグ名のユニーク制約・高速ルックアップ |

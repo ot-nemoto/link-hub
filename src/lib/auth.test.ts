@@ -32,6 +32,7 @@ const dbUser = {
   clerkId: "clerk_123",
   email: "test@example.com",
   name: "Test User",
+  apiKey: null,
   createdAt: new Date(),
   updatedAt: new Date(),
 };
