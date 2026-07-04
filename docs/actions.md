@@ -17,6 +17,8 @@
 | `reorderTags(ids, options?)` | カテゴリの並び順更新 | `src/app/(dashboard)/bookmarks/actions.ts` |
 | `deleteTag(id)` | カテゴリ削除 | `src/app/(dashboard)/bookmarks/actions.ts` |
 | `fetchOgp(url)` | URL から OGP 情報を取得 | `src/app/(dashboard)/bookmarks/fetchOgp.ts` |
+| `generateApiKey()` | API キーの生成・再生成 | `src/app/(dashboard)/api-key-actions.ts` |
+| `revokeApiKey()` | API キーの失効（無効化） | `src/app/(dashboard)/api-key-actions.ts` |
 
 ---
 
@@ -244,3 +246,33 @@
 |--------|------|
 | `{ title, image }` | 正常取得（image は絶対 URL に解決済み） |
 | `{ error: "取得できませんでした" }` | URLバリデーション失敗・fetch 失敗・タイムアウト（3秒）・レスポンス異常 |
+
+---
+
+## API キー操作（`src/app/(dashboard)/api-key-actions.ts`）
+
+外部 REST API（[`docs/api.md`](api.md)）の認証で使用する API キーの生成・取得。
+
+### `generateApiKey()`
+
+現在のユーザーの API キーを新規発行（再生成）する。既存キーは上書きされ無効になる（1 ユーザー 1 キー）。キーは `crypto.randomUUID()`（UUID v4）で生成する。
+
+**引数:** なし
+
+**戻り値:** `{ apiKey: string }`（生成した実値。クライアントには生成・再生成の直後のみ渡す）
+
+**未認証時:** `/sign-in` へ redirect
+
+> キーの実値をクライアントへ渡すのは生成・再生成の応答時のみ。既存キーの有無はサーバー（`layout.tsx`）で `lib/api-key.ts` の `getApiKey` を用いて boolean として算出し、実値はクライアントに渡さない。
+
+---
+
+### `revokeApiKey()`
+
+現在のユーザーの API キーを失効させる（`apiKey` を null に戻す）。以降そのキーでの API 認証は失敗する。
+
+**引数:** なし
+
+**戻り値:** `{ apiKey: null }`
+
+**未認証時:** `/sign-in` へ redirect

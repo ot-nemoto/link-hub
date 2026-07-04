@@ -18,6 +18,7 @@ model User {
   clerkId   String     @unique @map("clerk_id")
   email     String     @unique
   name      String?
+  apiKey    String?    @unique @map("api_key")
   createdAt DateTime   @default(now()) @map("created_at")
   updatedAt DateTime   @updatedAt @map("updated_at")
 
@@ -76,6 +77,7 @@ erDiagram
         String clerkId UK
         String email UK
         String name "nullable"
+        String apiKey UK "nullable"
         DateTime createdAt
         DateTime updatedAt
     }
@@ -118,6 +120,7 @@ erDiagram
 | clerkId | String | ユニーク。Clerk ユーザー ID（初回ログイン時に同期） |
 | email | String | ユニーク。メールアドレス |
 | name | String? | 表示名（任意） |
+| apiKey | String? | 外部 REST API 用の API キー（ユニーク・平文）。未発行は null。ヘッダーのモーダルで生成・再生成 |
 | createdAt | DateTime | 作成日時 |
 | updatedAt | DateTime | 更新日時 |
 
@@ -156,6 +159,7 @@ erDiagram
 |----------|------------|------|
 | users | `clerk_id` | Clerk ID による高速ルックアップ（UNIQUE） |
 | users | `email` | メールアドレス重複防止（UNIQUE） |
+| users | `api_key` | API キーによる認証時の高速ルックアップ（UNIQUE） |
 | bookmarks | `user_id` | ユーザー別ブックマーク取得の高速化 |
 | bookmarks | `tag_id` | カテゴリ別ブックマーク取得の高速化 |
 | tags | `(user_id, name)` | ユーザー内タグ名のユニーク制約・高速ルックアップ |

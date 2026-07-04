@@ -189,3 +189,18 @@
 |---|---------|------|---------|-------|
 | 1 | `bonjiri@example.com` → `tsukune@example.com` | bonjiri でログインしてブックマーク数（6件）を確認後、ログアウトして tsukune でログインする | ブックマーク分離 | tsukune のブックマーク（Figma・MDN Web Docs の2件）のみ表示される。bonjiri のブックマークは表示されない |
 | 2 | `bonjiri@example.com` → `tsukune@example.com` | bonjiri でログインしてカテゴリ（Frontend・Backend）を確認後、ログアウトして tsukune でログインしカテゴリ管理モーダルを開く | カテゴリ分離 | tsukune のカテゴリ（Design）のみ表示される。bonjiri のカテゴリは表示されない |
+
+---
+
+## API キー / 外部 API
+
+| # | ユーザー | 手順 | 確認観点 | 期待値 |
+|---|---------|------|---------|-------|
+| 1 | `bonjiri@example.com` | ヘッダーの設定ボタン（歯車）をクリックする | モーダル表示 | 設定モーダルが表示される（キー未発行時は「生成する」のみ・ローディング無し） |
+| 2 | `bonjiri@example.com` | 「生成する」をクリックする | キー生成 | UUID 形式のキーが入力欄に表示される（初期はマスク）。「表示」で実値が見える |
+| 3 | `bonjiri@example.com` | 「表示」で実値を控えてモーダルを閉じ、再度開く | 実値非保持 | キー欄はマスクされたプレースホルダのみ（実値は再表示できない） |
+| 4 | `bonjiri@example.com` | 控えたキーで `GET /api/bookmarks` を `Authorization: Bearer <キー>` 付きで呼ぶ | API 取得 | 自分のブックマークが JSON（`{ bookmarks: [...] }`）で返る |
+| 5 | 認証なし | Authorization ヘッダー無しで `GET /api/bookmarks` を呼ぶ | 認証必須 | `401`・`{ "error": "Unauthorized" }` が返る |
+| 6 | 無効なキー | 存在しないキーで `GET /api/bookmarks` を呼ぶ | 認証失敗 | `401` が返る |
+| 7 | `bonjiri@example.com` | 「再生成」後、旧キーで API を呼ぶ | 旧キー無効化 | 旧キーでは `401`、新キーでは 200 |
+| 8 | `bonjiri@example.com` | 「失効」→確認ダイアログで OK | キー失効 | 「生成する」表示に戻り、そのキーで API を呼ぶと `401` |
