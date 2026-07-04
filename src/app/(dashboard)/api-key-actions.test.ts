@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { generateApiKey, revokeApiKey } from "./api-key-actions";
 
+vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
 vi.mock("@/lib/auth", () => ({ getSession: vi.fn() }));
 vi.mock("@/lib/api-key", () => ({
@@ -12,6 +13,7 @@ vi.mock("@/lib/api-key", () => ({
 
 vi.stubEnv("DATABASE_URL", "postgresql://test");
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import * as libApiKey from "@/lib/api-key";
 import { getSession } from "@/lib/auth";
@@ -19,6 +21,7 @@ import { getSession } from "@/lib/auth";
 const mockRedirect = vi.mocked(redirect).mockImplementation(() => {
   throw new Error("NEXT_REDIRECT");
 });
+const mockRevalidatePath = vi.mocked(revalidatePath);
 const mockGetSession = vi.mocked(getSession);
 const mockLibGenerate = vi.mocked(libApiKey.generateApiKey);
 const mockLibRevoke = vi.mocked(libApiKey.revokeApiKey);
@@ -28,14 +31,25 @@ const session = { user: { id: "user_1", name: "Test", email: "test@example.com" 
 describe("generateApiKey action", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("正常系: lib を呼び生成したキーを返す", async () => {
+  it("正常系: lib を呼び revalidatePath して生成したキーを返す", async () => {
     mockGetSession.mockResolvedValue(session);
-    mockLibGenerate.mockResolvedValue("lh_generated");
+    mockLibGenerate.mockResolvedValue("key-generated");
 
     const result = await generateApiKey();
 
     expect(mockLibGenerate).toHaveBeenCalledWith("user_1");
-    expect(result).toEqual({ apiKey: "lh_generated" });
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/bookmarks");
+    expect(result).toEqual({ apiKey: "key-generated" });
+  });
+
+  it("lib が失敗した場合は { error } を返す", async () => {
+    mockGetSession.mockResolvedValue(session);
+    mockLibGenerate.mockRejectedValue(new Error("db error"));
+
+    const result = await generateApiKey();
+
+    expect(result).toEqual({ error: "API キーの生成に失敗しました" });
+    expect(mockRevalidatePath).not.toHaveBeenCalled();
   });
 
   it("未認証の場合 redirect を呼ぶ", async () => {
@@ -50,14 +64,25 @@ describe("generateApiKey action", () => {
 describe("revokeApiKey action", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("正常系: lib を呼び { apiKey: null } を返す", async () => {
+  it("正常系: lib を呼び revalidatePath して {} を返す", async () => {
     mockGetSession.mockResolvedValue(session);
     mockLibRevoke.mockResolvedValue(undefined);
 
     const result = await revokeApiKey();
 
     expect(mockLibRevoke).toHaveBeenCalledWith("user_1");
-    expect(result).toEqual({ apiKey: null });
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/bookmarks");
+    expect(result).toEqual({});
+  });
+
+  it("lib が失敗した場合は { error } を返す", async () => {
+    mockGetSession.mockResolvedValue(session);
+    mockLibRevoke.mockRejectedValue(new Error("db error"));
+
+    const result = await revokeApiKey();
+
+    expect(result).toEqual({ error: "API キーの失効に失敗しました" });
+    expect(mockRevalidatePath).not.toHaveBeenCalled();
   });
 
   it("未認証の場合 redirect を呼ぶ", async () => {

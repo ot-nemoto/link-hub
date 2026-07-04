@@ -37,6 +37,7 @@ export function SettingsModal({
     setPending(true);
     try {
       const r = await generateApiKey();
+      if (!r.apiKey) return;
       setHasApiKey(true);
       setApiKey(r.apiKey);
       setVisible(true);
