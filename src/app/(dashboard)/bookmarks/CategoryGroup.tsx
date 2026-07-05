@@ -8,6 +8,7 @@ import { groupByConsecutiveDomain } from "@/lib/domain-groups";
 import { getTagColor } from "@/lib/tag-colors";
 import { CategoryDropZone } from "./CategoryDropZone";
 import { DragHandleIcon } from "./DragHandleIcon";
+import { GlobeIcon } from "./GlobeIcon";
 import { SortableBookmarkItem } from "./SortableBookmarkItem";
 import type { Bookmark, TagItem } from "./types";
 
@@ -114,9 +115,10 @@ export function CategoryGroup({
                   return [
                     <li
                       key={`domain-${seg.bookmarks[0].id}`}
-                      className="flex flex-col gap-2 border-l-2 border-zinc-300 pl-3"
+                      className="flex flex-col gap-2 border-l-4 border-zinc-400 pl-4"
                     >
                       <div className="flex items-center gap-2 text-xs text-zinc-500">
+                        <GlobeIcon />
                         <span className="font-medium">{seg.domain}</span>
                         <span className="text-zinc-400">{seg.bookmarks.length}</span>
                       </div>
