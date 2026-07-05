@@ -61,7 +61,7 @@ flowchart TD
   - Cookie はサーバー（`page.tsx`）でも読み取り、初期 HTML を正しい開閉状態でレンダリングする（ハイドレーション時のちらつき防止）
   - 状態が未保存のカテゴリ（新規カテゴリ含む）はデフォルト展開。未分類グループも対象
 - カテゴリ内で連続する同一ドメインのブックマークをドメインサブグループとして表示する
-  - 連続する同一ドメインが2件以上の場合のみ、ドメインサブグループとして左レール（左縦線＋インデント）で範囲を囲み、上部にドメイン名・件数の見出しを表示する
+  - 連続する同一ドメインが2件以上の場合のみ、ドメインサブグループとして左レール（`border-l-4 border-zinc-400` の縦線＋インデント）で範囲を囲み、上部にグローブアイコン・ドメイン名・件数の見出しを表示する
   - 間に別ドメインが挟まる場合はサブグループ化しない（連続判定はカテゴリごとに独立）
   - 同一ドメインが1件のみの場合はサブグループ化せず、追加のラベルも表示しない（URL はタイトル下に表示される）
   - サブグループは表示時のレンダリングのみで、D&D で並び順が変わると動的に再計算される（並び順は尊重し D&D ロジックは変更しない）
@@ -212,6 +212,7 @@ src/components/
 | `CategoryDropZone` | `bookmarks/CategoryDropZone.tsx` | Component | カテゴリ内の空ドロップゾーン。カテゴリ間ブックマーク移動時の drop target |
 | `TrashGroup` | `bookmarks/TrashGroup.tsx` | Client Component | ゴミ箱グループ。削除済みブックマークの復元・全削除・折りたたみ表示 |
 | `DragHandleIcon` | `bookmarks/DragHandleIcon.tsx` | Component | ドラッグハンドルの SVG アイコン |
+| `GlobeIcon` | `bookmarks/GlobeIcon.tsx` | Component | ドメインサブグループ見出しのグローブ（世界）SVG アイコン |
 | `DeleteButton` | `bookmarks/DeleteButton.tsx` | Client Component | 削除ボタン。`useActionState` で Server Action を呼び出し |
 | `LogoutButton` | `LogoutButton.tsx` | Client Component | ログアウトボタン。Clerk 7 + React 19 対応のため `useClerk` フックで実装 |
 | `Header` | `components/Header.tsx` | Component | ヘッダー。アプリ名・メールアドレス・設定ボタン・ログアウトボタンを表示 |

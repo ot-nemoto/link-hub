@@ -22,6 +22,7 @@ import {
 import { BookmarkItemContent } from "./BookmarkItemContent";
 import { CategoryGroup } from "./CategoryGroup";
 import { DragHandleIcon } from "./DragHandleIcon";
+import { GlobeIcon } from "./GlobeIcon";
 import { TRASH_COLLAPSE_KEY, TrashGroup } from "./TrashGroup";
 import type { Bookmark, TagItem, TagWithCount } from "./types";
 import { UNCATEGORIZED_KEY } from "./types";
@@ -400,9 +401,10 @@ export function BookmarkList({
                         return [
                           <li
                             key={`domain-${seg.bookmarks[0].id}`}
-                            className="flex flex-col gap-2 border-l-2 border-zinc-300 pl-3"
+                            className="flex flex-col gap-2 border-l-4 border-zinc-400 pl-4"
                           >
                             <div className="flex items-center gap-2 text-xs text-zinc-500">
+                              <GlobeIcon />
                               <span className="font-medium">{seg.domain}</span>
                               <span className="text-zinc-400">{seg.bookmarks.length}</span>
                             </div>
