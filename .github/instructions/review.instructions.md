@@ -115,23 +115,19 @@ applyTo: "**"
 
 ### 判定条件（差分ベース）
 
-1. **UI/UX 変更**
-   - 対象例: `src/app/**`, `src/components/**` の画面表示・操作フロー・入力制約・文言変更
-   - 必須更新: `docs/e2e-scenarios.md`
-   - 指摘条件: 上記コード変更があるのに `docs/e2e-scenarios.md` の差分がない
-   - シナリオ記述ルール: `docs/e2e-scenarios.md` に追加・変更されたシナリオのユーザー列が、データを変更する操作と参照のみの操作で使用ユーザーが適切に分離されているか確認する。分離できていない場合は **MAJOR** で指摘する
+> UI/UX 変更（`src/app/**` / `src/components/**` の画面表示・操作フロー・文言）の動作確認は、ドキュメントではなく **Issue ごとの動作確認チェックリスト** で行う（`CLAUDE.md` 参照）。UI 変更に対する `docs/` 更新は必須としない。
 
-2. **外部 REST API 仕様変更**
+1. **外部 REST API 仕様変更**
    - 対象例: `src/app/api/**/route.ts` の新規追加・エンドポイント変更
    - 必須更新: `docs/api.md`
    - 指摘条件: 上記変更があるのに `docs/api.md` の差分がない
 
-3. **Server Actions 仕様変更**
+2. **Server Actions 仕様変更**
    - 対象例: `src/app/**/actions.ts` の引数・戻り値・認可ロジックの変更
    - 必須更新: `docs/actions.md`
    - 指摘条件: 上記変更があるのに `docs/actions.md` の差分がない
 
-4. **スキーマ変更**
+3. **スキーマ変更**
    - 対象例: Prisma schema / migration / DB カラム変更
    - 必須更新: `docs/schema.md`
    - 指摘条件: 上記変更があるのに `docs/schema.md` の差分がない
