@@ -17,57 +17,18 @@
 
 ## ディレクトリ構成
 
-```
-link-hub/
-├── src/
-│   ├── app/
-│   │   ├── (auth)/            # 認証ページ（Clerk）
-│   │   ├── (dashboard)/       # 認証済み画面グループ
-│   │   │   ├── layout.tsx     # ヘッダー・ログアウトボタン
-│   │   │   ├── LogoutButton.tsx
-│   │   │   ├── api-key-actions.ts   # API キー生成・失効の Server Actions
-│   │   │   └── bookmarks/          # ブックマーク関連画面
-│   │   │       ├── page.tsx            # 一覧（Server Component）
-│   │   │       ├── actions.ts          # Server Actions（書き込み操作を集約）
-│   │   │       ├── BookmarkForm.tsx    # 登録・編集共通フォーム
-│   │   │       ├── BookmarkList.tsx    # 一覧（カテゴリグルーピング・D&D）
-│   │   │       ├── BookmarkItemContent.tsx  # ブックマーク行の内容表示
-│   │   │       ├── SortableBookmarkItem.tsx # ソート可能なブックマーク行
-│   │   │       ├── CategoryGroup.tsx       # カテゴリグループ（折りたたみ・D&D）
-│   │   │       ├── CategoryDropZone.tsx    # カテゴリ内ドロップゾーン
-│   │   │       ├── DragHandleIcon.tsx      # ドラッグハンドルアイコン
-│   │   │       ├── DeleteButton.tsx
-│   │   │       ├── UndoSnackbar.tsx
-│   │   │       ├── useDragAndDrop.ts       # D&D ロジックカスタムフック
-│   │   │       ├── types.ts                # 共通型定義
-│   │   │       └── fetchOgp.ts
-│   │   └── api/                 # 外部連携用 REST API
-│   │       └── bookmarks/route.ts  # GET /api/bookmarks（API キー認証）
-│   ├── components/
-│   │   ├── Header.tsx             # ヘッダー
-│   │   ├── BookmarkAddModal.tsx   # ブックマーク追加モーダル
-│   │   ├── BookmarkEditModal.tsx  # ブックマーク編集モーダル
-│   │   ├── TagManagementModal.tsx # カテゴリ管理モーダル
-│   │   ├── SettingsButton.tsx     # 設定モーダルを開くボタン（歯車アイコン）
-│   │   ├── SettingsModal.tsx      # 設定モーダル（API キー表示・生成）
-│   │   └── icons/
-│   │       └── AppIcon.tsx
-│   ├── lib/
-│   │   ├── prisma.ts          # Prisma クライアント
-│   │   ├── auth.ts            # 認証ヘルパー
-│   │   ├── api-auth.ts        # API キー認証（Bearer → User）
-│   │   ├── api-key.ts         # API キー生成・取得（Prisma）
-│   │   ├── bookmarks.ts       # ブックマーク操作（Prisma）
-│   │   ├── tags.ts            # カテゴリ操作（Prisma）
-│   │   └── tag-colors.ts      # カテゴリカラー生成
-│   └── proxy.ts               # Next.js 16 middleware（旧 middleware.ts）
-├── prisma/
-│   ├── schema.prisma
-│   └── seed.ts
-├── docs/
-├── biome.json
-└── package.json
-```
+ファイル単位の一覧は**コードを正**とする（陳腐化しやすいため列挙しない）。主要ディレクトリの役割のみ示す。
+
+| パス | 役割 |
+|------|------|
+| `src/app/(auth)/` | 認証ページ（Clerk） |
+| `src/app/(dashboard)/` | 認証済み画面グループ。共通レイアウト（ヘッダー）とブックマーク関連画面・Server Actions |
+| `src/app/api/` | 外部連携用 REST API（API キー認証） |
+| `src/components/` | 画面横断の UI コンポーネント（モーダル・ヘッダー等） |
+| `src/lib/` | ドメインロジック・DB アクセス（Prisma）・認証ヘルパー |
+| `src/proxy.ts` | 認証ミドルウェア（Next.js 16 の Proxy。旧 `middleware.ts`） |
+| `prisma/` | スキーマ・マイグレーション・シード |
+| `docs/` | 意図・契約・規約のドキュメント |
 
 ## 認証フロー
 
