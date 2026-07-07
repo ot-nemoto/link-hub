@@ -20,52 +20,52 @@ const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
 // テストユーザーの共通パスワード
 const SEED_PASSWORD = "Yakitori2026";
 
-// ---- user1: タグフィルター・D&D・検索・削除・一括操作の検証用 ----
+type SeedBookmark = {
+  url: string;
+  title: string;
+  memo: string;
+  tag?: string;
+};
+
+// ---- user1: カテゴリ表示・D&D・検索の検証用（参照系） ----
 const USER1_EMAIL = "bonjiri@example.com";
 
 const USER1_TAGS = ["Frontend", "Backend"];
 
-const USER1_BOOKMARKS: {
-  url: string;
-  title: string;
-  memo: string;
-  tags: string[];
-}[] = [
+const USER1_BOOKMARKS: SeedBookmark[] = [
   {
     url: "https://nextjs.org",
     title: "Next.js",
     memo: "React フレームワーク",
-    tags: ["Frontend"],
+    tag: "Frontend",
   },
   {
     url: "https://vercel.com",
     title: "Vercel",
     memo: "デプロイプラットフォーム",
-    tags: ["Frontend"],
+    tag: "Frontend",
   },
   {
     url: "https://www.prisma.io",
     title: "Prisma",
     memo: "TypeScript 向け ORM",
-    tags: ["Backend"],
+    tag: "Backend",
   },
   {
     url: "https://neon.tech",
     title: "Neon",
     memo: "サーバーレス PostgreSQL",
-    tags: ["Frontend", "Backend"], // AND フィルターテスト用
+    tag: "Backend",
   },
   {
     url: "https://github.com",
     title: "GitHub",
-    memo: "コードホスティング",
-    tags: [], // タグなしフィルターテスト用
+    memo: "コードホスティング", // 未分類グループテスト用
   },
   {
     url: "https://playwright.dev",
     title: "Playwright",
-    memo: "E2E テストフレームワーク",
-    tags: [], // タグなしフィルターテスト用
+    memo: "E2E テストフレームワーク", // 未分類グループテスト用
   },
 ];
 
@@ -74,23 +74,17 @@ const USER2_EMAIL = "tsukune@example.com";
 
 const USER2_TAGS = ["Design"];
 
-const USER2_BOOKMARKS: {
-  url: string;
-  title: string;
-  memo: string;
-  tags: string[];
-}[] = [
+const USER2_BOOKMARKS: SeedBookmark[] = [
   {
     url: "https://www.figma.com",
     title: "Figma",
     memo: "デザインツール",
-    tags: ["Design"],
+    tag: "Design",
   },
   {
     url: "https://developer.mozilla.org",
     title: "MDN Web Docs",
     memo: "Web API リファレンス",
-    tags: [],
   },
 ];
 
@@ -99,41 +93,33 @@ const USER3_EMAIL = "tebasaki@example.com";
 
 const USER3_TAGS = ["Tools", "Docs"];
 
-const USER3_BOOKMARKS: {
-  url: string;
-  title: string;
-  memo: string;
-  tags: string[];
-}[] = [
+const USER3_BOOKMARKS: SeedBookmark[] = [
   {
     url: "https://www.typescriptlang.org",
     title: "TypeScript",
     memo: "型付き JavaScript",
-    tags: ["Tools"],
+    tag: "Tools",
   },
   {
     url: "https://nodejs.org",
     title: "Node.js",
     memo: "JavaScript ランタイム",
-    tags: ["Docs"],
+    tag: "Docs",
   },
   {
     url: "https://vitejs.dev",
     title: "Vite",
     memo: "ビルドツール",
-    tags: [],
   },
   {
     url: "https://biome.dev",
     title: "Biome",
     memo: "リンター・フォーマッタ",
-    tags: [],
   },
   {
     url: "https://www.npmjs.com",
     title: "npm",
     memo: "パッケージマネージャ",
-    tags: [],
   },
 ];
 
@@ -151,11 +137,7 @@ async function upsertClerkUser(email: string): Promise<string> {
   return created.id;
 }
 
-async function seedUser(
-  email: string,
-  tagNames: string[],
-  bookmarks: { url: string; title: string; memo: string; tags: string[] }[],
-) {
+async function seedUser(email: string, tagNames: string[], bookmarks: SeedBookmark[]) {
   const clerkId = await upsertClerkUser(email);
 
   // DB にユーザーが存在しなければ作成、存在すれば clerkId を同期
@@ -169,16 +151,25 @@ async function seedUser(
   await prisma.bookmark.deleteMany({ where: { userId: user.id } });
   await prisma.tag.deleteMany({ where: { userId: user.id } });
 
-  // タグを作成
+  // タグ（カテゴリ）を作成
   const tagMap = new Map<string, string>();
-  for (const name of tagNames) {
-    const tag = await prisma.tag.create({ data: { name, userId: user.id } });
-    tagMap.set(name, tag.id);
+  for (let i = 0; i < tagNames.length; i++) {
+    const tag = await prisma.tag.create({
+      data: { name: tagNames[i], sortOrder: i, userId: user.id },
+    });
+    tagMap.set(tagNames[i], tag.id);
   }
 
   // ブックマークをタグ込みで作成
   for (let i = 0; i < bookmarks.length; i++) {
-    const { url, title, memo, tags } = bookmarks[i];
+    const { url, title, memo, tag } = bookmarks[i];
+    let tagId: string | null = null;
+    if (tag !== undefined) {
+      tagId = tagMap.get(tag) ?? null;
+      if (tagId === null) {
+        throw new Error(`Unknown tag "${tag}" for bookmark "${title}" (${url}) of user ${email}`);
+      }
+    }
     await prisma.bookmark.create({
       data: {
         url,
@@ -186,17 +177,7 @@ async function seedUser(
         memo,
         sortOrder: i,
         userId: user.id,
-        tags: {
-          create: tags.map((name) => {
-            const tagId = tagMap.get(name);
-            if (tagId === undefined) {
-              throw new Error(
-                `Unknown tag "${name}" for bookmark "${title}" (${url}) of user ${email}`,
-              );
-            }
-            return { tagId };
-          }),
-        },
+        tagId,
       },
     });
   }
