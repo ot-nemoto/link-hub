@@ -77,23 +77,7 @@ Client (Browser)
 
 ## 環境変数
 
-```env
-# Database（Neon）
-DATABASE_URL=       # 接続プール URL（ランタイム用）
-DIRECT_URL=         # 直接接続 URL（prisma migrate 用）
-
-# Clerk
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
-CLERK_SECRET_KEY=
-NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
-NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL=/bookmarks
-
-# ローカル開発用認証バイパス（任意、どちらか一方を設定）
-# MOCK_USER_ID="<DB の users.id>"
-# MOCK_USER_EMAIL="your@example.com"
-```
-
-セットアップ手順・DB 操作・デプロイ手順の詳細は [`docs/development.md`](./development.md) を参照。
+環境変数（`DATABASE_URL` / `DIRECT_URL` / Clerk 関連 / 開発用モックバイパス）の一覧とセットアップ・DB 操作・デプロイ手順は [`docs/development.md`](./development.md) を正とする。
 
 ## バージョン固有仕様・既知のパターン
 
