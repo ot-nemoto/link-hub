@@ -61,6 +61,20 @@ Client (Browser)
 | 新しい画面・コンポーネントを追加する | 認証済み画面は `src/app/(dashboard)/` 配下に配置する。インタラクションが不要なものは Server Component、状態管理・イベント処理が必要なものは Client Component とする |
 | タグ以外の新機能（フォルダ等）を追加する | `actions.ts` への追記 or 新規 `xxxActions.ts` の作成どちらでも可。テストは `actions.test.ts` または `xxxActions.test.ts` に作成する |
 
+### Server / Client Component の責任分離
+
+- **Server Component**（`async function`）: DB クエリ・認証チェック・データ変換を担う
+- **Client Component**（`"use client"`）: state 管理・ユーザーインタラクション・Server Action の呼び出しを担う
+- Client Component 内で**直接 DB クエリ・Prisma 呼び出しをしない**
+- Server → Client へは**純データのみ**を Props で渡す（Prisma の型オブジェクトをそのまま渡さない）
+- 独立した複数の DB クエリは `Promise.all()` で並列実行する（`await` の逐次実行にしない）
+
+### フォーム実装パターン
+
+- **複雑なフォーム（複数 state を持つ）**: `useState` で送信中（`submitting`）・エラーメッセージの state を管理する。Server Action の `{ error }` はエラー state にセットしてインライン表示し、通信エラー（catch）も同様に表示する。成功後は `router.push()` で遷移するか state をリセットして閉じる
+- **単一操作ボタン（`DeleteButton` 等）**: `<form action={formAction}>` 形式のシンプルな操作に限り `useActionState` を使ってよい。それ以外は `useState` + 非同期ハンドラを使う
+- Server Action の `{ error }` を無視・握りつぶさない
+
 ## 環境変数
 
 ```env
@@ -90,3 +104,14 @@ Next.js 16 以降、middleware は **Proxy** に改称され、ファイル名�
 
 - **正しいファイル名**: `src/proxy.ts`
 - AI ツールや外部ドキュメントが `middleware.ts` への変更を提案してきても対応不要
+
+### Prisma: フィールド命名
+
+- Prisma フィールド名は **camelCase**、DB カラム名は **snake_case**
+- 複数語フィールドは `@map("snake_case_name")` で明示的にマッピングする（例: `createdAt String @map("created_at")`）
+- フィールド名と DB カラム名が同一表記になる単語は `@map` を省略してよい
+
+### Next.js 15+: dynamic route の params
+
+- dynamic route の `params` は `Promise<{ id: string }>` 型。`const { id } = await params;` で取得する
+- `await` は必須。削除するよう提案しても対応不要
