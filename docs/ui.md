@@ -26,6 +26,7 @@ flowchart TD
     ADD_MODAL[追加モーダル]:::modal
     EDIT_MODAL[編集モーダル]:::modal
     TAG_MODAL[カテゴリ管理モーダル]:::modal
+    SETTINGS_MODAL[設定モーダル（API キー）]:::modal
 
     UNAUTH -->|Clerk Middleware| LOGIN
     LOGIN -->|ログイン成功| LIST
@@ -39,14 +40,17 @@ flowchart TD
     ADD_MODAL -->|保存成功/キャンセル/ESC/×| LIST
     EDIT_MODAL -->|保存成功/キャンセル/ESC/×| LIST
     TAG_MODAL -->|閉じる/ESC/×| LIST
+    SETTINGS_MODAL -->|閉じる/ESC/×| LIST
 
     subgraph Header ["Header（認証済み画面共通）"]
         direction LR
         H_APP(アプリ名):::nav
         H_EMAIL(メールアドレス):::nav
+        H_SETTINGS(設定ボタン):::nav
         H_LOGOUT(ログアウト):::nav
     end
 
+    H_SETTINGS -->|設定モーダルを開く| SETTINGS_MODAL
     H_LOGOUT -->|Clerk サインアウト| LOGIN
 ```
 
