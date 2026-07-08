@@ -2,7 +2,7 @@
 
 ## 作業開始時のチェックリスト
 
-1. `docs/product.md` を読みプロダクトと主な機能を理解する
+1. `docs/product.md` を読みプロダクトを理解する（機能一覧は `README.md`）
 2. `docs/architecture.md` で実装方針を確認する
 3. GitHub Issues / Milestone でタスクの状態・実装順を確認する
 
@@ -19,7 +19,7 @@
 
 | ファイル | 役割 | 必須セクション |
 |----------|------|--------------|
-| `docs/product.md` | プロダクトの目的・対象ユーザー・主な機能・ゴール | 目的、対象ユーザー、主な機能、成功指標 |
+| `docs/product.md` | プロダクトの目的・対象ユーザー・ゴール | 目的、対象ユーザー、成功指標 |
 | `docs/architecture.md` | 技術スタック・実装方針 | 技術スタック、実装方針、環境変数 |
 | `docs/ui.md` | 画面一覧・遷移・UI規約 | 画面一覧、画面遷移図（Mermaid）、画面機能仕様、各画面の表示状態（Loading / Empty / Error）、UI規約 |
 | `docs/development.md` | 開発・運用手順 | ローカルセットアップ、環境変数、DB操作（該当する場合）、デプロイ手順 |
@@ -185,24 +185,9 @@ gh issue close <番号> --comment "完了。実装コミット: <short-hash> (<�
 
 ## バージョニングルール
 
-`package.json` の `version` はセマンティックバージョニング（SemVer）に従う。
-
-### バンプ方法
-
-> **バージョンバンプは `bump-version.yml` ワークフローが自動で行う。**
-> master への PR にラベルを付けるだけでよく、`package.json` の手動更新は不要。
-
-| ラベル | バージョン操作 | 例 |
-|--------|-------------|-----|
-| `bump:minor` | マイナー +1、パッチ → 0 | `0.1.0` → `0.2.0` |
-| `bump:patch` | パッチ +1 | `0.2.0` → `0.2.1` |
-
-### バンプの判断基準
-
-| 変更の種類 | 使用ラベル |
-|-----------|-----------|
-| 新機能追加（フェーズ完了など） | `bump:minor` |
-| バグ修正・小改善のみ | `bump:patch` |
+- `master` への PR に `bump:minor`（新機能）または `bump:patch`（バグ修正・小改善）ラベルを**1つだけ**付ける。`bump-version.yml` が `package.json` を自動バンプするため手動更新は不要
+- SemVer に従う。メジャーバンプ（`1.0.0` 等）はユーザーの明示的な指示時のみ
+- リリースフロー・CI・Dependabot 対応の詳細は [`docs/operations.md`](docs/operations.md) を参照
 
 ---
 

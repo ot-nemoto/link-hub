@@ -24,7 +24,7 @@
 
 | ファイル | 役割 |
 |---------|------|
-| [docs/product.md](./docs/product.md) | プロダクトの目的・対象ユーザー・主な機能・ゴール |
+| [docs/product.md](./docs/product.md) | プロダクトの目的・対象ユーザー・ゴール・成功指標 |
 | [docs/architecture.md](./docs/architecture.md) | 技術スタック・実装方針・環境変数 |
 | [docs/schema.md](./docs/schema.md) | DB テーブル定義・リレーション図 |
 | [docs/api.md](./docs/api.md) | 外部 REST API 定義 |
