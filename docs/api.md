@@ -35,7 +35,7 @@
 | 400 | バリデーションエラー（`url`/`title` 不正、`tagId` が文字列/null 以外、`ids` 未指定、ボディ不正 等） |
 | 401 | API キーが未指定・無効 |
 | 403 | 他ユーザーのリソースを操作しようとした |
-| 404 | 対象リソースが存在しない |
+| 404 | 対象リソースが存在しない（ブックマーク／指定した `tagId` のカテゴリ 等） |
 
 ## エンドポイント一覧
 
@@ -94,7 +94,7 @@ curl -s -H "Authorization: Bearer ${LH_API_KEY}" http://localhost:3000/api/bookm
 | `title` | string | ✅ | タイトル |
 | `memo` | string | - | メモ |
 | `ogImage` | string | - | OGP 画像 URL |
-| `tagId` | string \| null | - | カテゴリ ID（`null` は未分類・他ユーザーのカテゴリは無視され未分類になる）。文字列/null 以外は 400 |
+| `tagId` | string \| null | - | カテゴリ ID（`null` は未分類）。存在しない/他ユーザーのカテゴリは **404**、文字列/null 以外は 400 |
 | `hideOgImage` | boolean | - | 一覧で OGP 画像を隠すか |
 
 ```bash
@@ -131,8 +131,8 @@ curl -s -X DELETE -H "Authorization: Bearer ${LH_API_KEY}" \
 
 `url`・`title` 以外のフィールドは**キーを省略すると既存値を保持**し、明示的に送ると更新する（部分更新）:
 
-- `tagId`: 省略で保持、`null` で未分類化
-- `sortOrder`: 省略で保持、整数を送ると並び順を更新（整数以外は 400）
+- `tagId`: 省略で保持、`null` で未分類化。存在しない/他ユーザーの ID は 404
+- `sortOrder`: 省略で保持、`0`〜`2147483647` の整数で並び順を更新（範囲外・整数以外は 400）
 - `memo`: 省略で保持、空文字 `""` でクリア
 - `ogImage`: 省略で保持
 - `hideOgImage`: 省略で保持

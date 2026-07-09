@@ -160,16 +160,14 @@ describe("createBookmark", () => {
     );
   });
 
-  it("他ユーザーの tagId は null にフォールバックする", async () => {
+  it("存在しない/他ユーザーの tagId はエラーを返す", async () => {
     mockBookmarkAggregate.mockResolvedValue({ _max: { sortOrder: 0 } } as never);
     mockTagFindFirst.mockResolvedValue(null);
-    mockBookmarkCreate.mockResolvedValue(bookmark);
 
-    await createBookmark(userId, { ...bookmarkData, tagId: "tag_other" });
+    const result = await createBookmark(userId, { ...bookmarkData, tagId: "tag_other" });
 
-    expect(mockBookmarkCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ tagId: null }) }),
-    );
+    expect(result).toEqual({ error: "カテゴリが見つかりません" });
+    expect(mockBookmarkCreate).not.toHaveBeenCalled();
   });
 });
 
@@ -202,6 +200,16 @@ describe("updateBookmark", () => {
     const result = await updateBookmark(userId, "bm_1", bookmarkData);
 
     expect(result).toEqual({ error: "権限がありません" });
+    expect(mockBookmarkUpdate).not.toHaveBeenCalled();
+  });
+
+  it("存在しない/他ユーザーの tagId を指定するとエラーを返す", async () => {
+    mockBookmarkFindUnique.mockResolvedValue(bookmark as never);
+    mockTagFindFirst.mockResolvedValue(null);
+
+    const result = await updateBookmark(userId, "bm_1", { ...bookmarkData, tagId: "tag_other" });
+
+    expect(result).toEqual({ error: "カテゴリが見つかりません" });
     expect(mockBookmarkUpdate).not.toHaveBeenCalled();
   });
 

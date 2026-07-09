@@ -35,12 +35,16 @@ export function validateBookmarkInput(body: {
     return "tagId の形式が不正です";
   }
 
-  // sortOrder は整数のみ許可（DB は Int）。非整数は Prisma 実行時例外→500 になるため弾く。
+  // sortOrder は 0〜Int32 上限の整数のみ許可（DB は 32bit Int）。
+  // 非整数・範囲外は Prisma 実行時例外→500 になるため弾く。
   if (
     "sortOrder" in body &&
-    (typeof body.sortOrder !== "number" || !Number.isInteger(body.sortOrder))
+    (typeof body.sortOrder !== "number" ||
+      !Number.isInteger(body.sortOrder) ||
+      body.sortOrder < 0 ||
+      body.sortOrder > 2147483647)
   ) {
-    return "sortOrder は整数で指定してください";
+    return "sortOrder は 0 以上 2147483647 以下の整数で指定してください";
   }
 
   return null;

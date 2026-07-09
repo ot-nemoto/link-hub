@@ -120,7 +120,9 @@ describe("PATCH /api/bookmarks/:id", () => {
     const res = await PATCH(patchReq({ url: "https://a.com", title: "A", sortOrder: 1.5 }), ctx);
 
     expect(res.status).toBe(400);
-    expect(await res.json()).toEqual({ error: "sortOrder は整数で指定してください" });
+    expect(await res.json()).toEqual({
+      error: "sortOrder は 0 以上 2147483647 以下の整数で指定してください",
+    });
     expect(mockUpdate).not.toHaveBeenCalled();
   });
 });

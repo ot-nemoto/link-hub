@@ -57,27 +57,30 @@ describe("validateBookmarkInput", () => {
     expect(validateBookmarkInput({ url: "https://example.com", title: "x", tagId: {} })).toBe(msg);
   });
 
-  it("sortOrder が整数 / 省略なら通過する", () => {
+  it("sortOrder が範囲内の整数 / 省略なら通過する", () => {
     expect(
       validateBookmarkInput({ url: "https://example.com", title: "x", sortOrder: 0 }),
     ).toBeNull();
     expect(
-      validateBookmarkInput({ url: "https://example.com", title: "x", sortOrder: 5 }),
+      validateBookmarkInput({ url: "https://example.com", title: "x", sortOrder: 2147483647 }),
     ).toBeNull();
     expect(validateBookmarkInput({ url: "https://example.com", title: "x" })).toBeNull();
   });
 
-  it("sortOrder が整数以外（文字列・小数・配列）は 400 相当のエラー", () => {
-    const msg = "sortOrder は整数で指定してください";
+  it("sortOrder が整数以外・範囲外は 400 相当のエラー", () => {
+    const msg = "sortOrder は 0 以上 2147483647 以下の整数で指定してください";
     expect(validateBookmarkInput({ url: "https://example.com", title: "x", sortOrder: "1" })).toBe(
       msg,
     );
     expect(validateBookmarkInput({ url: "https://example.com", title: "x", sortOrder: 1.5 })).toBe(
       msg,
     );
-    expect(validateBookmarkInput({ url: "https://example.com", title: "x", sortOrder: [1] })).toBe(
+    expect(validateBookmarkInput({ url: "https://example.com", title: "x", sortOrder: -1 })).toBe(
       msg,
     );
+    expect(
+      validateBookmarkInput({ url: "https://example.com", title: "x", sortOrder: 2147483648 }),
+    ).toBe(msg);
   });
 });
 

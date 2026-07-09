@@ -64,7 +64,8 @@ export async function createBookmark(
       where: { id: data.tagId, userId },
       select: { id: true },
     });
-    if (tag) validTagId = tag.id;
+    if (!tag) return { error: "カテゴリが見つかりません" };
+    validTagId = tag.id;
   }
 
   const bookmark = await prisma.bookmark.create({
@@ -99,9 +100,10 @@ export async function updateBookmark(
         where: { id: data.tagId, userId },
         select: { id: true },
       });
-      validTagId = tag ? tag.id : null;
+      if (!tag) return { error: "カテゴリが見つかりません" };
+      validTagId = tag.id;
     } else {
-      validTagId = null;
+      validTagId = null; // 明示的な null は未分類化
     }
   }
 
