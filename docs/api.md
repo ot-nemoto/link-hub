@@ -229,3 +229,115 @@ curl -s -X POST -H "Authorization: Bearer ${LH_API_KEY}" \
 ### レスポンス（200）
 
 復元後のブックマーク（共通形式）を返す。未存在は `404`、他ユーザーのものは `403`。
+
+---
+
+# カテゴリ（Tags）API
+
+カテゴリ（タグ）の一覧・作成・更新・削除・並び替え。認証・エラー形式は上記共通仕様に従う（同名カテゴリは **409**）。
+
+## エンドポイント一覧
+
+| メソッド | パス | 概要 |
+|---------|------|------|
+| `GET` | `/api/tags` | カテゴリ一覧を取得（`?withCount=true` で件数付き） |
+| `POST` | `/api/tags` | カテゴリを作成 |
+| `POST` | `/api/tags/reorder` | 並び順を一括更新 |
+| `PATCH` | `/api/tags/:id` | カテゴリ名を変更 |
+| `DELETE` | `/api/tags/:id` | カテゴリを削除 |
+
+カテゴリのレスポンス形式:
+
+| フィールド | 型 | 説明 |
+|-----------|-----|------|
+| `id` | string | カテゴリ ID |
+| `name` | string | カテゴリ名 |
+| `bookmarkCount` | number | 紐づく未削除ブックマーク件数（`?withCount=true` のときのみ） |
+
+---
+
+## `GET /api/tags` — 一覧取得
+
+```bash
+curl -s -H "Authorization: Bearer ${LH_API_KEY}" \
+  "http://localhost:3000/api/tags?withCount=true" | jq
+```
+
+### レスポンス（200）
+
+```json
+{ "tags": [ { "id": "clyyyy", "name": "Frontend", "bookmarkCount": 3 } ] }
+```
+
+`?withCount=true` を付けない場合は `{ "tags": [ { "id", "name" } ] }`。
+
+---
+
+## `POST /api/tags` — 作成
+
+### リクエストボディ
+
+| フィールド | 型 | 必須 | 説明 |
+|-----------|-----|------|------|
+| `name` | string | ✅ | カテゴリ名（空・50 字超は 400、同名は 409） |
+
+```bash
+curl -s -X POST -H "Authorization: Bearer ${LH_API_KEY}" \
+  -H "Content-Type: application/json" -d '{"name":"Frontend"}' \
+  http://localhost:3000/api/tags | jq
+```
+
+### レスポンス（201）
+
+作成されたカテゴリ `{ "id", "name" }` を返す。同名が既に存在する場合は `409`。
+
+---
+
+## `POST /api/tags/reorder` — 並び替え
+
+`ids` の並び順どおりに `sortOrder` を一括更新する。
+
+```bash
+curl -s -X POST -H "Authorization: Bearer ${LH_API_KEY}" \
+  -H "Content-Type: application/json" -d '{"ids":["clyyyy","clzzzz"]}' \
+  http://localhost:3000/api/tags/reorder
+```
+
+### レスポンス（200）
+
+ボディなし。配列でない/空は `400`、他ユーザーの id を含む場合は `403`。
+
+---
+
+## `PATCH /api/tags/:id` — 名前変更
+
+### リクエストボディ
+
+| フィールド | 型 | 必須 | 説明 |
+|-----------|-----|------|------|
+| `name` | string | ✅ | 新しいカテゴリ名（空・50 字超は 400、別カテゴリと同名は 409） |
+
+```bash
+curl -s -X PATCH -H "Authorization: Bearer ${LH_API_KEY}" \
+  -H "Content-Type: application/json" -d '{"name":"Backend"}' \
+  http://localhost:3000/api/tags/clyyyy | jq
+```
+
+### レスポンス（200）
+
+更新後のカテゴリ `{ "id", "name" }` を返す。未存在は `404`、他ユーザーのものは `403`。
+
+---
+
+## `DELETE /api/tags/:id` — 削除
+
+カテゴリを削除する。紐づくブックマークの `tagId` は `null`（未分類）になる。
+
+```bash
+curl -s -X DELETE -H "Authorization: Bearer ${LH_API_KEY}" \
+  http://localhost:3000/api/tags/clyyyy
+```
+
+### レスポンス（204）
+
+ボディなし。未存在は `404`、他ユーザーのものは `403`。
