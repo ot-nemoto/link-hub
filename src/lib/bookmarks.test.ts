@@ -401,17 +401,16 @@ describe("deleteBookmarks", () => {
 describe("restoreBookmark", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("正常系: deletedAt を null に戻して {} を返す", async () => {
+  it("正常系: deletedAt を null に戻して復元レコードを返す", async () => {
     mockBookmarkFindUnique.mockResolvedValue({ ...bookmark, deletedAt: new Date() } as never);
     mockBookmarkUpdate.mockResolvedValue(bookmark);
 
     const result = await restoreBookmark(userId, "bm_1");
 
-    expect(result).toEqual({});
-    expect(mockBookmarkUpdate).toHaveBeenCalledWith({
-      where: { id: "bm_1" },
-      data: { deletedAt: null },
-    });
+    expect(result).toEqual({ bookmark });
+    expect(mockBookmarkUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: "bm_1" }, data: { deletedAt: null } }),
+    );
   });
 
   it("存在しないブックマークは error を返す", async () => {

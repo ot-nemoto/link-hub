@@ -179,15 +179,22 @@ export async function deleteBookmarks(userId: string, ids: string[]): Promise<{ 
   return {};
 }
 
-export async function restoreBookmark(userId: string, id: string): Promise<{ error?: string }> {
+export async function restoreBookmark(
+  userId: string,
+  id: string,
+): Promise<{ bookmark?: BookmarkWithTag; error?: string }> {
   const bookmark = await prisma.bookmark.findUnique({ where: { id } });
   if (!bookmark) return { error: "ブックマークが見つかりません" };
   if (bookmark.userId !== userId) return { error: "権限がありません" };
 
   // deletedAt を null に戻す。tagId は保持されているため元のカテゴリに復帰する
-  await prisma.bookmark.update({ where: { id }, data: { deletedAt: null } });
+  const restored = await prisma.bookmark.update({
+    where: { id },
+    data: { deletedAt: null },
+    include: { tag: { select: { id: true, name: true } } },
+  });
 
-  return {};
+  return { bookmark: restored };
 }
 
 export async function emptyTrash(userId: string): Promise<{ error?: string }> {

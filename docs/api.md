@@ -44,10 +44,14 @@
 | `GET` | `/api/bookmarks` | ブックマーク一覧を取得 |
 | `POST` | `/api/bookmarks` | ブックマークを作成 |
 | `DELETE` | `/api/bookmarks?ids=a,b,c` | 複数ブックマークを一括削除（ゴミ箱へ） |
-| `PATCH` | `/api/bookmarks/:id` | ブックマークを更新（カテゴリ移動・並び順変更を含む） |
+| `POST` | `/api/bookmarks/reorder` | 並び順を一括更新 |
+| `GET` | `/api/bookmarks/trash` | ゴミ箱（削除済み）一覧を取得 |
+| `DELETE` | `/api/bookmarks/trash` | ゴミ箱を空にする（完全削除） |
+| `PATCH` | `/api/bookmarks/:id` | ブックマークを更新（カテゴリ移動を含む） |
 | `DELETE` | `/api/bookmarks/:id` | ブックマークを削除（ゴミ箱へ） |
+| `POST` | `/api/bookmarks/:id/restore` | ゴミ箱から復元 |
 
-> 削除はソフトデリート（ゴミ箱へ移動）。ゴミ箱の一覧・復元・完全削除、並び替え、カテゴリ API は別 Issue で追加予定。
+> 削除はソフトデリート（ゴミ箱へ移動）。カテゴリ API は別 Issue で追加予定。
 
 ---
 
@@ -157,3 +161,71 @@ curl -s -X DELETE -H "Authorization: Bearer ${LH_API_KEY}" \
 ### レスポンス（204）
 
 ボディなし。
+
+---
+
+## `POST /api/bookmarks/reorder` — 並び替え
+
+`ids` の並び順どおりに `sortOrder` を一括更新する。自ユーザー所有分のみ。
+
+### リクエストボディ
+
+| フィールド | 型 | 必須 | 説明 |
+|-----------|-----|------|------|
+| `ids` | string[] | ✅ | 並べたい順のブックマーク ID 配列（文字列以外・空配列は 400） |
+
+```bash
+curl -s -X POST -H "Authorization: Bearer ${LH_API_KEY}" \
+  -H "Content-Type: application/json" \
+  -d '{"ids":["clxxxx","clyyyy","clzzzz"]}' \
+  http://localhost:3000/api/bookmarks/reorder
+```
+
+### レスポンス（200）
+
+ボディなし。指定 ID に他ユーザーのものが含まれる場合は `403`。
+
+---
+
+## `GET /api/bookmarks/trash` — ゴミ箱一覧
+
+削除済み（ソフトデリート）のブックマークを削除日時の降順で返す。形式は一覧取得と同じ。
+
+```bash
+curl -s -H "Authorization: Bearer ${LH_API_KEY}" \
+  http://localhost:3000/api/bookmarks/trash | jq
+```
+
+### レスポンス（200）
+
+`GET /api/bookmarks` と同じ `{ "bookmarks": [ ... ] }` 形式。
+
+---
+
+## `DELETE /api/bookmarks/trash` — ゴミ箱を空にする
+
+ゴミ箱内のブックマークを**完全削除**する（物理削除・不可逆）。
+
+```bash
+curl -s -X DELETE -H "Authorization: Bearer ${LH_API_KEY}" \
+  http://localhost:3000/api/bookmarks/trash
+```
+
+### レスポンス（204）
+
+ボディなし。
+
+---
+
+## `POST /api/bookmarks/:id/restore` — 復元
+
+ゴミ箱内のブックマークを元のカテゴリに復元する（`deletedAt` を解除）。
+
+```bash
+curl -s -X POST -H "Authorization: Bearer ${LH_API_KEY}" \
+  http://localhost:3000/api/bookmarks/clxxxx/restore | jq
+```
+
+### レスポンス（200）
+
+復元後のブックマーク（共通形式）を返す。未存在は `404`、他ユーザーのものは `403`。
