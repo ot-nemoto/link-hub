@@ -9,7 +9,7 @@
 - `Authorization: Bearer <api-key>` ヘッダー必須
 - API キーはアプリのヘッダー「API キー」モーダルで生成・再生成できる（1 ユーザー 1 キー・平文保持）
 - キーが無効・未指定の場合は `401 Unauthorized`
-- `/api/bookmarks(.*)` は `proxy.ts` の public ルートに含め、Clerk 認証ではなく API キー認証で保護する
+- `/api/bookmarks(.*)`・`/api/tags(.*)`・`/api/ogp(.*)` は `proxy.ts` の public ルートに含め、Clerk 認証ではなく API キー認証で保護する
 
 ## 共通仕様
 
@@ -51,7 +51,7 @@
 | `DELETE` | `/api/bookmarks/:id` | ブックマークを削除（ゴミ箱へ） |
 | `POST` | `/api/bookmarks/:id/restore` | ゴミ箱から復元 |
 
-> 削除はソフトデリート（ゴミ箱へ移動）。カテゴリ API は別 Issue で追加予定。
+> 削除はソフトデリート（ゴミ箱へ移動）。カテゴリ API・OGP 取得 API は本ドキュメント後半を参照。
 
 ---
 
