@@ -55,6 +55,16 @@ describe("PATCH /api/bookmarks/:id", () => {
     expect(mockUpdate).not.toHaveBeenCalled();
   });
 
+  it("body が非オブジェクト（配列）の場合は 400（日本語メッセージ）", async () => {
+    mockGetUser.mockResolvedValue({ id: "user_1" });
+
+    const res = await PATCH(patchReq([1, 2, 3]), ctx);
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "リクエストボディが不正です" });
+    expect(mockUpdate).not.toHaveBeenCalled();
+  });
+
   it("存在しない場合は 404", async () => {
     mockGetUser.mockResolvedValue({ id: "user_1" });
     mockUpdate.mockResolvedValue({ error: "ブックマークが見つかりません" });

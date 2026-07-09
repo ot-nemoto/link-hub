@@ -87,12 +87,14 @@ describe("POST /api/bookmarks", () => {
     expect(mockCreateBookmark).not.toHaveBeenCalled();
   });
 
-  it("ボディが不正（非オブジェクト）な場合は 400", async () => {
+  it("ボディが非オブジェクト（null・配列）の場合は 400（日本語メッセージ）", async () => {
     mockGetUser.mockResolvedValue({ id: "user_1" });
 
-    const res = await POST({ json: async () => null } as never);
-
-    expect(res.status).toBe(400);
+    for (const bad of [null, [1, 2, 3]]) {
+      const res = await POST(jsonReq(bad));
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({ error: "リクエストボディが不正です" });
+    }
     expect(mockCreateBookmark).not.toHaveBeenCalled();
   });
 

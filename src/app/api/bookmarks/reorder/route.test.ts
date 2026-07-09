@@ -39,6 +39,17 @@ describe("POST /api/bookmarks/reorder", () => {
     expect(mockReorder).not.toHaveBeenCalled();
   });
 
+  it("body が非オブジェクト（配列・null）の場合は 400（日本語メッセージ）", async () => {
+    mockGetUser.mockResolvedValue({ id: "user_1" });
+
+    for (const bad of [[1, 2, 3], null]) {
+      const res = await POST(jsonReq(bad));
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({ error: "リクエストボディが不正です" });
+    }
+    expect(mockReorder).not.toHaveBeenCalled();
+  });
+
   it("ids に非文字列が含まれる場合は 400", async () => {
     mockGetUser.mockResolvedValue({ id: "user_1" });
 
