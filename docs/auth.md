@@ -20,6 +20,7 @@ Clerk によるメール/パスワード認証を使用する。
 | `/sign-up/**` | 公開（認証不要） |
 | `/auth-error` | 公開（認証不要） |
 | `/api/bookmarks/**` | 公開（Clerk 認証は不要。API キー認証で保護。[`docs/api.md`](api.md) 参照） |
+| `/api/tags/**` | 公開（Clerk 認証は不要。API キー認証で保護。[`docs/api.md`](api.md) 参照） |
 | 上記以外すべて | 認証必須（未認証は Clerk のサインイン画面へリダイレクト） |
 
 ### 開発環境のモックバイパス

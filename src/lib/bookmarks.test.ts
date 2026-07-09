@@ -332,6 +332,17 @@ describe("reorderBookmarks", () => {
     expect(result).toEqual({ error: "権限がありません" });
     expect(mockTransaction).not.toHaveBeenCalled();
   });
+
+  it("重複 ID があっても所有していれば誤って 403 にしない（ユニーク基準で判定）", async () => {
+    mockBookmarkCount.mockResolvedValue(1);
+    mockTransaction.mockResolvedValue([]);
+
+    const result = await reorderBookmarks(userId, ["bm_1", "bm_1"]);
+
+    expect(result).toEqual({});
+    expect(mockBookmarkCount).toHaveBeenCalledWith({ where: { id: { in: ["bm_1"] }, userId } });
+    expect(mockTransaction).toHaveBeenCalled();
+  });
 });
 
 describe("deleteBookmark", () => {

@@ -31,10 +31,11 @@ export async function createTag(
   userId: string,
   name: string,
 ): Promise<{ tag?: { id: string; name: string }; conflict?: boolean; error?: string }> {
-  if (!name || name.length > 50) return { error: "タグ名が不正です" };
+  const trimmed = name.trim();
+  if (!trimmed || trimmed.length > 50) return { error: "タグ名が不正です" };
 
   const existing = await prisma.tag.findUnique({
-    where: { userId_name: { userId, name } },
+    where: { userId_name: { userId, name: trimmed } },
   });
   if (existing) return { conflict: true, tag: { id: existing.id, name: existing.name } };
 
@@ -46,7 +47,7 @@ export async function createTag(
     const sortOrder = (maxSort._max.sortOrder ?? -1) + 1;
 
     const tag = await prisma.tag.create({
-      data: { userId, name, sortOrder },
+      data: { userId, name: trimmed, sortOrder },
       select: { id: true, name: true },
     });
     return { tag };
@@ -54,7 +55,7 @@ export async function createTag(
     // findUnique → create の間に別リクエストが同名タグを作成した場合（P2002）は conflict として扱う
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
       const conflicted = await prisma.tag.findUnique({
-        where: { userId_name: { userId, name } },
+        where: { userId_name: { userId, name: trimmed } },
         select: { id: true, name: true },
       });
       if (conflicted) return { conflict: true, tag: { id: conflicted.id, name: conflicted.name } };
@@ -105,8 +106,10 @@ export async function updateTag(
 }
 
 export async function reorderTags(userId: string, ids: string[]): Promise<{ error?: string }> {
-  const count = await prisma.tag.count({ where: { id: { in: ids }, userId } });
-  if (count !== ids.length) return { error: "権限がありません" };
+  // 重複 ID があっても誤判定しないよう、所有権チェックはユニーク ID 基準で行う
+  const uniqueIds = [...new Set(ids)];
+  const count = await prisma.tag.count({ where: { id: { in: uniqueIds }, userId } });
+  if (count !== uniqueIds.length) return { error: "権限がありません" };
 
   await prisma.$transaction(
     ids.map((id, index) => prisma.tag.update({ where: { id }, data: { sortOrder: index } })),
