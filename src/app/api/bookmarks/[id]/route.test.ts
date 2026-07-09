@@ -96,6 +96,33 @@ describe("PATCH /api/bookmarks/:id", () => {
       expect.objectContaining({ url: "https://a.com", title: "Updated" }),
     );
   });
+
+  it("tagId + sortOrder を同時指定すると lib に渡す（moveBookmark 相当）", async () => {
+    mockGetUser.mockResolvedValue({ id: "user_1" });
+    mockUpdate.mockResolvedValue({ bookmark: record as never });
+
+    const res = await PATCH(
+      patchReq({ url: "https://a.com", title: "A", tagId: "t9", sortOrder: 3 }),
+      ctx,
+    );
+
+    expect(res.status).toBe(200);
+    expect(mockUpdate).toHaveBeenCalledWith(
+      "user_1",
+      "bm_1",
+      expect.objectContaining({ tagId: "t9", sortOrder: 3 }),
+    );
+  });
+
+  it("sortOrder が整数以外の場合は 400（lib に到達させない）", async () => {
+    mockGetUser.mockResolvedValue({ id: "user_1" });
+
+    const res = await PATCH(patchReq({ url: "https://a.com", title: "A", sortOrder: 1.5 }), ctx);
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "sortOrder は整数で指定してください" });
+    expect(mockUpdate).not.toHaveBeenCalled();
+  });
 });
 
 describe("DELETE /api/bookmarks/:id", () => {

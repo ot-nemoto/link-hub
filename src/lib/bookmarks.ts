@@ -9,6 +9,7 @@ export type BookmarkData = {
   ogImage?: string;
   tagId?: string | null;
   hideOgImage?: boolean;
+  sortOrder?: number;
 };
 
 export type BookmarkWithTag = Prisma.BookmarkGetPayload<{
@@ -113,6 +114,7 @@ export async function updateBookmark(
       ...(data.ogImage !== undefined ? { ogImage: data.ogImage ?? null } : {}),
       ...(data.hideOgImage !== undefined ? { hideOgImage: data.hideOgImage } : {}),
       ...(validTagId !== undefined ? { tagId: validTagId } : {}),
+      ...(data.sortOrder !== undefined ? { sortOrder: data.sortOrder } : {}),
     },
     include: { tag: { select: { id: true, name: true } } },
   });

@@ -47,7 +47,7 @@
 | `POST` | `/api/bookmarks/reorder` | 並び順を一括更新 |
 | `GET` | `/api/bookmarks/trash` | ゴミ箱（削除済み）一覧を取得 |
 | `DELETE` | `/api/bookmarks/trash` | ゴミ箱を空にする（完全削除） |
-| `PATCH` | `/api/bookmarks/:id` | ブックマークを更新（カテゴリ移動を含む） |
+| `PATCH` | `/api/bookmarks/:id` | ブックマークを更新（カテゴリ移動・並び順変更を含む） |
 | `DELETE` | `/api/bookmarks/:id` | ブックマークを削除（ゴミ箱へ） |
 | `POST` | `/api/bookmarks/:id/restore` | ゴミ箱から復元 |
 
@@ -127,14 +127,17 @@ curl -s -X DELETE -H "Authorization: Bearer ${LH_API_KEY}" \
 
 ## `PATCH /api/bookmarks/:id` — 更新
 
-リクエストボディは `POST` と同じ（`url`・`title` は必須）。`tagId` でカテゴリ移動が可能。`sortOrder`（並び順）は非対応（並び替えは別途 reorder API を予定）。
+リクエストボディは `POST` と同じ（`url`・`title` は必須）。`tagId` でカテゴリ移動、`sortOrder` で位置指定ができ、両方を同時指定すればカテゴリ移動＋並び順変更を 1 回で行える。
 
 `url`・`title` 以外のフィールドは**キーを省略すると既存値を保持**し、明示的に送ると更新する（部分更新）:
 
 - `tagId`: 省略で保持、`null` で未分類化
+- `sortOrder`: 省略で保持、整数を送ると並び順を更新（整数以外は 400）
 - `memo`: 省略で保持、空文字 `""` でクリア
 - `ogImage`: 省略で保持
 - `hideOgImage`: 省略で保持
+
+> カテゴリ内の一括並び替えは [`POST /api/bookmarks/reorder`](#post-apibookmarksreorder--並び替え)、単一の移動＋位置指定はこの `PATCH`（`tagId`+`sortOrder`）で行う。
 
 ```bash
 curl -s -X PATCH -H "Authorization: Bearer ${LH_API_KEY}" \

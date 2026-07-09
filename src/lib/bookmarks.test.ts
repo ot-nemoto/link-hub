@@ -250,6 +250,35 @@ describe("updateBookmark", () => {
     const callArg = mockBookmarkUpdate.mock.calls[0][0];
     expect(callArg.data).not.toHaveProperty("memo");
   });
+
+  it("sortOrder を指定すると update データに含める（moveBookmark 相当）", async () => {
+    mockBookmarkFindUnique.mockResolvedValue(bookmark as never);
+    mockTagFindFirst.mockResolvedValue({ id: "tag_1" } as never);
+    mockBookmarkUpdate.mockResolvedValue(bookmark);
+
+    await updateBookmark(userId, "bm_1", {
+      url: "https://example.com",
+      title: "x",
+      tagId: "tag_1",
+      sortOrder: 2,
+    });
+
+    expect(mockBookmarkUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ tagId: "tag_1", sortOrder: 2 }),
+      }),
+    );
+  });
+
+  it("sortOrder が undefined の場合は update データに含めない", async () => {
+    mockBookmarkFindUnique.mockResolvedValue(bookmark as never);
+    mockBookmarkUpdate.mockResolvedValue(bookmark);
+
+    await updateBookmark(userId, "bm_1", { url: "https://example.com", title: "x" });
+
+    const callArg = mockBookmarkUpdate.mock.calls[0][0];
+    expect(callArg.data).not.toHaveProperty("sortOrder");
+  });
 });
 
 describe("moveBookmark", () => {
