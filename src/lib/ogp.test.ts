@@ -278,4 +278,38 @@ describe("fetchOgpData", () => {
       expect(mockFetch).not.toHaveBeenCalled();
     }
   });
+
+  it("IPv6 系・0.0.0.0 など SSRF バイパスを遮断する", async () => {
+    for (const url of [
+      "http://0/", // 0.0.0.0 に正規化
+      "http://0.0.0.0/",
+      "http://[::1]/", // IPv6 ループバック
+      "http://[::ffff:127.0.0.1]/", // IPv4-mapped ループバック
+      "http://[::ffff:169.254.169.254]/", // IPv4-mapped メタデータIP
+      "http://[fc00::1]/", // ULA
+      "http://[fd12:3456::1]/", // ULA
+      "http://[fe80::1]/", // リンクローカル
+    ]) {
+      const result = await fetchOgpData(url);
+      expect(result, `${url} should be blocked`).toEqual({ error: "取得できませんでした" });
+      expect(mockFetch, `${url} should not fetch`).not.toHaveBeenCalled();
+    }
+  });
+
+  it("10進数/16進数表記の IPv4 も new URL 正規化で遮断される", async () => {
+    for (const url of ["http://2130706433/", "http://0x7f000001/"]) {
+      const result = await fetchOgpData(url);
+      expect(result, `${url} should be blocked`).toEqual({ error: "取得できませんでした" });
+      expect(mockFetch).not.toHaveBeenCalled();
+    }
+  });
+
+  it("グローバル IPv6 は許可して fetch する", async () => {
+    mockFetch.mockResolvedValue(makeHtmlResponse("<html><head><title>OK</title></head></html>"));
+
+    const result = await fetchOgpData("http://[2606:2800:220:1:248:1893:25c8:1946]/");
+
+    expect(result.title).toBe("OK");
+    expect(mockFetch).toHaveBeenCalled();
+  });
 });

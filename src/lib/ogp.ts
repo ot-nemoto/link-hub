@@ -1,3 +1,5 @@
+import net from "node:net";
+
 function decodeHtmlEntities(str: string): string {
   return str
     .replace(/&nbsp;/g, " ")
@@ -38,7 +40,59 @@ function decodeBuffer(buffer: ArrayBuffer, charset: string): string {
   }
 }
 
-/** SSRF 対策: http/https のみ許可し、localhost・プライベート IP 帯を遮断する。 */
+/** プライベート・ループバック・リンクローカル等の遮断対象 IPv4 か判定する。 */
+function isBlockedIpv4(ip: string): boolean {
+  const parts = ip.split(".").map(Number);
+  if (parts.length !== 4 || parts.some((n) => !Number.isInteger(n) || n < 0 || n > 255)) {
+    return true; // 異常な形式は安全側に倒して遮断
+  }
+  const [a, b] = parts;
+  return (
+    a === 0 || // 0.0.0.0/8（0.0.0.0 含む）
+    a === 10 || // 10.0.0.0/8 プライベート
+    a === 127 || // ループバック
+    (a === 100 && b >= 64 && b <= 127) || // 100.64/10 CGNAT
+    (a === 169 && b === 254) || // 169.254/16 リンクローカル（クラウドメタデータ）
+    (a === 172 && b >= 16 && b <= 31) || // 172.16/12 プライベート
+    (a === 192 && b === 168) // 192.168/16 プライベート
+  );
+}
+
+/** 遮断対象ホスト（プライベート/ループバック/リンクローカル/ULA/IPv4-mapped 等）か判定する。 */
+function isBlockedHostname(hostname: string): boolean {
+  // new URL() は IPv6 を [...] で囲むため外す
+  const host =
+    hostname.startsWith("[") && hostname.endsWith("]") ? hostname.slice(1, -1) : hostname;
+
+  if (net.isIPv4(host)) return isBlockedIpv4(host);
+
+  if (net.isIPv6(host)) {
+    const v6 = host.toLowerCase();
+    if (v6 === "::" || v6 === "::1") return true; // 未指定 / ループバック
+    // IPv4-mapped（::ffff:x）: 埋め込まれた IPv4 を取り出して判定する
+    const mapped = v6.match(/^::ffff:(.+)$/);
+    if (mapped) {
+      const rest = mapped[1];
+      if (net.isIPv4(rest)) return isBlockedIpv4(rest);
+      const hex = rest.match(/^([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
+      if (hex) {
+        const hi = Number.parseInt(hex[1], 16);
+        const lo = Number.parseInt(hex[2], 16);
+        return isBlockedIpv4(`${(hi >> 8) & 255}.${hi & 255}.${(lo >> 8) & 255}.${lo & 255}`);
+      }
+      return true; // 未知の mapped 形式は遮断
+    }
+    if (/^fe[89ab]/.test(v6)) return true; // fe80::/10 リンクローカル
+    if (/^f[cd]/.test(v6)) return true; // fc00::/7 ULA
+    return false;
+  }
+
+  // IP リテラルでない（ドメイン名）: localhost 系のみ遮断
+  const lower = hostname.toLowerCase();
+  return lower === "localhost" || lower.endsWith(".localhost");
+}
+
+/** SSRF 対策: http/https のみ許可し、内部ネットワーク宛のホストを遮断する。 */
 function isAllowedUrl(url: string): boolean {
   let parsed: URL;
   try {
@@ -47,16 +101,7 @@ function isAllowedUrl(url: string): boolean {
     return false;
   }
   if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return false;
-  const hostname = parsed.hostname;
-  if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1") return false;
-  if (
-    /^10\./.test(hostname) ||
-    /^172\.(1[6-9]|2\d|3[01])\./.test(hostname) ||
-    /^192\.168\./.test(hostname) ||
-    /^169\.254\./.test(hostname)
-  )
-    return false;
-  return true;
+  return !isBlockedHostname(parsed.hostname);
 }
 
 /**

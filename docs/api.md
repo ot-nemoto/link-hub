@@ -351,7 +351,14 @@ curl -s -X DELETE -H "Authorization: Bearer ${LH_API_KEY}" \
 指定 URL の OGP メタデータ（タイトル・画像）を取得する。ブックマーク登録前のタイトル/画像の自動補完に使う。
 
 - `url` 未指定・`http`/`https` 以外の形式は **400**
-- **取得失敗・タイムアウト・SSRF ブロック（localhost / プライベート IP 等）でもエラーにせず、`{ title: null, image: null }` を 200 で返す**（ベストエフォート）
+- **取得失敗・タイムアウト・SSRF ブロックでもエラーにせず、`{ title: null, image: null }` を 200 で返す**（ベストエフォート）
+
+SSRF 対策として、以下のホストは fetch せず空を返す（`new URL()` で正規化した上で判定）：
+
+- ループバック（`127.0.0.0/8`・`::1`・`localhost`）、未指定（`0.0.0.0/8`・`::`）
+- プライベート IPv4（`10/8`・`172.16/12`・`192.168/16`）・CGNAT（`100.64/10`）・リンクローカル（`169.254/16`）
+- IPv6 ULA（`fc00::/7`）・リンクローカル（`fe80::/10`）
+- 上記に対応する IPv4-mapped IPv6（`::ffff:x`）表記
 
 ```bash
 curl -s -H "Authorization: Bearer ${LH_API_KEY}" \
