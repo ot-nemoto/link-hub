@@ -341,3 +341,30 @@ curl -s -X DELETE -H "Authorization: Bearer ${LH_API_KEY}" \
 ### レスポンス（204）
 
 ボディなし。未存在は `404`、他ユーザーのものは `403`。
+
+---
+
+# OGP 取得 API
+
+## `GET /api/ogp?url=<url>` — OGP メタデータ取得
+
+指定 URL の OGP メタデータ（タイトル・画像）を取得する。ブックマーク登録前のタイトル/画像の自動補完に使う。
+
+- `url` 未指定・`http`/`https` 以外の形式は **400**
+- **取得失敗・タイムアウト・SSRF ブロック（localhost / プライベート IP 等）でもエラーにせず、`{ title: null, image: null }` を 200 で返す**（ベストエフォート）
+
+```bash
+curl -s -H "Authorization: Bearer ${LH_API_KEY}" \
+  "http://localhost:3000/api/ogp?url=https://example.com" | jq
+```
+
+### レスポンス（200）
+
+```json
+{ "title": "Example Domain", "image": "https://example.com/og.png" }
+```
+
+| フィールド | 型 | 説明 |
+|-----------|-----|------|
+| `title` | string \| null | og:title（無ければ `<title>`）。取得できなければ null |
+| `image` | string \| null | og:image の絶対 URL。取得できなければ null |
