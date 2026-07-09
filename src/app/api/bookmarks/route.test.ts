@@ -116,6 +116,16 @@ describe("POST /api/bookmarks", () => {
     expect(mockCreateBookmark).not.toHaveBeenCalled();
   });
 
+  it("存在しない/他ユーザーの tagId は 404（lib がエラーを返す）", async () => {
+    mockGetUser.mockResolvedValue({ id: "user_1" });
+    mockCreateBookmark.mockResolvedValue({ error: "カテゴリが見つかりません" });
+
+    const res = await POST(jsonReq({ url: "https://a.com", title: "A", tagId: "nope" }));
+
+    expect(res.status).toBe(404);
+    expect(await res.json()).toEqual({ error: "カテゴリが見つかりません" });
+  });
+
   it("正常系: 201 で作成リソースを返し lib を呼ぶ", async () => {
     mockGetUser.mockResolvedValue({ id: "user_1" });
     mockCreateBookmark.mockResolvedValue({ bookmark: record as never });

@@ -160,16 +160,14 @@ describe("createBookmark", () => {
     );
   });
 
-  it("他ユーザーの tagId は null にフォールバックする", async () => {
+  it("存在しない/他ユーザーの tagId はエラーを返す", async () => {
     mockBookmarkAggregate.mockResolvedValue({ _max: { sortOrder: 0 } } as never);
     mockTagFindFirst.mockResolvedValue(null);
-    mockBookmarkCreate.mockResolvedValue(bookmark);
 
-    await createBookmark(userId, { ...bookmarkData, tagId: "tag_other" });
+    const result = await createBookmark(userId, { ...bookmarkData, tagId: "tag_other" });
 
-    expect(mockBookmarkCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ tagId: null }) }),
-    );
+    expect(result).toEqual({ error: "カテゴリが見つかりません" });
+    expect(mockBookmarkCreate).not.toHaveBeenCalled();
   });
 });
 
@@ -202,6 +200,16 @@ describe("updateBookmark", () => {
     const result = await updateBookmark(userId, "bm_1", bookmarkData);
 
     expect(result).toEqual({ error: "権限がありません" });
+    expect(mockBookmarkUpdate).not.toHaveBeenCalled();
+  });
+
+  it("存在しない/他ユーザーの tagId を指定するとエラーを返す", async () => {
+    mockBookmarkFindUnique.mockResolvedValue(bookmark as never);
+    mockTagFindFirst.mockResolvedValue(null);
+
+    const result = await updateBookmark(userId, "bm_1", { ...bookmarkData, tagId: "tag_other" });
+
+    expect(result).toEqual({ error: "カテゴリが見つかりません" });
     expect(mockBookmarkUpdate).not.toHaveBeenCalled();
   });
 
@@ -249,6 +257,35 @@ describe("updateBookmark", () => {
 
     const callArg = mockBookmarkUpdate.mock.calls[0][0];
     expect(callArg.data).not.toHaveProperty("memo");
+  });
+
+  it("sortOrder を指定すると update データに含める（moveBookmark 相当）", async () => {
+    mockBookmarkFindUnique.mockResolvedValue(bookmark as never);
+    mockTagFindFirst.mockResolvedValue({ id: "tag_1" } as never);
+    mockBookmarkUpdate.mockResolvedValue(bookmark);
+
+    await updateBookmark(userId, "bm_1", {
+      url: "https://example.com",
+      title: "x",
+      tagId: "tag_1",
+      sortOrder: 2,
+    });
+
+    expect(mockBookmarkUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ tagId: "tag_1", sortOrder: 2 }),
+      }),
+    );
+  });
+
+  it("sortOrder が undefined の場合は update データに含めない", async () => {
+    mockBookmarkFindUnique.mockResolvedValue(bookmark as never);
+    mockBookmarkUpdate.mockResolvedValue(bookmark);
+
+    await updateBookmark(userId, "bm_1", { url: "https://example.com", title: "x" });
+
+    const callArg = mockBookmarkUpdate.mock.calls[0][0];
+    expect(callArg.data).not.toHaveProperty("sortOrder");
   });
 });
 

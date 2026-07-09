@@ -9,6 +9,7 @@ export function validateBookmarkInput(body: {
   url?: unknown;
   title?: unknown;
   tagId?: unknown;
+  sortOrder?: unknown;
 }): string | null {
   if (typeof body.url !== "string" || body.url.trim() === "") {
     return "url は必須です";
@@ -34,6 +35,18 @@ export function validateBookmarkInput(body: {
     return "tagId の形式が不正です";
   }
 
+  // sortOrder は 0〜Int32 上限の整数のみ許可（DB は 32bit Int）。
+  // 非整数・範囲外は Prisma 実行時例外→500 になるため弾く。
+  if (
+    "sortOrder" in body &&
+    (typeof body.sortOrder !== "number" ||
+      !Number.isInteger(body.sortOrder) ||
+      body.sortOrder < 0 ||
+      body.sortOrder > 2147483647)
+  ) {
+    return "sortOrder は 0 以上 2147483647 以下の整数で指定してください";
+  }
+
   return null;
 }
 
@@ -50,5 +63,6 @@ export function toBookmarkData(body: Record<string, unknown>): BookmarkData {
     ogImage: typeof body.ogImage === "string" ? body.ogImage : undefined,
     tagId: "tagId" in body ? (body.tagId as string | null) : undefined,
     hideOgImage: typeof body.hideOgImage === "boolean" ? body.hideOgImage : undefined,
+    sortOrder: typeof body.sortOrder === "number" ? body.sortOrder : undefined,
   };
 }
