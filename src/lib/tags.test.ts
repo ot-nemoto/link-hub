@@ -107,6 +107,29 @@ describe("createTag", () => {
     expect(mockTagCreate).not.toHaveBeenCalled();
   });
 
+  it("空白のみの場合は error を返す", async () => {
+    const result = await createTag(userId, "   ");
+
+    expect(result).toEqual({ error: "タグ名が不正です" });
+    expect(mockTagCreate).not.toHaveBeenCalled();
+  });
+
+  it("前後の空白を trim して作成する", async () => {
+    mockTagFindUnique.mockResolvedValue(null);
+    mockTagAggregate.mockResolvedValue({ _max: { sortOrder: 0 } } as never);
+    mockTagCreate.mockResolvedValue({ id: "tag_1", name: "React" } as never);
+
+    await createTag(userId, "  React  ");
+
+    expect(mockTagFindUnique).toHaveBeenCalledWith({
+      where: { userId_name: { userId, name: "React" } },
+    });
+    expect(mockTagCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({ userId, name: "React" }),
+      select: { id: true, name: true },
+    });
+  });
+
   it("既存タグと重複する場合は { conflict: true, tag } を返す", async () => {
     mockTagFindUnique.mockResolvedValue(tag as never);
 
@@ -262,6 +285,17 @@ describe("reorderTags", () => {
 
     expect(result).toEqual({ error: "権限がありません" });
     expect(mockTransaction).not.toHaveBeenCalled();
+  });
+
+  it("重複 ID があっても所有していれば誤って 403 にしない（ユニーク基準で判定）", async () => {
+    mockTagCount.mockResolvedValue(1);
+    mockTransaction.mockResolvedValue([]);
+
+    const result = await reorderTags(userId, ["tag_1", "tag_1"]);
+
+    expect(result).toEqual({});
+    expect(mockTagCount).toHaveBeenCalledWith({ where: { id: { in: ["tag_1"] }, userId } });
+    expect(mockTransaction).toHaveBeenCalled();
   });
 });
 

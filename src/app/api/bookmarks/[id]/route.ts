@@ -3,20 +3,15 @@ import { type NextRequest, NextResponse } from "next/server";
 import { getUserByApiKey } from "@/lib/api-auth";
 import { jsonError, serializeBookmark, statusForError, unauthorized } from "@/lib/api-response";
 import { toBookmarkData, validateBookmarkInput } from "@/lib/bookmark-validation";
-import { createBookmark, deleteBookmarks, getBookmarks } from "@/lib/bookmarks";
+import { deleteBookmark, updateBookmark } from "@/lib/bookmarks";
 
-export async function GET(req: NextRequest) {
+type RouteContext = { params: Promise<{ id: string }> };
+
+export async function PATCH(req: NextRequest, { params }: RouteContext) {
   const user = await getUserByApiKey(req);
   if (!user) return unauthorized();
 
-  const bookmarks = await getBookmarks(user.id);
-
-  return NextResponse.json({ bookmarks: bookmarks.map(serializeBookmark) });
-}
-
-export async function POST(req: NextRequest) {
-  const user = await getUserByApiKey(req);
-  if (!user) return unauthorized();
+  const { id } = await params;
 
   const body = await req.json().catch(() => null);
   if (!body || typeof body !== "object") return jsonError("リクエストボディが不正です", 400);
@@ -24,24 +19,20 @@ export async function POST(req: NextRequest) {
   const validationError = validateBookmarkInput(body);
   if (validationError) return jsonError(validationError, 400);
 
-  const result = await createBookmark(user.id, toBookmarkData(body));
+  const result = await updateBookmark(user.id, id, toBookmarkData(body));
   if (result.error) return jsonError(result.error, statusForError(result.error));
-  if (!result.bookmark) return jsonError("作成に失敗しました", 500);
+  if (!result.bookmark) return jsonError("更新に失敗しました", 500);
 
-  return NextResponse.json(serializeBookmark(result.bookmark), { status: 201 });
+  return NextResponse.json(serializeBookmark(result.bookmark));
 }
 
-export async function DELETE(req: NextRequest) {
+export async function DELETE(req: NextRequest, { params }: RouteContext) {
   const user = await getUserByApiKey(req);
   if (!user) return unauthorized();
 
-  const ids = (req.nextUrl.searchParams.get("ids") ?? "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-  if (ids.length === 0) return jsonError("ids は必須です", 400);
+  const { id } = await params;
 
-  const result = await deleteBookmarks(user.id, ids);
+  const result = await deleteBookmark(user.id, id);
   if (result.error) return jsonError(result.error, statusForError(result.error));
 
   return new NextResponse(null, { status: 204 });

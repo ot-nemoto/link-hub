@@ -1,13 +1,20 @@
+import type { Prisma } from "@prisma/client";
+
 import { prisma } from "@/lib/prisma";
 
 export type BookmarkData = {
   url: string;
   title: string;
-  memo: string;
+  memo?: string;
   ogImage?: string;
   tagId?: string | null;
   hideOgImage?: boolean;
+  sortOrder?: number;
 };
+
+export type BookmarkWithTag = Prisma.BookmarkGetPayload<{
+  include: { tag: { select: { id: true; name: true } } };
+}>;
 
 export async function getBookmarks(userId: string, query?: string) {
   const where = {
@@ -44,7 +51,7 @@ export async function getDeletedBookmarks(userId: string) {
 export async function createBookmark(
   userId: string,
   data: BookmarkData,
-): Promise<{ error?: string }> {
+): Promise<{ bookmark?: BookmarkWithTag; error?: string }> {
   const agg = await prisma.bookmark.aggregate({
     where: { userId },
     _max: { sortOrder: true },
@@ -57,10 +64,11 @@ export async function createBookmark(
       where: { id: data.tagId, userId },
       select: { id: true },
     });
-    if (tag) validTagId = tag.id;
+    if (!tag) return { error: "カテゴリが見つかりません" };
+    validTagId = tag.id;
   }
 
-  await prisma.bookmark.create({
+  const bookmark = await prisma.bookmark.create({
     data: {
       userId,
       url: data.url,
@@ -70,16 +78,17 @@ export async function createBookmark(
       sortOrder,
       tagId: validTagId,
     },
+    include: { tag: { select: { id: true, name: true } } },
   });
 
-  return {};
+  return { bookmark };
 }
 
 export async function updateBookmark(
   userId: string,
   id: string,
   data: BookmarkData,
-): Promise<{ error?: string }> {
+): Promise<{ bookmark?: BookmarkWithTag; error?: string }> {
   const bookmark = await prisma.bookmark.findUnique({ where: { id } });
   if (!bookmark) return { error: "ブックマークが見つかりません" };
   if (bookmark.userId !== userId) return { error: "権限がありません" };
@@ -91,25 +100,28 @@ export async function updateBookmark(
         where: { id: data.tagId, userId },
         select: { id: true },
       });
-      validTagId = tag ? tag.id : null;
+      if (!tag) return { error: "カテゴリが見つかりません" };
+      validTagId = tag.id;
     } else {
-      validTagId = null;
+      validTagId = null; // 明示的な null は未分類化
     }
   }
 
-  await prisma.bookmark.update({
+  const updated = await prisma.bookmark.update({
     where: { id },
     data: {
       url: data.url,
       title: data.title,
-      memo: data.memo || null,
+      ...(data.memo !== undefined ? { memo: data.memo || null } : {}),
       ...(data.ogImage !== undefined ? { ogImage: data.ogImage ?? null } : {}),
       ...(data.hideOgImage !== undefined ? { hideOgImage: data.hideOgImage } : {}),
       ...(validTagId !== undefined ? { tagId: validTagId } : {}),
+      ...(data.sortOrder !== undefined ? { sortOrder: data.sortOrder } : {}),
     },
+    include: { tag: { select: { id: true, name: true } } },
   });
 
-  return {};
+  return { bookmark: updated };
 }
 
 export async function moveBookmark(
@@ -139,10 +151,12 @@ export async function moveBookmark(
 }
 
 export async function reorderBookmarks(userId: string, ids: string[]): Promise<{ error?: string }> {
+  // 重複 ID があっても誤判定しないよう、所有権チェックはユニーク ID 基準で行う
+  const uniqueIds = [...new Set(ids)];
   const owned = await prisma.bookmark.count({
-    where: { id: { in: ids }, userId },
+    where: { id: { in: uniqueIds }, userId },
   });
-  if (owned !== ids.length) return { error: "権限がありません" };
+  if (owned !== uniqueIds.length) return { error: "権限がありません" };
 
   await prisma.$transaction(
     ids.map((id, index) => prisma.bookmark.update({ where: { id }, data: { sortOrder: index } })),
@@ -171,15 +185,22 @@ export async function deleteBookmarks(userId: string, ids: string[]): Promise<{ 
   return {};
 }
 
-export async function restoreBookmark(userId: string, id: string): Promise<{ error?: string }> {
+export async function restoreBookmark(
+  userId: string,
+  id: string,
+): Promise<{ bookmark?: BookmarkWithTag; error?: string }> {
   const bookmark = await prisma.bookmark.findUnique({ where: { id } });
   if (!bookmark) return { error: "ブックマークが見つかりません" };
   if (bookmark.userId !== userId) return { error: "権限がありません" };
 
   // deletedAt を null に戻す。tagId は保持されているため元のカテゴリに復帰する
-  await prisma.bookmark.update({ where: { id }, data: { deletedAt: null } });
+  const restored = await prisma.bookmark.update({
+    where: { id },
+    data: { deletedAt: null },
+    include: { tag: { select: { id: true, name: true } } },
+  });
 
-  return {};
+  return { bookmark: restored };
 }
 
 export async function emptyTrash(userId: string): Promise<{ error?: string }> {

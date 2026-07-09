@@ -7,6 +7,8 @@ const isPublicRoute = createRouteMatcher([
   "/auth-error",
   // 外部連携用 REST API は Clerk ではなく API キー認証で保護する
   "/api/bookmarks(.*)",
+  "/api/tags(.*)",
+  "/api/ogp(.*)",
 ]);
 
 export default clerkMiddleware(async (auth, request) => {
