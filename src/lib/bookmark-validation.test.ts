@@ -37,6 +37,25 @@ describe("validateBookmarkInput", () => {
       "title は必須です",
     );
   });
+
+  it("tagId が string / null / 省略なら通過する", () => {
+    expect(
+      validateBookmarkInput({ url: "https://example.com", title: "x", tagId: "tag_1" }),
+    ).toBeNull();
+    expect(
+      validateBookmarkInput({ url: "https://example.com", title: "x", tagId: null }),
+    ).toBeNull();
+    expect(validateBookmarkInput({ url: "https://example.com", title: "x" })).toBeNull();
+  });
+
+  it("tagId が非文字列（数値・配列・オブジェクト）は 400 相当のエラー", () => {
+    const msg = "tagId の形式が不正です";
+    expect(validateBookmarkInput({ url: "https://example.com", title: "x", tagId: 123 })).toBe(msg);
+    expect(validateBookmarkInput({ url: "https://example.com", title: "x", tagId: ["a"] })).toBe(
+      msg,
+    );
+    expect(validateBookmarkInput({ url: "https://example.com", title: "x", tagId: {} })).toBe(msg);
+  });
 });
 
 describe("toBookmarkData", () => {
@@ -60,17 +79,23 @@ describe("toBookmarkData", () => {
     });
   });
 
-  it("省略されたフィールドは undefined / memo は空文字にフォールバック", () => {
+  it("省略されたフィールドはすべて undefined（更新しない意図）", () => {
     const result = toBookmarkData({ url: "https://example.com", title: "x" });
 
     expect(result).toEqual({
       url: "https://example.com",
       title: "x",
-      memo: "",
+      memo: undefined,
       ogImage: undefined,
       tagId: undefined,
       hideOgImage: undefined,
     });
+  });
+
+  it("memo に空文字を明示した場合は空文字（＝クリア）を保持する", () => {
+    const result = toBookmarkData({ url: "https://example.com", title: "x", memo: "" });
+
+    expect(result.memo).toBe("");
   });
 
   it("tagId に null を明示した場合は null（未分類化）を保持する", () => {

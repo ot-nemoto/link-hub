@@ -106,6 +106,16 @@ describe("POST /api/bookmarks", () => {
     expect(mockCreateBookmark).not.toHaveBeenCalled();
   });
 
+  it("tagId が非文字列の場合は 400（lib に到達させない）", async () => {
+    mockGetUser.mockResolvedValue({ id: "user_1" });
+
+    const res = await POST(jsonReq({ url: "https://a.com", title: "A", tagId: 123 }));
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "tagId の形式が不正です" });
+    expect(mockCreateBookmark).not.toHaveBeenCalled();
+  });
+
   it("正常系: 201 で作成リソースを返し lib を呼ぶ", async () => {
     mockGetUser.mockResolvedValue({ id: "user_1" });
     mockCreateBookmark.mockResolvedValue({ bookmark: record as never });

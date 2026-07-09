@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 export type BookmarkData = {
   url: string;
   title: string;
-  memo: string;
+  memo?: string;
   ogImage?: string;
   tagId?: string | null;
   hideOgImage?: boolean;
@@ -109,7 +109,7 @@ export async function updateBookmark(
     data: {
       url: data.url,
       title: data.title,
-      memo: data.memo || null,
+      ...(data.memo !== undefined ? { memo: data.memo || null } : {}),
       ...(data.ogImage !== undefined ? { ogImage: data.ogImage ?? null } : {}),
       ...(data.hideOgImage !== undefined ? { hideOgImage: data.hideOgImage } : {}),
       ...(validTagId !== undefined ? { tagId: validTagId } : {}),

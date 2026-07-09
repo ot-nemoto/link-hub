@@ -240,6 +240,16 @@ describe("updateBookmark", () => {
     const callArg = mockBookmarkUpdate.mock.calls[0][0];
     expect(callArg.data).not.toHaveProperty("hideOgImage");
   });
+
+  it("memo が undefined の場合は update データに含めない（既存値を保持）", async () => {
+    mockBookmarkFindUnique.mockResolvedValue(bookmark as never);
+    mockBookmarkUpdate.mockResolvedValue(bookmark);
+
+    await updateBookmark(userId, "bm_1", { url: "https://example.com", title: "x" });
+
+    const callArg = mockBookmarkUpdate.mock.calls[0][0];
+    expect(callArg.data).not.toHaveProperty("memo");
+  });
 });
 
 describe("moveBookmark", () => {

@@ -5,7 +5,11 @@ import type { BookmarkData } from "@/lib/bookmarks";
  * UI 側で行っている検証と同等の内容をサーバー側でも行う。
  * 問題なければ null、不正なら日本語のエラーメッセージを返す。
  */
-export function validateBookmarkInput(body: { url?: unknown; title?: unknown }): string | null {
+export function validateBookmarkInput(body: {
+  url?: unknown;
+  title?: unknown;
+  tagId?: unknown;
+}): string | null {
   if (typeof body.url !== "string" || body.url.trim() === "") {
     return "url は必須です";
   }
@@ -24,18 +28,25 @@ export function validateBookmarkInput(body: { url?: unknown; title?: unknown }):
     return "title は必須です";
   }
 
+  // tagId は string（カテゴリ ID）または null（未分類）のみ許可。
+  // 非文字列を許すと Prisma に渡って実行時例外→500 になるため 400 で弾く。
+  if ("tagId" in body && body.tagId !== null && typeof body.tagId !== "string") {
+    return "tagId の形式が不正です";
+  }
+
   return null;
 }
 
 /**
  * 検証済みリクエストボディを lib の BookmarkData に変換する。
- * `tagId` / `ogImage` はキーの有無で「更新しない(undefined)」と「クリアする(null/"")」を区別する。
+ * 各フィールドはキーの有無で「更新しない(undefined)」と「クリアする(null/"")」を区別する
+ * （`memo`/`ogImage` は空文字でクリア、`tagId` は null で未分類化）。
  */
 export function toBookmarkData(body: Record<string, unknown>): BookmarkData {
   return {
     url: body.url as string,
     title: body.title as string,
-    memo: typeof body.memo === "string" ? body.memo : "",
+    memo: "memo" in body ? (typeof body.memo === "string" ? body.memo : "") : undefined,
     ogImage: typeof body.ogImage === "string" ? body.ogImage : undefined,
     tagId: "tagId" in body ? (body.tagId as string | null) : undefined,
     hideOgImage: typeof body.hideOgImage === "boolean" ? body.hideOgImage : undefined,

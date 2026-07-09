@@ -32,7 +32,7 @@
 
 | ステータス | 条件 |
 |-----------|------|
-| 400 | バリデーションエラー（`url`/`title` 不正、`ids` 未指定、ボディ不正 等） |
+| 400 | バリデーションエラー（`url`/`title` 不正、`tagId` が文字列/null 以外、`ids` 未指定、ボディ不正 等） |
 | 401 | API キーが未指定・無効 |
 | 403 | 他ユーザーのリソースを操作しようとした |
 | 404 | 対象リソースが存在しない |
@@ -90,7 +90,7 @@ curl -s -H "Authorization: Bearer ${LH_API_KEY}" http://localhost:3000/api/bookm
 | `title` | string | ✅ | タイトル |
 | `memo` | string | - | メモ |
 | `ogImage` | string | - | OGP 画像 URL |
-| `tagId` | string \| null | - | カテゴリ ID（他ユーザーのカテゴリは無視され未分類になる） |
+| `tagId` | string \| null | - | カテゴリ ID（`null` は未分類・他ユーザーのカテゴリは無視され未分類になる）。文字列/null 以外は 400 |
 | `hideOgImage` | boolean | - | 一覧で OGP 画像を隠すか |
 
 ```bash
@@ -123,10 +123,14 @@ curl -s -X DELETE -H "Authorization: Bearer ${LH_API_KEY}" \
 
 ## `PATCH /api/bookmarks/:id` — 更新
 
-リクエストボディは `POST` と同じ（`url`・`title` は必須）。`tagId` と組み合わせてカテゴリ移動、`sortOrder` は非対応（並び替えは別途 reorder API を予定）。
+リクエストボディは `POST` と同じ（`url`・`title` は必須）。`tagId` でカテゴリ移動が可能。`sortOrder`（並び順）は非対応（並び替えは別途 reorder API を予定）。
 
-- `tagId` を省略すると既存カテゴリを保持、`null` を指定すると未分類化する
-- `ogImage` を省略すると既存値を保持する
+`url`・`title` 以外のフィールドは**キーを省略すると既存値を保持**し、明示的に送ると更新する（部分更新）:
+
+- `tagId`: 省略で保持、`null` で未分類化
+- `memo`: 省略で保持、空文字 `""` でクリア
+- `ogImage`: 省略で保持
+- `hideOgImage`: 省略で保持
 
 ```bash
 curl -s -X PATCH -H "Authorization: Bearer ${LH_API_KEY}" \
