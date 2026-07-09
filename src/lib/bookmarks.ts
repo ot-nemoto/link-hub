@@ -147,10 +147,12 @@ export async function moveBookmark(
 }
 
 export async function reorderBookmarks(userId: string, ids: string[]): Promise<{ error?: string }> {
+  // 重複 ID があっても誤判定しないよう、所有権チェックはユニーク ID 基準で行う
+  const uniqueIds = [...new Set(ids)];
   const owned = await prisma.bookmark.count({
-    where: { id: { in: ids }, userId },
+    where: { id: { in: uniqueIds }, userId },
   });
-  if (owned !== ids.length) return { error: "権限がありません" };
+  if (owned !== uniqueIds.length) return { error: "権限がありません" };
 
   await prisma.$transaction(
     ids.map((id, index) => prisma.bookmark.update({ where: { id }, data: { sortOrder: index } })),
