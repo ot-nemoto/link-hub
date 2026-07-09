@@ -2,8 +2,9 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { getUserByApiKey } from "@/lib/api-auth";
 import { jsonError, serializeBookmark, statusForError, unauthorized } from "@/lib/api-response";
-import { toBookmarkData, validateBookmarkInput } from "@/lib/bookmark-validation";
 import { createBookmark, deleteBookmarks, getBookmarks } from "@/lib/bookmarks";
+import { firstZodError } from "@/lib/schemas/_zod-error";
+import { bookmarkBodySchema } from "@/lib/schemas/bookmark";
 
 export async function GET(req: NextRequest) {
   const user = await getUserByApiKey(req);
@@ -21,10 +22,10 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   if (!body || typeof body !== "object") return jsonError("リクエストボディが不正です", 400);
 
-  const validationError = validateBookmarkInput(body);
-  if (validationError) return jsonError(validationError, 400);
+  const parsed = bookmarkBodySchema.safeParse(body);
+  if (!parsed.success) return jsonError(firstZodError(parsed.error), 400);
 
-  const result = await createBookmark(user.id, toBookmarkData(body));
+  const result = await createBookmark(user.id, parsed.data);
   if (result.error) return jsonError(result.error, statusForError(result.error));
   if (!result.bookmark) return jsonError("作成に失敗しました", 500);
 
