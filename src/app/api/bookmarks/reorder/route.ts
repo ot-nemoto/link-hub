@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
   if (!user) return unauthorized();
 
   const body = await req.json().catch(() => null);
-  const parsed = reorderBodySchema.safeParse(body ?? {});
+  const parsed = reorderBodySchema.safeParse(body);
   if (!parsed.success) return jsonError(firstZodError(parsed.error), 400);
 
   const result = await reorderBookmarks(user.id, parsed.data.ids);

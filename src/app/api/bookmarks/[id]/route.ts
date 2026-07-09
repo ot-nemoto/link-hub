@@ -15,8 +15,6 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
   const { id } = await params;
 
   const body = await req.json().catch(() => null);
-  if (!body || typeof body !== "object") return jsonError("リクエストボディが不正です", 400);
-
   const parsed = bookmarkBodySchema.safeParse(body);
   if (!parsed.success) return jsonError(firstZodError(parsed.error), 400);
 

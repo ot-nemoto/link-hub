@@ -107,6 +107,12 @@ describe("bookmarkBodySchema", () => {
     expect(r.success).toBe(true);
     if (r.success) expect(r.data).not.toHaveProperty("extra");
   });
+
+  it("body が非オブジェクト（配列・文字列・数値・null）はボディ不正の日本語エラー", () => {
+    for (const v of [[1, 2, 3], "x", 42, null]) {
+      expect(parseError(bookmarkBodySchema, v)).toBe("リクエストボディが不正です");
+    }
+  });
 });
 
 describe("reorderBodySchema", () => {
@@ -127,5 +133,12 @@ describe("reorderBodySchema", () => {
     expect(!e1.success && firstZodError(e1.error)).toBe("ids は必須です");
     const e2 = reorderBodySchema.safeParse({});
     expect(!e2.success && firstZodError(e2.error)).toBe("ids は文字列の配列で指定してください");
+  });
+
+  it("body が非オブジェクト（配列・文字列・数値・null）はボディ不正の日本語エラー", () => {
+    for (const v of [[], "x", 42, null]) {
+      const r = reorderBodySchema.safeParse(v);
+      expect(!r.success && firstZodError(r.error)).toBe("リクエストボディが不正です");
+    }
   });
 });

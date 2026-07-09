@@ -20,8 +20,6 @@ export async function POST(req: NextRequest) {
   if (!user) return unauthorized();
 
   const body = await req.json().catch(() => null);
-  if (!body || typeof body !== "object") return jsonError("リクエストボディが不正です", 400);
-
   const parsed = bookmarkBodySchema.safeParse(body);
   if (!parsed.success) return jsonError(firstZodError(parsed.error), 400);
 
