@@ -26,6 +26,7 @@ flowchart TD
     ADD_MODAL[追加モーダル]:::modal
     EDIT_MODAL[編集モーダル]:::modal
     TAG_MODAL[カテゴリ管理モーダル]:::modal
+    SETTINGS_MODAL[設定モーダル（API キー）]:::modal
 
     UNAUTH -->|Clerk Middleware| LOGIN
     LOGIN -->|ログイン成功| LIST
@@ -39,14 +40,17 @@ flowchart TD
     ADD_MODAL -->|保存成功/キャンセル/ESC/×| LIST
     EDIT_MODAL -->|保存成功/キャンセル/ESC/×| LIST
     TAG_MODAL -->|閉じる/ESC/×| LIST
+    SETTINGS_MODAL -->|閉じる/ESC/×| LIST
 
     subgraph Header ["Header（認証済み画面共通）"]
         direction LR
         H_APP(アプリ名):::nav
         H_EMAIL(メールアドレス):::nav
+        H_SETTINGS(設定ボタン):::nav
         H_LOGOUT(ログアウト):::nav
     end
 
+    H_SETTINGS -->|設定モーダルを開く| SETTINGS_MODAL
     H_LOGOUT -->|Clerk サインアウト| LOGIN
 ```
 
@@ -163,64 +167,9 @@ flowchart TD
 
 ---
 
-## レイアウト構成
+## ディレクトリ・コンポーネント構成
 
-```
-src/app/
-├── layout.tsx              # ルートレイアウト（ClerkProvider）
-├── page.tsx                # トップ（/bookmarks へリダイレクト）
-├── (auth)/                 # 認証画面グループ（ヘッダーなし）
-│   ├── sign-in/            # Clerk ログイン画面
-│   └── sign-up/            # Clerk サインアップ画面
-├── (dashboard)/            # 認証済み画面グループ
-│   ├── layout.tsx          # ダッシュボードレイアウト（ヘッダー含む）
-│   ├── LogoutButton.tsx    # ログアウトボタン（Clerk useClerk フック使用）
-│   └── bookmarks/          # ブックマーク関連画面
-│       ├── page.tsx            # 一覧（Server Component）
-│       ├── BookmarkForm.tsx    # 登録・編集共通フォーム（OGP 自動取得含む）
-│       ├── BookmarkList.tsx    # ブックマーク一覧（カテゴリグルーピング・D&D）
-│       ├── BookmarkItemContent.tsx  # ブックマーク行の内容表示
-│       ├── SortableBookmarkItem.tsx # ソート可能なブックマーク行
-│       ├── CategoryGroup.tsx       # カテゴリグループ（折りたたみ・D&D）
-│       ├── CategoryDropZone.tsx    # カテゴリ内ドロップゾーン
-│       ├── TrashGroup.tsx          # ゴミ箱グループ（復元・全削除）
-│       ├── DragHandleIcon.tsx      # ドラッグハンドルアイコン
-│       ├── DeleteButton.tsx        # 削除ボタン（useActionState）
-│       ├── useDragAndDrop.ts       # D&D ロジックカスタムフック
-│       ├── types.ts                # 共通型定義
-│       ├── actions.ts             # Server Actions
-│       └── fetchOgp.ts            # OGP 取得 Server Action
-├── auth-error/page.tsx     # 認証エラー画面
-src/components/
-├── Header.tsx              # ヘッダー（アプリ名・メール・ログアウト）
-├── BookmarkAddModal.tsx    # ブックマーク追加モーダル
-├── BookmarkEditModal.tsx   # ブックマーク編集モーダル
-├── TagManagementModal.tsx  # カテゴリ管理モーダル
-└── icons/
-    └── AppIcon.tsx         # アプリアイコン
-```
-
-## コンポーネント一覧
-
-| コンポーネント | ファイル | 種別 | 説明 |
-|--------------|---------|------|------|
-| `BookmarkForm` | `bookmarks/BookmarkForm.tsx` | Client Component | ブックマーク登録・編集フォーム。バリデーション・送信処理・OGP 自動取得・カテゴリ選択を担当 |
-| `BookmarkList` | `bookmarks/BookmarkList.tsx` | Client Component | ブックマーク一覧。カテゴリグルーピング・検索・削除（ゴミ箱移動）・復元・全削除の管理を担当 |
-| `BookmarkItemContent` | `bookmarks/BookmarkItemContent.tsx` | Component | ブックマーク行の表示内容（タイトル・URL・メモ・OGP画像・編集/削除ボタン） |
-| `SortableBookmarkItem` | `bookmarks/SortableBookmarkItem.tsx` | Component | ソート可能なブックマーク行。`useSortable` で D&D 対応 |
-| `CategoryGroup` | `bookmarks/CategoryGroup.tsx` | Client Component | カテゴリグループ。折りたたみ・D&D 対応のカテゴリヘッダーとブックマークリスト |
-| `CategoryDropZone` | `bookmarks/CategoryDropZone.tsx` | Component | カテゴリ内の空ドロップゾーン。カテゴリ間ブックマーク移動時の drop target |
-| `TrashGroup` | `bookmarks/TrashGroup.tsx` | Client Component | ゴミ箱グループ。削除済みブックマークの復元・全削除・折りたたみ表示 |
-| `DragHandleIcon` | `bookmarks/DragHandleIcon.tsx` | Component | ドラッグハンドルの SVG アイコン |
-| `GlobeIcon` | `bookmarks/GlobeIcon.tsx` | Component | ドメインサブグループ見出しのグローブ（世界）SVG アイコン |
-| `DeleteButton` | `bookmarks/DeleteButton.tsx` | Client Component | 削除ボタン。`useActionState` で Server Action を呼び出し |
-| `LogoutButton` | `LogoutButton.tsx` | Client Component | ログアウトボタン。Clerk 7 + React 19 対応のため `useClerk` フックで実装 |
-| `Header` | `components/Header.tsx` | Component | ヘッダー。アプリ名・メールアドレス・設定ボタン・ログアウトボタンを表示 |
-| `SettingsButton` | `components/SettingsButton.tsx` | Client Component | ヘッダーの設定ボタン（歯車アイコン）。クリックで `SettingsModal` を開く |
-| `SettingsModal` | `components/SettingsModal.tsx` | Client Component | 設定モーダル。API キーの生成/再生成/失効・表示/隠す（`createPortal` で body 直下に描画） |
-| `BookmarkAddModal` | `components/BookmarkAddModal.tsx` | Client Component | ブックマーク追加モーダル。`BookmarkForm` をラップ |
-| `BookmarkEditModal` | `components/BookmarkEditModal.tsx` | Client Component | ブックマーク編集モーダル。`BookmarkForm` をラップ |
-| `TagManagementModal` | `components/TagManagementModal.tsx` | Client Component | カテゴリ管理モーダル。カテゴリの作成・編集・削除・一覧表示 |
+コンポーネントの一覧・配置・責務は**コードを正**とする（`src/app/(dashboard)/bookmarks/` と `src/components/`）。本ドキュメントには個々のコンポーネント一覧やディレクトリツリーは持たない（実装と乖離しやすいため）。主要な画面・状態・規約のみ上記/下記に記載する。
 
 ## UI 規約
 

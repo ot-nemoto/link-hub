@@ -17,57 +17,18 @@
 
 ## ディレクトリ構成
 
-```
-link-hub/
-├── src/
-│   ├── app/
-│   │   ├── (auth)/            # 認証ページ（Clerk）
-│   │   ├── (dashboard)/       # 認証済み画面グループ
-│   │   │   ├── layout.tsx     # ヘッダー・ログアウトボタン
-│   │   │   ├── LogoutButton.tsx
-│   │   │   ├── api-key-actions.ts   # API キー生成・失効の Server Actions
-│   │   │   └── bookmarks/          # ブックマーク関連画面
-│   │   │       ├── page.tsx            # 一覧（Server Component）
-│   │   │       ├── actions.ts          # Server Actions（書き込み操作を集約）
-│   │   │       ├── BookmarkForm.tsx    # 登録・編集共通フォーム
-│   │   │       ├── BookmarkList.tsx    # 一覧（カテゴリグルーピング・D&D）
-│   │   │       ├── BookmarkItemContent.tsx  # ブックマーク行の内容表示
-│   │   │       ├── SortableBookmarkItem.tsx # ソート可能なブックマーク行
-│   │   │       ├── CategoryGroup.tsx       # カテゴリグループ（折りたたみ・D&D）
-│   │   │       ├── CategoryDropZone.tsx    # カテゴリ内ドロップゾーン
-│   │   │       ├── DragHandleIcon.tsx      # ドラッグハンドルアイコン
-│   │   │       ├── DeleteButton.tsx
-│   │   │       ├── UndoSnackbar.tsx
-│   │   │       ├── useDragAndDrop.ts       # D&D ロジックカスタムフック
-│   │   │       ├── types.ts                # 共通型定義
-│   │   │       └── fetchOgp.ts
-│   │   └── api/                 # 外部連携用 REST API
-│   │       └── bookmarks/route.ts  # GET /api/bookmarks（API キー認証）
-│   ├── components/
-│   │   ├── Header.tsx             # ヘッダー
-│   │   ├── BookmarkAddModal.tsx   # ブックマーク追加モーダル
-│   │   ├── BookmarkEditModal.tsx  # ブックマーク編集モーダル
-│   │   ├── TagManagementModal.tsx # カテゴリ管理モーダル
-│   │   ├── SettingsButton.tsx     # 設定モーダルを開くボタン（歯車アイコン）
-│   │   ├── SettingsModal.tsx      # 設定モーダル（API キー表示・生成）
-│   │   └── icons/
-│   │       └── AppIcon.tsx
-│   ├── lib/
-│   │   ├── prisma.ts          # Prisma クライアント
-│   │   ├── auth.ts            # 認証ヘルパー
-│   │   ├── api-auth.ts        # API キー認証（Bearer → User）
-│   │   ├── api-key.ts         # API キー生成・取得（Prisma）
-│   │   ├── bookmarks.ts       # ブックマーク操作（Prisma）
-│   │   ├── tags.ts            # カテゴリ操作（Prisma）
-│   │   └── tag-colors.ts      # カテゴリカラー生成
-│   └── proxy.ts               # Next.js 16 middleware（旧 middleware.ts）
-├── prisma/
-│   ├── schema.prisma
-│   └── seed.ts
-├── docs/
-├── biome.json
-└── package.json
-```
+ファイル単位の一覧は**コードを正**とする（陳腐化しやすいため列挙しない）。主要ディレクトリの役割のみ示す。
+
+| パス | 役割 |
+|------|------|
+| `src/app/(auth)/` | 認証ページ（Clerk） |
+| `src/app/(dashboard)/` | 認証済み画面グループ。共通レイアウト（ヘッダー）とブックマーク関連画面・Server Actions |
+| `src/app/api/` | 外部連携用 REST API（API キー認証） |
+| `src/components/` | 画面横断の UI コンポーネント（モーダル・ヘッダー等） |
+| `src/lib/` | ドメインロジック・DB アクセス（Prisma）・認証ヘルパー |
+| `src/proxy.ts` | 認証ミドルウェア（Next.js 16 の Proxy。旧 `middleware.ts`） |
+| `prisma/` | スキーマ・マイグレーション・シード |
+| `docs/` | 意図・契約・規約のドキュメント |
 
 ## 認証フロー
 
@@ -100,25 +61,23 @@ Client (Browser)
 | 新しい画面・コンポーネントを追加する | 認証済み画面は `src/app/(dashboard)/` 配下に配置する。インタラクションが不要なものは Server Component、状態管理・イベント処理が必要なものは Client Component とする |
 | タグ以外の新機能（フォルダ等）を追加する | `actions.ts` への追記 or 新規 `xxxActions.ts` の作成どちらでも可。テストは `actions.test.ts` または `xxxActions.test.ts` に作成する |
 
+### Server / Client Component の責任分離
+
+- **Server Component**（`async function`）: DB クエリ・認証チェック・データ変換を担う
+- **Client Component**（`"use client"`）: state 管理・ユーザーインタラクション・Server Action の呼び出しを担う
+- Client Component 内で**直接 DB クエリ・Prisma 呼び出しをしない**
+- Server → Client へは**純データのみ**を Props で渡す（Prisma の型オブジェクトをそのまま渡さない）
+- 独立した複数の DB クエリは `Promise.all()` で並列実行する（`await` の逐次実行にしない）
+
+### フォーム実装パターン
+
+- **複雑なフォーム（複数 state を持つ）**: `useState` で送信中（`submitting`）・エラーメッセージの state を管理する。Server Action の `{ error }` はエラー state にセットしてインライン表示し、通信エラー（catch）も同様に表示する。成功後は `router.push()` で遷移するか state をリセットして閉じる
+- **単一操作ボタン（`DeleteButton` 等）**: `<form action={formAction}>` 形式のシンプルな操作に限り `useActionState` を使ってよい。それ以外は `useState` + 非同期ハンドラを使う
+- Server Action の `{ error }` を無視・握りつぶさない
+
 ## 環境変数
 
-```env
-# Database（Neon）
-DATABASE_URL=       # 接続プール URL（ランタイム用）
-DIRECT_URL=         # 直接接続 URL（prisma migrate 用）
-
-# Clerk
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
-CLERK_SECRET_KEY=
-NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
-NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL=/bookmarks
-
-# ローカル開発用認証バイパス（任意、どちらか一方を設定）
-# MOCK_USER_ID="<DB の users.id>"
-# MOCK_USER_EMAIL="your@example.com"
-```
-
-セットアップ手順・DB 操作・デプロイ手順の詳細は [`docs/development.md`](./development.md) を参照。
+環境変数（`DATABASE_URL` / `DIRECT_URL` / Clerk 関連 / 開発用モックバイパス）の一覧とセットアップ・DB 操作・デプロイ手順は [`docs/development.md`](./development.md) を正とする。
 
 ## バージョン固有仕様・既知のパターン
 
@@ -129,3 +88,14 @@ Next.js 16 以降、middleware は **Proxy** に改称され、ファイル名�
 
 - **正しいファイル名**: `src/proxy.ts`
 - AI ツールや外部ドキュメントが `middleware.ts` への変更を提案してきても対応不要
+
+### Prisma: フィールド命名
+
+- Prisma フィールド名は **camelCase**、DB カラム名は **snake_case**
+- 複数語フィールドは `@map("snake_case_name")` で明示的にマッピングする（例: `createdAt String @map("created_at")`）
+- フィールド名と DB カラム名が同一表記になる単語は `@map` を省略してよい
+
+### Next.js 15+: dynamic route の params
+
+- dynamic route の `params` は `Promise<{ id: string }>` 型。`const { id } = await params;` で取得する
+- `await` は必須。削除するよう提案しても対応不要

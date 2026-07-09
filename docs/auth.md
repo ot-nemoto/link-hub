@@ -19,6 +19,7 @@ Clerk によるメール/パスワード認証を使用する。
 | `/sign-in/**` | 公開（認証不要） |
 | `/sign-up/**` | 公開（認証不要） |
 | `/auth-error` | 公開（認証不要） |
+| `/api/bookmarks/**` | 公開（Clerk 認証は不要。API キー認証で保護。[`docs/api.md`](api.md) 参照） |
 | 上記以外すべて | 認証必須（未認証は Clerk のサインイン画面へリダイレクト） |
 
 ### 開発環境のモックバイパス
@@ -29,19 +30,7 @@ Clerk によるメール/パスワード認証を使用する。
 
 ## セッション管理
 
-`src/lib/auth.ts` の `getSession()` を使用する。
-
-```ts
-getSession(): Promise<Session | null>
-
-type Session = {
-  user: {
-    id: string;       // DB の User.id（CUID）
-    name: string | null;
-    email: string;
-  };
-};
-```
+`src/lib/auth.ts` の `getSession()` を使う（戻り値 `Session` の型定義はコードを正とする）。返すのは DB の `User.id`（CUID）・`name`・`email` を含むユーザー情報、未認証時は `null`。
 
 ### 処理フロー
 
@@ -52,15 +41,10 @@ type Session = {
 
 ### 利用パターン
 
-```ts
-// Server Action での典型的な使い方
-const session = await getSession();
-if (!session) redirect("/sign-in");
-// session.user.id で自ユーザーを特定
-```
+- Server Action / Server Component の先頭で `getSession()` を呼び、未認証なら `redirect("/sign-in")` する。以降は `session.user.id` で自ユーザーを特定する
 
 ---
 
 ## ユーザーデータ分離
 
-認証はロールなしのユーザー認証。各ユーザーは自分のデータのみにアクセスできる。DB アクセスでは `where` に `userId` を含めるか、取得後に所有者の `userId` を検証する。
+認証はロールなしのユーザー認証で、各ユーザーは自分のデータのみアクセスできる。DB アクセスの `where` に `userId` を含める等の具体ルールは [`CLAUDE.md` のセキュリティルール](../CLAUDE.md#セキュリティルール) を正とする。
