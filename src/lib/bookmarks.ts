@@ -1,3 +1,5 @@
+import type { Prisma } from "@prisma/client";
+
 import { prisma } from "@/lib/prisma";
 
 export type BookmarkData = {
@@ -8,6 +10,10 @@ export type BookmarkData = {
   tagId?: string | null;
   hideOgImage?: boolean;
 };
+
+export type BookmarkWithTag = Prisma.BookmarkGetPayload<{
+  include: { tag: { select: { id: true; name: true } } };
+}>;
 
 export async function getBookmarks(userId: string, query?: string) {
   const where = {
@@ -44,7 +50,7 @@ export async function getDeletedBookmarks(userId: string) {
 export async function createBookmark(
   userId: string,
   data: BookmarkData,
-): Promise<{ error?: string }> {
+): Promise<{ bookmark?: BookmarkWithTag; error?: string }> {
   const agg = await prisma.bookmark.aggregate({
     where: { userId },
     _max: { sortOrder: true },
@@ -60,7 +66,7 @@ export async function createBookmark(
     if (tag) validTagId = tag.id;
   }
 
-  await prisma.bookmark.create({
+  const bookmark = await prisma.bookmark.create({
     data: {
       userId,
       url: data.url,
@@ -70,16 +76,17 @@ export async function createBookmark(
       sortOrder,
       tagId: validTagId,
     },
+    include: { tag: { select: { id: true, name: true } } },
   });
 
-  return {};
+  return { bookmark };
 }
 
 export async function updateBookmark(
   userId: string,
   id: string,
   data: BookmarkData,
-): Promise<{ error?: string }> {
+): Promise<{ bookmark?: BookmarkWithTag; error?: string }> {
   const bookmark = await prisma.bookmark.findUnique({ where: { id } });
   if (!bookmark) return { error: "ブックマークが見つかりません" };
   if (bookmark.userId !== userId) return { error: "権限がありません" };
@@ -97,7 +104,7 @@ export async function updateBookmark(
     }
   }
 
-  await prisma.bookmark.update({
+  const updated = await prisma.bookmark.update({
     where: { id },
     data: {
       url: data.url,
@@ -107,9 +114,10 @@ export async function updateBookmark(
       ...(data.hideOgImage !== undefined ? { hideOgImage: data.hideOgImage } : {}),
       ...(validTagId !== undefined ? { tagId: validTagId } : {}),
     },
+    include: { tag: { select: { id: true, name: true } } },
   });
 
-  return {};
+  return { bookmark: updated };
 }
 
 export async function moveBookmark(
