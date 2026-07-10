@@ -1,25 +1,31 @@
 import { z } from "zod";
 
+/** エラーレスポンス `{ error: string }`（OpenAPI ドキュメント用）。 */
+export const errorResponseSchema = z.object({ error: z.string() });
+
 /**
  * http/https の URL を検証する共有フィールド（必須/形式/スキームの 3 メッセージ）。
  * ブックマークの `url` と OGP 取得の `url` クエリで共有する。
  */
-export const httpUrlField = z.string({ error: "url は必須です" }).superRefine((val, ctx) => {
-  if (val.trim() === "") {
-    ctx.addIssue({ code: "custom", message: "url は必須です" });
-    return;
-  }
-  let parsed: URL;
-  try {
-    parsed = new URL(val);
-  } catch {
-    ctx.addIssue({ code: "custom", message: "url の形式が不正です" });
-    return;
-  }
-  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-    ctx.addIssue({ code: "custom", message: "url は http または https のみ対応しています" });
-  }
-});
+export const httpUrlField = z
+  .string({ error: "url は必須です" })
+  .superRefine((val, ctx) => {
+    if (val.trim() === "") {
+      ctx.addIssue({ code: "custom", message: "url は必須です" });
+      return;
+    }
+    let parsed: URL;
+    try {
+      parsed = new URL(val);
+    } catch {
+      ctx.addIssue({ code: "custom", message: "url の形式が不正です" });
+      return;
+    }
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      ctx.addIssue({ code: "custom", message: "url は http または https のみ対応しています" });
+    }
+  })
+  .meta({ description: "http または https の URL" });
 
 /**
  * 並び替え（reorder）の body スキーマ（ブックマーク・カテゴリ共通）。

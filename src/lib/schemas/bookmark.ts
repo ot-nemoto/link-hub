@@ -36,4 +36,15 @@ export const bookmarkBodySchema = z.object(
 
 export type BookmarkBody = z.infer<typeof bookmarkBodySchema>;
 
+/** ブックマークのレスポンス形式（OpenAPI ドキュメント用）。 */
+export const bookmarkResponseSchema = z.object({
+  id: z.string(),
+  url: z.string(),
+  title: z.string(),
+  memo: z.string().nullable(),
+  ogImage: z.string().nullable(),
+  category: z.object({ id: z.string(), name: z.string() }).nullable(),
+  createdAt: z.string(),
+});
+
 // 並び替え（reorder）の body スキーマは共通のため src/lib/schemas/common.ts に移設。
