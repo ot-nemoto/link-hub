@@ -5,10 +5,29 @@ import { errorResponseSchema, reorderBodySchema } from "@/lib/schemas/common";
 import { ogpResponseSchema } from "@/lib/schemas/ogp";
 import { tagBodySchema, tagResponseSchema } from "@/lib/schemas/tag";
 
-/** Zod スキーマを OpenAPI 3.1（JSON Schema 2020-12）に変換する。`$schema` は components では不要なため除去。 */
+/**
+ * `additionalProperties` を再帰的に除去する。
+ * Zod の `z.object()` は既定で strip（未知キーは受理して無視）だが `z.toJSONSchema()` は
+ * `additionalProperties: false` を出力するため、これを残すと「未知フィールドは拒否」と読めて
+ * 実サーバー挙動（受理して無視）と食い違う。仕様を実挙動に合わせるため除去する。
+ */
+function stripAdditionalProperties(node: unknown): void {
+  if (Array.isArray(node)) {
+    for (const item of node) stripAdditionalProperties(item);
+    return;
+  }
+  if (node && typeof node === "object") {
+    const obj = node as Record<string, unknown>;
+    delete obj.additionalProperties;
+    for (const value of Object.values(obj)) stripAdditionalProperties(value);
+  }
+}
+
+/** Zod スキーマを OpenAPI 3.1（JSON Schema 2020-12）に変換する。`$schema`・`additionalProperties` は除去。 */
 function toSchema(schema: z.ZodType): Record<string, unknown> {
   const json = z.toJSONSchema(schema) as Record<string, unknown>;
   delete json.$schema;
+  stripAdditionalProperties(json);
   return json;
 }
 
@@ -194,8 +213,9 @@ export function buildOpenApiDocument(options: { version?: string } = {}) {
               name: "withCount",
               in: "query",
               required: false,
-              schema: { type: "string", enum: ["true"] },
-              description: "`true` で各カテゴリの未削除ブックマーク件数を含める",
+              schema: { type: "string" },
+              description:
+                "`true` のとき各カテゴリの未削除ブックマーク件数を含める（それ以外の値は件数なし）",
             },
           ],
           responses: {

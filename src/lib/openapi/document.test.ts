@@ -69,6 +69,15 @@ describe("buildOpenApiDocument", () => {
     );
   });
 
+  it("components.schemas に additionalProperties を残さない（実サーバーの strip 挙動と整合）", () => {
+    expect(JSON.stringify(doc.components.schemas)).not.toContain("additionalProperties");
+  });
+
+  it("url フィールドに http/https を示す description が付く", () => {
+    const bookmarkBody = JSON.parse(JSON.stringify(doc.components.schemas.BookmarkBody));
+    expect(bookmarkBody.properties.url.description).toBeTruthy();
+  });
+
   it("全 $ref が components.schemas に解決できる（参照切れなし）", () => {
     const refs = [...JSON.stringify(doc).matchAll(/"#\/components\/schemas\/([A-Za-z0-9]+)"/g)].map(
       (m) => m[1],
