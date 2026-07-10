@@ -31,6 +31,16 @@ describe("buildOpenApiDocument", () => {
     expect(doc.security).toEqual([{ bearerAuth: [] }]);
   });
 
+  it("serverUrl を渡すと servers 先頭に本番 URL が入る（未指定は localhost のみ）", () => {
+    const withServer = buildOpenApiDocument({
+      version: "1.0.0",
+      serverUrl: "https://api.example.com",
+    });
+    expect(withServer.servers[0]).toEqual({ url: "https://api.example.com", description: "本番" });
+
+    expect(doc.servers).toEqual([{ url: "http://localhost:3000", description: "ローカル開発" }]);
+  });
+
   it("全エンドポイント（9 パス / 15 オペレーション）が含まれる", () => {
     expect(Object.keys(doc.paths).sort()).toEqual([...EXPECTED_PATHS].sort());
 

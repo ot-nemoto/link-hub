@@ -56,8 +56,12 @@ const idParam = {
   description: "対象リソースの ID",
 };
 
-/** OpenAPI 3.1 ドキュメントを組み立てる。 */
-export function buildOpenApiDocument(options: { version?: string } = {}) {
+/** OpenAPI 3.1 ドキュメントを組み立てる。`serverUrl` があれば servers 先頭に本番 URL を追加。 */
+export function buildOpenApiDocument(options: { version?: string; serverUrl?: string } = {}) {
+  const servers = [
+    ...(options.serverUrl ? [{ url: options.serverUrl, description: "本番" }] : []),
+    { url: "http://localhost:3000", description: "ローカル開発" },
+  ];
   return {
     openapi: "3.1.0",
     info: {
@@ -66,7 +70,7 @@ export function buildOpenApiDocument(options: { version?: string } = {}) {
       description:
         "link-hub の外部 REST API。API キー（`Authorization: Bearer <api-key>`）で認証する。",
     },
-    servers: [{ url: "http://localhost:3000", description: "ローカル開発" }],
+    servers,
     security: [{ bearerAuth: [] }],
     components: {
       securitySchemes: {
