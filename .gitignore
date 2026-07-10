@@ -45,3 +45,6 @@ next-env.d.ts
 # prisma
 prisma/*.db
 prisma/*.db-journal
+
+# generated OpenAPI spec (T116: gen:openapi で都度生成)
+openapi.json

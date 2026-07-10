@@ -135,3 +135,19 @@ Vercel ダッシュボードの「Functions」>「Shell」、または devcontai
 npm run migrate
 # 実行内容: prisma migrate deploy
 ```
+
+## API リファレンス（OpenAPI）
+
+外部 REST API の仕様は、`src/lib/schemas/` の Zod スキーマを唯一の正として OpenAPI 3.1 を生成する（[`docs/api.md`](api.md) / 公開リファレンス）。
+
+```bash
+# openapi.json を生成（生成物は gitignore）
+npm run gen:openapi
+
+# 本番 API URL を servers に含める場合
+OPENAPI_SERVER_URL="https://<本番URL>" npm run gen:openapi
+```
+
+- 公開ページは Scalar で描画し、GitHub Actions（`.github/workflows/deploy-openapi-github-pages.yml`）が `develop` への push 時に **GitHub Pages** へデプロイする（公開 URL: `https://ot-nemoto.github.io/link-hub/`）
+- 初回のみ、リポジトリ Settings → Pages → **Source = GitHub Actions** を有効化する必要がある
+- 本番 URL を出す場合はリポジトリ変数 `OPENAPI_SERVER_URL` を設定する
