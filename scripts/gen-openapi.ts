@@ -6,7 +6,10 @@ import { buildOpenApiDocument } from "@/lib/openapi/document";
 const root = process.cwd();
 const pkg = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8")) as { version: string };
 
-const doc = buildOpenApiDocument({ version: pkg.version });
+const doc = buildOpenApiDocument({
+  version: pkg.version,
+  serverUrl: process.env.OPENAPI_SERVER_URL,
+});
 const outPath = resolve(root, "openapi.json");
 writeFileSync(outPath, `${JSON.stringify(doc, null, 2)}\n`);
 
