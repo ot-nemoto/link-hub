@@ -17,7 +17,7 @@
 - キーワード検索
 - ドラッグ＆ドロップによる並び替え（ブックマーク・カテゴリ）
 - ゴミ箱方式の削除（復元・完全削除）
-- API キー認証によるブックマーク取得 REST API
+- API キー認証による外部 REST API（ブックマーク・カテゴリの CRUD／並び替え／ゴミ箱／OGP 取得）
 - 完全なユーザーデータ分離（他ユーザーのデータは参照不可）
 
 ## ドキュメント
@@ -27,7 +27,8 @@
 | [docs/product.md](./docs/product.md) | プロダクトの目的・対象ユーザー・ゴール・成功指標 |
 | [docs/architecture.md](./docs/architecture.md) | 技術スタック・実装方針・環境変数 |
 | [docs/schema.md](./docs/schema.md) | DB テーブル定義・リレーション図 |
-| [docs/api.md](./docs/api.md) | 外部 REST API 定義 |
+| [docs/api.md](./docs/api.md) | 外部 REST API の概要・認証（詳細な仕様は下記リファレンス） |
+| [API リファレンス（Scalar / GitHub Pages）](https://ot-nemoto.github.io/link-hub/) | Zod スキーマから生成した OpenAPI 3.1 仕様の公開ページ |
 | [docs/actions.md](./docs/actions.md) | Server Actions 一覧 |
 | [docs/auth.md](./docs/auth.md) | 認証フロー・保護対象ルート・セッション管理 |
 | [docs/ui.md](./docs/ui.md) | 画面一覧・画面遷移図・UI 規約 |

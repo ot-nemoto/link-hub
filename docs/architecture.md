@@ -48,9 +48,9 @@ Client (Browser)
 
 - ページコンポーネントは Server Components を基本とし、インタラクションが必要な部分のみ Client Components を使用する
 - **reads（データ取得）**: Server Components から Prisma を直接呼ぶ
-- **writes（書き込み操作）**: Server Actions（`actions.ts`）に集約する。REST API は使用しない
-- バリデーションはクライアント側で実施する（Zod は不使用）
-- ユーザー分離は全 Server Actions で `getSession()` による認証チェックを必須とする
+- **writes（書き込み操作）**: ドメインロジックは `src/lib/` に集約し、UI からは Server Actions（`actions.ts`）、外部クライアントからは API キー認証の REST API（`src/app/api/`）が同じ lib 関数を呼ぶ（[`docs/api.md`](api.md)）
+- **バリデーション**: UI はクライアント側で実施（Zod 不使用）。**REST API はサーバー側で Zod スキーマ（`src/lib/schemas/`）により検証**し、同じスキーマから OpenAPI 仕様を生成する（[`docs/api.md`](api.md) の公開リファレンス）
+- ユーザー分離は全 Server Actions・API ルートで認証チェック（`getSession()` / API キー）を必須とする
 
 ### 機能追加時のガイドライン
 
