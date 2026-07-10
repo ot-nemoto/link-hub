@@ -1,23 +1,8 @@
 import { z } from "zod";
 
-const SORT_ORDER_MSG = "sortOrder は 0 以上 2147483647 以下の整数で指定してください";
+import { httpUrlField } from "./common";
 
-const urlField = z.string({ error: "url は必須です" }).superRefine((val, ctx) => {
-  if (val.trim() === "") {
-    ctx.addIssue({ code: "custom", message: "url は必須です" });
-    return;
-  }
-  let parsed: URL;
-  try {
-    parsed = new URL(val);
-  } catch {
-    ctx.addIssue({ code: "custom", message: "url の形式が不正です" });
-    return;
-  }
-  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-    ctx.addIssue({ code: "custom", message: "url は http または https のみ対応しています" });
-  }
-});
+const SORT_ORDER_MSG = "sortOrder は 0 以上 2147483647 以下の整数で指定してください";
 
 const titleField = z
   .string({ error: "title は必須です" })
@@ -33,7 +18,7 @@ const titleField = z
  */
 export const bookmarkBodySchema = z.object(
   {
-    url: urlField,
+    url: httpUrlField,
     title: titleField,
     memo: z.string({ error: "memo は文字列で指定してください" }).optional(),
     ogImage: z.string({ error: "ogImage は文字列で指定してください" }).optional(),
@@ -51,14 +36,4 @@ export const bookmarkBodySchema = z.object(
 
 export type BookmarkBody = z.infer<typeof bookmarkBodySchema>;
 
-/** 並び替え（reorder）の body スキーマ。 */
-export const reorderBodySchema = z.object(
-  {
-    ids: z
-      .array(z.string({ error: "ids は文字列の配列で指定してください" }), {
-        error: "ids は文字列の配列で指定してください",
-      })
-      .min(1, { error: "ids は必須です" }),
-  },
-  { error: "リクエストボディが不正です" },
-);
+// 並び替え（reorder）の body スキーマは共通のため src/lib/schemas/common.ts に移設。
