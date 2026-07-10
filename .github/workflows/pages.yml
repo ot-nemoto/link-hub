@@ -9,6 +9,7 @@ on:
       - "src/lib/openapi/**"
       - "scripts/gen-openapi.ts"
       - "docs/scalar/**"
+      - "package.json" # info.version の由来（バージョンバンプでも再公開する）
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
