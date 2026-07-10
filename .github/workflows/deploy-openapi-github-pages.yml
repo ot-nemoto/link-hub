@@ -1,4 +1,4 @@
-name: Deploy API reference to Pages
+name: Deploy OpenAPI reference to GitHub Pages
 
 on:
   push:
@@ -10,7 +10,7 @@ on:
       - "scripts/gen-openapi.ts"
       - "docs/scalar/**"
       - "package.json" # info.version の由来（バージョンバンプでも再公開する）
-      - ".github/workflows/pages.yml"
+      - ".github/workflows/deploy-openapi-github-pages.yml"
   workflow_dispatch:
 
 permissions:

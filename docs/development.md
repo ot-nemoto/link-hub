@@ -148,6 +148,6 @@ npm run gen:openapi
 OPENAPI_SERVER_URL="https://<本番URL>" npm run gen:openapi
 ```
 
-- 公開ページは Scalar で描画し、GitHub Actions（`.github/workflows/pages.yml`）が `develop` への push 時に **GitHub Pages** へデプロイする（公開 URL: `https://ot-nemoto.github.io/link-hub/`）
+- 公開ページは Scalar で描画し、GitHub Actions（`.github/workflows/deploy-openapi-github-pages.yml`）が `develop` への push 時に **GitHub Pages** へデプロイする（公開 URL: `https://ot-nemoto.github.io/link-hub/`）
 - 初回のみ、リポジトリ Settings → Pages → **Source = GitHub Actions** を有効化する必要がある
 - 本番 URL を出す場合はリポジトリ変数 `OPENAPI_SERVER_URL` を設定する
