@@ -89,6 +89,17 @@ describe("POST /api/tags", () => {
     expect(mockCreateTag).not.toHaveBeenCalled();
   });
 
+  it("body が非オブジェクト（配列・null）の場合は 400（日本語メッセージ）", async () => {
+    mockGetUser.mockResolvedValue({ id: "user_1" });
+
+    for (const bad of [[1, 2, 3], null]) {
+      const res = await POST(jsonReq(bad));
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({ error: "リクエストボディが不正です" });
+    }
+    expect(mockCreateTag).not.toHaveBeenCalled();
+  });
+
   it("同名カテゴリは 409", async () => {
     mockGetUser.mockResolvedValue({ id: "user_1" });
     mockCreateTag.mockResolvedValue({ conflict: true, tag: { id: "t1", name: "React" } });

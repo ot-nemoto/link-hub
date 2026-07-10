@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 
 import { firstZodError } from "./_zod-error";
-import { bookmarkBodySchema, reorderBodySchema } from "./bookmark";
+import { bookmarkBodySchema } from "./bookmark";
 
 /** safeParse して先頭エラーメッセージ（成功時 null）を返すヘルパー。 */
 function parseError(schema: typeof bookmarkBodySchema, input: unknown): string | null {
@@ -111,34 +111,6 @@ describe("bookmarkBodySchema", () => {
   it("body が非オブジェクト（配列・文字列・数値・null）はボディ不正の日本語エラー", () => {
     for (const v of [[1, 2, 3], "x", 42, null]) {
       expect(parseError(bookmarkBodySchema, v)).toBe("リクエストボディが不正です");
-    }
-  });
-});
-
-describe("reorderBodySchema", () => {
-  it("正常系: 文字列配列で通過", () => {
-    expect(reorderBodySchema.safeParse({ ids: ["a", "b"] }).success).toBe(true);
-  });
-
-  it("配列でない・非文字列要素は配列エラー", () => {
-    const msg = "ids は文字列の配列で指定してください";
-    const e1 = reorderBodySchema.safeParse({ ids: "a,b" });
-    expect(!e1.success && firstZodError(e1.error)).toBe(msg);
-    const e2 = reorderBodySchema.safeParse({ ids: ["a", 1] });
-    expect(!e2.success && firstZodError(e2.error)).toBe(msg);
-  });
-
-  it("空配列・ids 欠落は必須エラー", () => {
-    const e1 = reorderBodySchema.safeParse({ ids: [] });
-    expect(!e1.success && firstZodError(e1.error)).toBe("ids は必須です");
-    const e2 = reorderBodySchema.safeParse({});
-    expect(!e2.success && firstZodError(e2.error)).toBe("ids は文字列の配列で指定してください");
-  });
-
-  it("body が非オブジェクト（配列・文字列・数値・null）はボディ不正の日本語エラー", () => {
-    for (const v of [[], "x", 42, null]) {
-      const r = reorderBodySchema.safeParse(v);
-      expect(!r.success && firstZodError(r.error)).toBe("リクエストボディが不正です");
     }
   });
 });

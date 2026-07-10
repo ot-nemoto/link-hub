@@ -4,7 +4,7 @@ import { getUserByApiKey } from "@/lib/api-auth";
 import { jsonError, statusForError, unauthorized } from "@/lib/api-response";
 import { reorderBookmarks } from "@/lib/bookmarks";
 import { firstZodError } from "@/lib/schemas/_zod-error";
-import { reorderBodySchema } from "@/lib/schemas/bookmark";
+import { reorderBodySchema } from "@/lib/schemas/common";
 
 export async function POST(req: NextRequest) {
   const user = await getUserByApiKey(req);
