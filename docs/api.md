@@ -25,6 +25,7 @@
 - リクエスト・レスポンスボディはすべて JSON（`Content-Type: application/json`）
 - 削除はソフトデリート（ゴミ箱へ移動）。ゴミ箱の一覧・復元・完全削除を別途提供
 - 未知のリクエストフィールドは受理して無視する（strip）
+- **CORS 対応**: 任意オリジンから利用可（`Access-Control-Allow-Origin: *`）。API キー認証・Cookie 不使用のためオリジン制限は不要。プリフライト `OPTIONS` にも対応（`src/proxy.ts`）
 
 ### エラーレスポンス
 
