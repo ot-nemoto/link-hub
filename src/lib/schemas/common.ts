@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+/** エラーレスポンス `{ error: string }`（OpenAPI ドキュメント用）。 */
+export const errorResponseSchema = z.object({ error: z.string() });
+
 /**
  * http/https の URL を検証する共有フィールド（必須/形式/スキームの 3 メッセージ）。
  * ブックマークの `url` と OGP 取得の `url` クエリで共有する。
