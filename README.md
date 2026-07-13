@@ -33,7 +33,6 @@
 | [docs/auth.md](./docs/auth.md) | 認証フロー・保護対象ルート・セッション管理 |
 | [docs/ui.md](./docs/ui.md) | 画面一覧・画面遷移図・UI 規約 |
 | [docs/development.md](./docs/development.md) | ローカルセットアップ・環境変数・DB操作・デプロイ手順 |
-| [docs/operations.md](./docs/operations.md) | リリースフロー・バージョニングルール・CI 構成 |
 
 > 個別のタスク・進捗は GitHub Issues / Milestone で管理する。
 
