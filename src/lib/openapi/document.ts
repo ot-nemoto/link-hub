@@ -59,10 +59,13 @@ const idParam = {
 /** OpenAPI 3.1 ドキュメントを組み立てる。`serverUrl`（アクセス元オリジン）があれば servers 先頭に置く。 */
 export function buildOpenApiDocument(options: { version?: string; serverUrl?: string } = {}) {
   const localhost = "http://localhost:3000";
+  // アクセス元オリジンが localhost（ポート違い含む）なら、固定の localhost 候補は紛らわしいので加えない。
+  const originIsLocalhost = options.serverUrl
+    ? new URL(options.serverUrl).hostname === "localhost"
+    : false;
   const servers = [
     ...(options.serverUrl ? [{ url: options.serverUrl }] : []),
-    // ローカル開発用の候補。アクセス元オリジンが localhost の場合は重複するため加えない。
-    ...(options.serverUrl === localhost ? [] : [{ url: localhost, description: "ローカル開発" }]),
+    ...(originIsLocalhost ? [] : [{ url: localhost, description: "ローカル開発" }]),
   ];
   return {
     openapi: "3.1.0",

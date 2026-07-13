@@ -44,9 +44,15 @@ describe("buildOpenApiDocument", () => {
     expect(doc.servers).toEqual([{ url: "http://localhost:3000", description: "ローカル開発" }]);
   });
 
-  it("serverUrl が localhost のときは servers を重複させない", () => {
+  it("serverUrl が localhost（ポート違い含む）のときは servers を重複させない", () => {
     const local = buildOpenApiDocument({ version: "1.0.0", serverUrl: "http://localhost:3000" });
     expect(local.servers).toEqual([{ url: "http://localhost:3000" }]);
+
+    const otherPort = buildOpenApiDocument({
+      version: "1.0.0",
+      serverUrl: "http://localhost:3001",
+    });
+    expect(otherPort.servers).toEqual([{ url: "http://localhost:3001" }]);
   });
 
   it("全エンドポイント（9 パス / 15 オペレーション）が含まれる", () => {
