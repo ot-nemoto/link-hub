@@ -15,7 +15,10 @@ dotenv.config({ path: ".env" });
 const adapter = new PrismaNeon({ connectionString: process.env.DIRECT_URL ?? "" });
 const prisma = new PrismaClient({ adapter });
 
-const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+const clerkSecretKey = process.env.CLERK_SECRET_KEY;
+if (!clerkSecretKey) throw new Error("CLERK_SECRET_KEY is not set");
+
+const clerk = createClerkClient({ secretKey: clerkSecretKey });
 
 // テストユーザーの共通パスワード
 const SEED_PASSWORD = "Yakitori2026";
