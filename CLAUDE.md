@@ -20,7 +20,6 @@
 - **必須ドキュメント**: `product` / `architecture` / `ui` / `development`
 - **条件付き必須ドキュメント**: `api`（外部 REST API。フィールド単位の契約は生成した OpenAPI 仕様 `openapi.json` / 公開 Scalar リファレンスが正）/ `actions`（Server Actions を採用）/ `schema`（Prisma + PostgreSQL を利用）/ `auth`（Clerk 認証フロー）
   - 不採用: `kintone-fields`（外部データソース参照なし）/ `integrations`（外部サービス連携は認証の Clerk のみで `auth.md` に集約）/ `infra`（Vercel + Neon 構成は `architecture.md` / `development.md` に集約）
-  - **`docs/api.md` の必須セクション読み替え（本リポジトリ固有）**: common-rules は api.md の必須に「リクエスト・レスポンス定義」を挙げるが、本リポジトリでは**フィールド単位のリクエスト・レスポンス定義は Zod スキーマから生成した OpenAPI 仕様（`openapi.json` / 公開 Scalar リファレンス）を正**とし、`docs/api.md` には手書きしない（重複・drift 回避）。api.md は概要・認証・エンドポイント一覧・エラー定義・公開リファレンスへのポインタを担う
 
 ## テスト対象（このリポジトリ固有）
 
