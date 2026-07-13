@@ -18,7 +18,7 @@
 ## 本リポジトリのドキュメント採否
 
 - **必須ドキュメント**: `product` / `architecture` / `ui` / `development`
-- **条件付き必須ドキュメント**: `api`（外部 REST API。フィールド単位の契約は生成した OpenAPI 仕様 `openapi.json` / 公開 Scalar リファレンスが正）/ `actions`（Server Actions を採用）/ `schema`（Prisma + PostgreSQL を利用）/ `auth`（Clerk 認証フロー）
+- **条件付き必須ドキュメント**: `api`（外部 REST API。フィールド単位の契約はアプリ内でホスティングする OpenAPI 仕様 `/openapi.json` / Stoplight Elements リファレンス `/api-reference` が正）/ `actions`（Server Actions を採用）/ `schema`（Prisma + PostgreSQL を利用）/ `auth`（Clerk 認証フロー）
   - 不採用: `kintone-fields`（外部データソース参照なし）/ `integrations`（外部サービス連携は認証の Clerk のみで `auth.md` に集約）/ `infra`（Vercel + Neon 構成は `architecture.md` / `development.md` に集約）
 
 ## テスト対象（このリポジトリ固有）

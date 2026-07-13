@@ -31,14 +31,22 @@ describe("buildOpenApiDocument", () => {
     expect(doc.security).toEqual([{ bearerAuth: [] }]);
   });
 
-  it("serverUrl を渡すと servers 先頭に本番 URL が入る（未指定は localhost のみ）", () => {
+  it("serverUrl（オリジン）を渡すと servers 先頭に入り、localhost が続く（未指定は localhost のみ）", () => {
     const withServer = buildOpenApiDocument({
       version: "1.0.0",
       serverUrl: "https://api.example.com",
     });
-    expect(withServer.servers[0]).toEqual({ url: "https://api.example.com", description: "本番" });
+    expect(withServer.servers).toEqual([
+      { url: "https://api.example.com" },
+      { url: "http://localhost:3000", description: "ローカル開発" },
+    ]);
 
     expect(doc.servers).toEqual([{ url: "http://localhost:3000", description: "ローカル開発" }]);
+  });
+
+  it("serverUrl が localhost のときは servers を重複させない", () => {
+    const local = buildOpenApiDocument({ version: "1.0.0", serverUrl: "http://localhost:3000" });
+    expect(local.servers).toEqual([{ url: "http://localhost:3000" }]);
   });
 
   it("全エンドポイント（9 パス / 15 オペレーション）が含まれる", () => {

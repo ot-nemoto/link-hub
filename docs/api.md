@@ -4,14 +4,14 @@
 
 書き込み系の業務ロジックは `src/lib/` に集約し、Server Actions（UI 用）と REST API（外部用）が同じ関数を共有する。Server Actions の仕様は [`docs/actions.md`](actions.md) を参照。
 
-## 公開リファレンス（仕様の正）
+## API リファレンス（仕様の正）
 
 エンドポイントごとの詳細（リクエスト/レスポンススキーマ・パラメータ）は、**Zod スキーマ（`src/lib/schemas/`）から生成した OpenAPI 3.1 仕様**が正とする。
 
-- **公開リファレンス（Scalar）: <https://ot-nemoto.github.io/link-hub/>**
-- ローカル生成: `npm run gen:openapi` → `openapi.json`
+- **リファレンス（Stoplight Elements）: アプリ内 `/api-reference`（ログイン必須）**
+- OpenAPI JSON: `/openapi.json`（実行時に生成。`servers` はアクセス元オリジンを反映）
 
-本ドキュメントは認証・共通仕様・エンドポイント一覧の概要にとどめ、フィールド単位の契約はリファレンスを参照する（重複を避け drift を防ぐため）。
+リファレンス UI・OpenAPI JSON はアプリに同梱してホスティングする（外部の GitHub Pages 等には公開しない）。本ドキュメントは認証・共通仕様・エンドポイント一覧の概要にとどめ、フィールド単位の契約はリファレンスを参照する（重複を避け drift を防ぐため）。
 
 ## 認証
 
@@ -75,4 +75,4 @@ curl -s -X POST -H "Authorization: Bearer ${LH_API_KEY}" \
   "$BASE/api/bookmarks" | jq
 ```
 
-各エンドポイントのリクエスト/レスポンス詳細・全パラメータは[公開リファレンス](https://ot-nemoto.github.io/link-hub/)を参照。
+各エンドポイントのリクエスト/レスポンス詳細・全パラメータはアプリ内リファレンス `/api-reference`（ログイン必須）を参照。

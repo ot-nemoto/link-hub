@@ -56,11 +56,13 @@ const idParam = {
   description: "対象リソースの ID",
 };
 
-/** OpenAPI 3.1 ドキュメントを組み立てる。`serverUrl` があれば servers 先頭に本番 URL を追加。 */
+/** OpenAPI 3.1 ドキュメントを組み立てる。`serverUrl`（アクセス元オリジン）があれば servers 先頭に置く。 */
 export function buildOpenApiDocument(options: { version?: string; serverUrl?: string } = {}) {
+  const localhost = "http://localhost:3000";
   const servers = [
-    ...(options.serverUrl ? [{ url: options.serverUrl, description: "本番" }] : []),
-    { url: "http://localhost:3000", description: "ローカル開発" },
+    ...(options.serverUrl ? [{ url: options.serverUrl }] : []),
+    // ローカル開発用の候補。アクセス元オリジンが localhost の場合は重複するため加えない。
+    ...(options.serverUrl === localhost ? [] : [{ url: localhost, description: "ローカル開発" }]),
   ];
   return {
     openapi: "3.1.0",
