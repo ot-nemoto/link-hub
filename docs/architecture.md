@@ -2,18 +2,20 @@
 
 ## 技術スタック
 
-| カテゴリ | 技術 | バージョン |
-|----------|------|-----------|
-| フレームワーク | Next.js (App Router) | 16.2.9 |
-| UI ライブラリ | React | 19.2.7 |
-| 言語 | TypeScript (strict) | latest |
-| スタイリング | Tailwind CSS | 4 |
-| ORM | Prisma | 7.8.0 |
-| DB | PostgreSQL (Neon) | - |
-| 認証 | Clerk | 7.x |
-| D&D | dnd-kit | core 6.x / sortable 10.x |
-| フォーマッタ/リンター | Biome | 2.5.0 |
-| テスト（ユニット） | Vitest | 4.x |
+> バージョンは `package.json` を正とする（本表には固定バージョン値を書かない）。
+
+| カテゴリ | 技術 |
+|----------|------|
+| フレームワーク | Next.js (App Router) |
+| UI ライブラリ | React |
+| 言語 | TypeScript (strict) |
+| スタイリング | Tailwind CSS |
+| ORM | Prisma |
+| DB | PostgreSQL (Neon) |
+| 認証 | Clerk |
+| D&D | dnd-kit |
+| フォーマッタ/リンター | Biome |
+| テスト（ユニット） | Vitest |
 
 ## ディレクトリ構成
 
@@ -49,7 +51,7 @@ Client (Browser)
 - ページコンポーネントは Server Components を基本とし、インタラクションが必要な部分のみ Client Components を使用する
 - **reads（データ取得）**: Server Components から Prisma を直接呼ぶ
 - **writes（書き込み操作）**: ドメインロジックは `src/lib/` に集約し、UI からは Server Actions（`actions.ts`）、外部クライアントからは API キー認証の REST API（`src/app/api/`）が同じ lib 関数を呼ぶ（[`docs/api.md`](api.md)）
-- **バリデーション**: UI はクライアント側で実施（Zod 不使用）。**REST API はサーバー側で Zod スキーマ（`src/lib/schemas/`）により検証**し、同じスキーマから OpenAPI 仕様を生成する（[`docs/api.md`](api.md) の公開リファレンス）
+- **バリデーション**: UI はクライアント側で実施（Zod 不使用）。**REST API はサーバー側で Zod スキーマ（`src/lib/schemas/`）により検証**し、同じスキーマから OpenAPI 仕様を生成する。OpenAPI JSON は実行時ルート `/openapi.json`、リファレンス UI（Stoplight Elements）はアプリ内 `/api-reference`（ログイン必須）で提供する（[`docs/api.md`](api.md)）
 - ユーザー分離は全 Server Actions・API ルートで認証チェック（`getSession()` / API キー）を必須とする
 
 ### 機能追加時のガイドライン

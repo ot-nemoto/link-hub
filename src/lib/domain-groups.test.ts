@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it } from "vitest";
 import type { Bookmark } from "@/app/(dashboard)/bookmarks/types";
 import { getDomain, groupByConsecutiveDomain } from "./domain-groups";

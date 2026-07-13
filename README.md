@@ -28,12 +28,11 @@
 | [docs/architecture.md](./docs/architecture.md) | 技術スタック・実装方針・環境変数 |
 | [docs/schema.md](./docs/schema.md) | DB テーブル定義・リレーション図 |
 | [docs/api.md](./docs/api.md) | 外部 REST API の概要・認証（詳細な仕様は下記リファレンス） |
-| [API リファレンス（Scalar / GitHub Pages）](https://ot-nemoto.github.io/link-hub/) | Zod スキーマから生成した OpenAPI 3.1 仕様の公開ページ |
+| API リファレンス（Stoplight Elements）: アプリ内 `/api-reference`（ログイン必須） | Zod スキーマから生成した OpenAPI 3.1 仕様をアプリ内でホスティング |
 | [docs/actions.md](./docs/actions.md) | Server Actions 一覧 |
 | [docs/auth.md](./docs/auth.md) | 認証フロー・保護対象ルート・セッション管理 |
 | [docs/ui.md](./docs/ui.md) | 画面一覧・画面遷移図・UI 規約 |
 | [docs/development.md](./docs/development.md) | ローカルセットアップ・環境変数・DB操作・デプロイ手順 |
-| [docs/operations.md](./docs/operations.md) | リリースフロー・バージョニングルール・CI 構成 |
 
 > 個別のタスク・進捗は GitHub Issues / Milestone で管理する。
 
