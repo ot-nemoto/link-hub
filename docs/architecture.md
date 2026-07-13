@@ -2,18 +2,20 @@
 
 ## 技術スタック
 
-| カテゴリ | 技術 | バージョン |
-|----------|------|-----------|
-| フレームワーク | Next.js (App Router) | 16.2.9 |
-| UI ライブラリ | React | 19.2.7 |
-| 言語 | TypeScript (strict) | latest |
-| スタイリング | Tailwind CSS | 4 |
-| ORM | Prisma | 7.8.0 |
-| DB | PostgreSQL (Neon) | - |
-| 認証 | Clerk | 7.x |
-| D&D | dnd-kit | core 6.x / sortable 10.x |
-| フォーマッタ/リンター | Biome | 2.5.0 |
-| テスト（ユニット） | Vitest | 4.x |
+> バージョンは `package.json` を正とする（本表には固定バージョン値を書かない）。
+
+| カテゴリ | 技術 |
+|----------|------|
+| フレームワーク | Next.js (App Router) |
+| UI ライブラリ | React |
+| 言語 | TypeScript (strict) |
+| スタイリング | Tailwind CSS |
+| ORM | Prisma |
+| DB | PostgreSQL (Neon) |
+| 認証 | Clerk |
+| D&D | dnd-kit |
+| フォーマッタ/リンター | Biome |
+| テスト（ユニット） | Vitest |
 
 ## ディレクトリ構成
 
