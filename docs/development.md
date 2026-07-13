@@ -138,16 +138,9 @@ npm run migrate
 
 ## API リファレンス（OpenAPI）
 
-外部 REST API の仕様は、`src/lib/schemas/` の Zod スキーマを唯一の正として OpenAPI 3.1 を生成する（[`docs/api.md`](api.md) / 公開リファレンス）。
+外部 REST API の仕様は、`src/lib/schemas/` の Zod スキーマを唯一の正として OpenAPI 3.1 を生成する（[`docs/api.md`](api.md)）。**リファレンスはアプリに同梱してホスティングし、外部 Pages 等には公開しない**。
 
-```bash
-# openapi.json を生成（生成物は gitignore）
-npm run gen:openapi
-
-# 本番 API URL を servers に含める場合
-OPENAPI_SERVER_URL="https://<本番URL>" npm run gen:openapi
-```
-
-- 公開ページは Scalar で描画し、GitHub Actions（`.github/workflows/deploy-openapi-github-pages.yml`）が `develop` への push 時に **GitHub Pages** へデプロイする（公開 URL: `https://ot-nemoto.github.io/link-hub/`）
-- 初回のみ、リポジトリ Settings → Pages → **Source = GitHub Actions** を有効化する必要がある
-- 本番 URL を出す場合はリポジトリ変数 `OPENAPI_SERVER_URL` を設定する
+- **OpenAPI JSON**: 実行時ルート `/openapi.json`（`src/app/openapi.json/route.ts`）が `buildOpenApiDocument()` で都度生成する。`servers` はリクエストのオリジンから自動導出するため、環境変数や生成物ファイルは不要
+- **リファレンス UI**: `/api-reference`（`src/app/api-reference/route.ts`）が Stoplight Elements（CDN 版 Web Component）で `/openapi.json` を描画する
+- いずれも **ログイン必須**（`proxy.ts` の Clerk 保護対象。public ルートには含めない）
+- ローカルでは `npm run dev` 後に `http://localhost:3000/api-reference` で確認できる
