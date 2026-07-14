@@ -7,14 +7,10 @@
 
 ## 採用する条件付き docs
 
-必須 docs（`product` / `architecture` / `ui` / `development`）は common-rules、API・バックエンド系 docs の必須セクションは api-rules を正とする。本リポジトリが追加で採用する docs:
+必須 docs は common-rules、API・バックエンド系 docs の役割・必須セクションは api-rules を正とする。ここは**採否のみ**記す。
 
-| ファイル | 役割 |
-|----------|------|
-| （API 仕様） | 外部 REST API。配信 OpenAPI spec（`/openapi.json`）＋ リファレンス UI（`/api-reference`）に一本化（`docs/api.md` は持たない） |
-| `docs/actions.md` | Server Actions 定義 |
-| `docs/schema.md` | DB スキーマ（Prisma + PostgreSQL） |
-| `docs/auth.md` | 認証フロー（Clerk） |
+- 採用: `docs/actions.md` / `docs/schema.md` / `docs/auth.md`
+- 外部 REST API を提供（仕様は配信 OpenAPI spec ＋ リファレンス UI に一本化・`docs/api.md` は持たない）
 
 ## テスト対象（このリポジトリ固有）
 
