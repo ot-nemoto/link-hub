@@ -3,17 +3,11 @@
 > このファイルは **このリポジトリが所有** する。自由に編集してよく、dev-commons からは同期されない（上書きされない）。
 > 共通ルールは `.claude/common-rules.md`（全リポ普遍）と `.claude/api-rules.md`（API・バックエンド系）にあり、ルートの `CLAUDE.md` が本ファイルと共に import する。
 > 共通ルールと矛盾する記述は、import 順で後ろにある本ファイルが優先される。
-> ここに書くのは**このリポジトリでしか通用しない情報のみ**（採用する条件付き docs・テスト対象・真に固有なもの）。共有できる規約は共有レイヤーにあるので重複させない。
 
-## 採用する条件付き docs
-
-必須 docs は common-rules、API・バックエンド系 docs の役割・必須セクションは api-rules を正とする。ここは**採否のみ**記す。
-
-- 採用: `docs/actions.md` / `docs/schema.md` / `docs/auth.md`
-- 外部 REST API を提供（仕様は配信 OpenAPI spec ＋ リファレンス UI に一本化・`docs/api.md` は持たない）
-
-## テスト対象（このリポジトリ固有）
-
-- ユニットテスト対象: `src/lib/`（ユーティリティ関数）・Server Actions（各 `actions.ts`）
-- API ルート: `src/app/api/`（`route.ts`）を対象に含める
-- Prisma を参照するテストは先頭に `// @vitest-environment node` を付け、`vi.mock("@/lib/prisma", ...)` でモックする（直接参照しない場合は必要な `@/lib/*` をモックする）
+<!--
+ここに書くのは「このリポジトリでしか通用せず、かつコード・docs・共有ルールからは読み取れない情報」だけ。
+- 書かない: ドキュメント採否・技術スタック・テスト対象ディレクトリなど、コード/docs を見れば分かること（source of truth 原則）
+- 書かない: 複数リポで共有できる規約（→ common-rules / api-rules へ）
+- 書く: 非自明な運用上の gotcha、共有ルールの例外など、このリポ固有かつ暗黙のもの
+現時点で本リポジトリ固有の追加事項はなし（採否・スタック・テスト対象はコード/docs、規約は common-rules / api-rules が正）。
+-->
