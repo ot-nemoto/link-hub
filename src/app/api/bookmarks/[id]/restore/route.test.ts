@@ -69,7 +69,7 @@ describe("POST /api/bookmarks/:id/restore", () => {
       title: "A",
       memo: null,
       ogImage: null,
-      category: { id: "t1", name: "Cat" },
+      tag: { id: "t1", name: "Cat" },
       createdAt: "2026-01-02T03:04:05.000Z",
     });
     expect(mockRestore).toHaveBeenCalledWith("user_1", "bm_1");

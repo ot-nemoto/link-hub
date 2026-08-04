@@ -13,7 +13,7 @@ const base = {
 };
 
 describe("serializeBookmark", () => {
-  it("正常系: tag を category に変換し createdAt を ISO 文字列で返す", () => {
+  it("正常系: createdAt を ISO 文字列で返す", () => {
     const result = serializeBookmark({ ...base, tag: { id: "t1", name: "Cat" } });
 
     expect(result).toEqual({
@@ -22,15 +22,15 @@ describe("serializeBookmark", () => {
       title: "Example",
       memo: "メモ",
       ogImage: "https://example.com/og.png",
-      category: { id: "t1", name: "Cat" },
+      tag: { id: "t1", name: "Cat" },
       createdAt: "2026-01-02T03:04:05.000Z",
     });
   });
 
-  it("tag が null の場合は category: null", () => {
+  it("tag が null の場合は tag: null", () => {
     const result = serializeBookmark({ ...base, memo: null, ogImage: null, tag: null });
 
-    expect(result.category).toBeNull();
+    expect(result.tag).toBeNull();
     expect(result.memo).toBeNull();
     expect(result.ogImage).toBeNull();
   });
@@ -43,7 +43,7 @@ describe("statusForError", () => {
 
   it("「見つかりません」を含む場合は 404", () => {
     expect(statusForError("ブックマークが見つかりません")).toBe(404);
-    expect(statusForError("カテゴリが見つかりません")).toBe(404);
+    expect(statusForError("タグが見つかりません")).toBe(404);
   });
 
   it("それ以外は 400", () => {

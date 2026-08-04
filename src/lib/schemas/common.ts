@@ -28,7 +28,7 @@ export const httpUrlField = z
   .meta({ description: "http または https の URL" });
 
 /**
- * 並び替え（reorder）の body スキーマ（ブックマーク・カテゴリ共通）。
+ * 並び替え（reorder）の body スキーマ（ブックマーク・タグ共通）。
  * 第2引数の `error` は body 自体が非オブジェクトのときのメッセージ。
  */
 export const reorderBodySchema = z.object(

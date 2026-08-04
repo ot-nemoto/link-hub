@@ -20,9 +20,9 @@ import {
   updateTag,
 } from "./actions";
 import { BookmarkItemContent } from "./BookmarkItemContent";
-import { CategoryGroup } from "./CategoryGroup";
 import { DragHandleIcon } from "./DragHandleIcon";
 import { GlobeIcon } from "./GlobeIcon";
+import { TagGroup } from "./TagGroup";
 import { TRASH_COLLAPSE_KEY, TrashGroup } from "./TrashGroup";
 import type { Bookmark, TagItem, TagWithCount } from "./types";
 import { UNCATEGORIZED_KEY } from "./types";
@@ -256,10 +256,8 @@ export function BookmarkList({
     [router, editingBookmarkId, allTagsState],
   );
 
-  const scrollToCategory = useCallback((key: string) => {
-    document
-      .getElementById(`category-${key}`)
-      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  const scrollToTag = useCallback((key: string) => {
+    document.getElementById(`tag-${key}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
 
   return (
@@ -279,7 +277,7 @@ export function BookmarkList({
             onClick={() => setIsTagModalOpen(true)}
             className="shrink-0 cursor-pointer rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
           >
-            カテゴリ管理
+            タグ管理
           </button>
           <button
             type="button"
@@ -290,14 +288,14 @@ export function BookmarkList({
           </button>
         </div>
         {groupedBookmarks.length > 1 && (
-          <nav className="flex gap-1.5 overflow-x-auto" aria-label="カテゴリナビゲーション">
+          <nav className="flex gap-1.5 overflow-x-auto" aria-label="タグナビゲーション">
             {groupedBookmarks.map((group) => {
               const color = group.tag ? getTagColor(group.tag.name) : null;
               return (
                 <button
                   key={group.key}
                   type="button"
-                  onClick={() => scrollToCategory(group.key)}
+                  onClick={() => scrollToTag(group.key)}
                   className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-zinc-200 px-3 py-1 text-xs font-medium text-zinc-600 transition-colors hover:border-zinc-400 hover:bg-zinc-50"
                 >
                   <span
@@ -325,13 +323,13 @@ export function BookmarkList({
           onDragEnd={handleDragEnd}
         >
           <SortableContext
-            items={groupedBookmarks.map((g) => `category-${g.key}`)}
+            items={groupedBookmarks.map((g) => `tag-${g.key}`)}
             strategy={verticalListSortingStrategy}
           >
             {groupedBookmarks.map((group) => (
-              <CategoryGroup
+              <TagGroup
                 key={group.key}
-                categoryKey={group.key}
+                tagKey={group.key}
                 tag={group.tag}
                 bookmarks={group.bookmarks}
                 isSearching={isSearching}
@@ -360,7 +358,7 @@ export function BookmarkList({
             const isSortable = group.tag !== null;
             const segments = groupByConsecutiveDomain(group.bookmarks);
             return (
-              <div key={group.key} id={`category-${group.key}`} className="mb-6 scroll-mt-28">
+              <div key={group.key} id={`tag-${group.key}`} className="mb-6 scroll-mt-28">
                 <div className="mb-2 flex w-full items-center gap-2 border-b border-zinc-200 pb-1.5">
                   {isSortable && (
                     <span className="shrink-0 text-zinc-400">

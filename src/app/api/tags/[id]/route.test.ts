@@ -45,7 +45,7 @@ describe("PATCH /api/tags/:id", () => {
     expect(mockUpdate).not.toHaveBeenCalled();
   });
 
-  it("同名カテゴリは 409", async () => {
+  it("同名タグは 409", async () => {
     mockGetUser.mockResolvedValue({ id: "user_1" });
     mockUpdate.mockResolvedValue({ conflict: true, tag: { id: "t2", name: "Vue" } });
 
@@ -63,7 +63,7 @@ describe("PATCH /api/tags/:id", () => {
     expect(res.status).toBe(404);
   });
 
-  it("他ユーザーのカテゴリは 403", async () => {
+  it("他ユーザーのタグは 403", async () => {
     mockGetUser.mockResolvedValue({ id: "user_1" });
     mockUpdate.mockResolvedValue({ error: "権限がありません" });
 
@@ -72,7 +72,7 @@ describe("PATCH /api/tags/:id", () => {
     expect(res.status).toBe(403);
   });
 
-  it("正常系: 200 で更新カテゴリを返す", async () => {
+  it("正常系: 200 で更新タグを返す", async () => {
     mockGetUser.mockResolvedValue({ id: "user_1" });
     mockUpdate.mockResolvedValue({ tag: { id: "t1", name: "Vue" } });
 
@@ -105,7 +105,7 @@ describe("DELETE /api/tags/:id", () => {
     expect(res.status).toBe(404);
   });
 
-  it("他ユーザーのカテゴリは 403", async () => {
+  it("他ユーザーのタグは 403", async () => {
     mockGetUser.mockResolvedValue({ id: "user_1" });
     mockDelete.mockResolvedValue({ error: "権限がありません" });
 
