@@ -73,7 +73,8 @@ export function buildOpenApiDocument(options: { version?: string; serverUrl?: st
       title: "link-hub API",
       version: options.version ?? "0.0.0",
       description:
-        "link-hub の外部 REST API。API キー（`Authorization: Bearer <api-key>`）で認証する。",
+        "link-hub の外部 REST API。API キー（`Authorization: Bearer <api-key>`）で認証する。\n\n" +
+        "**破壊的変更**: ブックマークレスポンスのタグ情報フィールドは `category` から `tag` にリネームされた（本 API はバージョニングされていない）。",
     },
     servers,
     security: [{ bearerAuth: [] }],
