@@ -22,6 +22,7 @@ import {
 import { BookmarkItemContent } from "./BookmarkItemContent";
 import { DragHandleIcon } from "./DragHandleIcon";
 import { GlobeIcon } from "./GlobeIcon";
+import { SearchIcon } from "./SearchIcon";
 import { TagGroup } from "./TagGroup";
 import { TRASH_COLLAPSE_KEY, TrashGroup } from "./TrashGroup";
 import type { Bookmark, TagItem, TagWithCount } from "./types";
@@ -262,16 +263,21 @@ export function BookmarkList({
 
   return (
     <div>
-      <div className="sticky top-0 z-10 -mx-4 bg-white/95 px-4 pb-3 pt-4 backdrop-blur-sm sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+      <div className="sticky top-4 z-10 mb-5 rounded-2xl border border-zinc-200 bg-white/95 p-4 shadow-sm backdrop-blur-sm">
         <div className="mb-3 flex items-center gap-2">
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="タイトル・URL・メモで検索"
-            aria-label="ブックマークを検索"
-            className="min-w-0 flex-1 rounded-md border border-zinc-300 px-4 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
-          />
+          <div className="relative min-w-0 flex-1">
+            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2">
+              <SearchIcon />
+            </span>
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="タイトル・URL・メモで検索"
+              aria-label="ブックマークを検索"
+              className="w-full rounded-full border border-zinc-300 bg-zinc-100 py-2 pl-9 pr-4 text-sm focus:border-zinc-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-zinc-500"
+            />
+          </div>
           <button
             type="button"
             onClick={() => setIsTagModalOpen(true)}
@@ -358,7 +364,7 @@ export function BookmarkList({
             const isSortable = group.tag !== null;
             const segments = groupByConsecutiveDomain(group.bookmarks);
             return (
-              <div key={group.key} id={`tag-${group.key}`} className="mb-6 scroll-mt-28">
+              <div key={group.key} id={`tag-${group.key}`} className="mb-6 scroll-mt-40">
                 <div className="mb-2 flex w-full items-center gap-2 border-b border-zinc-200 pb-1.5">
                   {isSortable && (
                     <span className="shrink-0 text-zinc-400">

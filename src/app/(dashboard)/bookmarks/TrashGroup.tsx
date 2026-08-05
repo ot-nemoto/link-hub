@@ -30,7 +30,7 @@ export function TrashGroup({
   };
 
   return (
-    <div id={`tag-${TRASH_COLLAPSE_KEY}`} className="mb-6 scroll-mt-28">
+    <div id={`tag-${TRASH_COLLAPSE_KEY}`} className="mb-6 scroll-mt-40">
       <div className="mb-2 flex w-full items-center gap-2 border-b border-zinc-200 pb-1.5">
         <button
           type="button"
