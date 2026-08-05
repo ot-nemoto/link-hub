@@ -8,16 +8,16 @@
 |--------|------|---------|
 | `createBookmark(data)` | ブックマーク新規登録 | `src/app/(dashboard)/bookmarks/actions.ts` |
 | `updateBookmark(id, data)` | ブックマーク更新 | `src/app/(dashboard)/bookmarks/actions.ts` |
-| `moveBookmark(id, tagId, sortOrder, options?)` | ブックマークのカテゴリ移動・並び順更新 | `src/app/(dashboard)/bookmarks/actions.ts` |
+| `moveBookmark(id, tagId, sortOrder, options?)` | ブックマークのタグ移動・並び順更新 | `src/app/(dashboard)/bookmarks/actions.ts` |
 | `reorderBookmarks(ids, options?)` | ブックマークの並び順更新 | `src/app/(dashboard)/bookmarks/actions.ts` |
 | `deleteBookmark(id, prevState)` | ブックマーク削除（ソフトデリート＝ゴミ箱へ移動） | `src/app/(dashboard)/bookmarks/actions.ts` |
 | `deleteBookmarks(ids)` | ブックマーク一括削除（ソフトデリート） | `src/app/(dashboard)/bookmarks/actions.ts` |
 | `restoreBookmark(id)` | ゴミ箱からブックマークを復元 | `src/app/(dashboard)/bookmarks/actions.ts` |
 | `emptyTrash()` | ゴミ箱内を完全削除（物理削除） | `src/app/(dashboard)/bookmarks/actions.ts` |
-| `createTag(name)` | カテゴリ新規作成 | `src/app/(dashboard)/bookmarks/actions.ts` |
-| `updateTag(id, name)` | カテゴリ名の更新 | `src/app/(dashboard)/bookmarks/actions.ts` |
-| `reorderTags(ids, options?)` | カテゴリの並び順更新 | `src/app/(dashboard)/bookmarks/actions.ts` |
-| `deleteTag(id)` | カテゴリ削除 | `src/app/(dashboard)/bookmarks/actions.ts` |
+| `createTag(name)` | タグ新規作成 | `src/app/(dashboard)/bookmarks/actions.ts` |
+| `updateTag(id, name)` | タグ名の更新 | `src/app/(dashboard)/bookmarks/actions.ts` |
+| `reorderTags(ids, options?)` | タグの並び順更新 | `src/app/(dashboard)/bookmarks/actions.ts` |
+| `deleteTag(id)` | タグ削除 | `src/app/(dashboard)/bookmarks/actions.ts` |
 | `fetchOgp(url)` | URL から OGP 情報を取得 | `src/app/(dashboard)/bookmarks/fetchOgp.ts` |
 | `generateApiKey()` | API キーの生成・再生成 | `src/app/(dashboard)/api-key-actions.ts` |
 | `revokeApiKey()` | API キーの失効（無効化） | `src/app/(dashboard)/api-key-actions.ts` |

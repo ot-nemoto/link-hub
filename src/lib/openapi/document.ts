@@ -73,7 +73,8 @@ export function buildOpenApiDocument(options: { version?: string; serverUrl?: st
       title: "link-hub API",
       version: options.version ?? "0.0.0",
       description:
-        "link-hub の外部 REST API。API キー（`Authorization: Bearer <api-key>`）で認証する。",
+        "link-hub の外部 REST API。API キー（`Authorization: Bearer <api-key>`）で認証する。\n\n" +
+        "**破壊的変更**: ブックマークレスポンスのタグ情報フィールドは `category` から `tag` にリネームされた（本 API はバージョニングされていない）。",
     },
     servers,
     security: [{ bearerAuth: [] }],
@@ -117,7 +118,7 @@ export function buildOpenApiDocument(options: { version?: string; serverUrl?: st
             201: jsonResponse("作成されたブックマーク", ref("Bookmark")),
             400: errorResponse("バリデーションエラー"),
             401: errorResponse("認証エラー"),
-            404: errorResponse("指定した tagId のカテゴリが存在しない"),
+            404: errorResponse("指定した tagId のタグが存在しない"),
           },
         },
         delete: {
@@ -176,7 +177,7 @@ export function buildOpenApiDocument(options: { version?: string; serverUrl?: st
       },
       "/api/bookmarks/{id}": {
         patch: {
-          summary: "ブックマークを更新（カテゴリ移動・並び順変更を含む）",
+          summary: "ブックマークを更新（タグ移動・並び順変更を含む）",
           tags: ["bookmarks"],
           parameters: [idParam],
           requestBody: jsonBody("BookmarkBody"),
@@ -185,7 +186,7 @@ export function buildOpenApiDocument(options: { version?: string; serverUrl?: st
             400: errorResponse("バリデーションエラー"),
             401: errorResponse("認証エラー"),
             403: errorResponse("他ユーザーのリソース"),
-            404: errorResponse("未存在 / 指定した tagId のカテゴリが存在しない"),
+            404: errorResponse("未存在 / 指定した tagId のタグが存在しない"),
           },
         },
         delete: {
@@ -215,7 +216,7 @@ export function buildOpenApiDocument(options: { version?: string; serverUrl?: st
       },
       "/api/tags": {
         get: {
-          summary: "カテゴリ一覧を取得",
+          summary: "タグ一覧を取得",
           tags: ["tags"],
           parameters: [
             {
@@ -224,11 +225,11 @@ export function buildOpenApiDocument(options: { version?: string; serverUrl?: st
               required: false,
               schema: { type: "string" },
               description:
-                "`true` のとき各カテゴリの未削除ブックマーク件数を含める（それ以外の値は件数なし）",
+                "`true` のとき各タグの未削除ブックマーク件数を含める（それ以外の値は件数なし）",
             },
           ],
           responses: {
-            200: jsonResponse("カテゴリの一覧", {
+            200: jsonResponse("タグの一覧", {
               type: "object",
               properties: { tags: { type: "array", items: ref("Tag") } },
               required: ["tags"],
@@ -237,20 +238,20 @@ export function buildOpenApiDocument(options: { version?: string; serverUrl?: st
           },
         },
         post: {
-          summary: "カテゴリを作成",
+          summary: "タグを作成",
           tags: ["tags"],
           requestBody: jsonBody("TagBody"),
           responses: {
-            201: jsonResponse("作成されたカテゴリ", ref("Tag")),
+            201: jsonResponse("作成されたタグ", ref("Tag")),
             400: errorResponse("バリデーションエラー"),
             401: errorResponse("認証エラー"),
-            409: errorResponse("同名カテゴリが既に存在"),
+            409: errorResponse("同名タグが既に存在"),
           },
         },
       },
       "/api/tags/reorder": {
         post: {
-          summary: "カテゴリの並び順を一括更新",
+          summary: "タグの並び順を一括更新",
           tags: ["tags"],
           requestBody: jsonBody("ReorderBody"),
           responses: {
@@ -263,21 +264,21 @@ export function buildOpenApiDocument(options: { version?: string; serverUrl?: st
       },
       "/api/tags/{id}": {
         patch: {
-          summary: "カテゴリ名を変更",
+          summary: "タグ名を変更",
           tags: ["tags"],
           parameters: [idParam],
           requestBody: jsonBody("TagBody"),
           responses: {
-            200: jsonResponse("更新後のカテゴリ", ref("Tag")),
+            200: jsonResponse("更新後のタグ", ref("Tag")),
             400: errorResponse("バリデーションエラー"),
             401: errorResponse("認証エラー"),
             403: errorResponse("他ユーザーのリソース"),
             404: errorResponse("未存在"),
-            409: errorResponse("同名カテゴリが既に存在"),
+            409: errorResponse("同名タグが既に存在"),
           },
         },
         delete: {
-          summary: "カテゴリを削除（紐づくブックマークは未分類化）",
+          summary: "タグを削除（紐づくブックマークは未分類化）",
           tags: ["tags"],
           parameters: [idParam],
           responses: {

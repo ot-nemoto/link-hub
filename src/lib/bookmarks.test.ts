@@ -166,7 +166,7 @@ describe("createBookmark", () => {
 
     const result = await createBookmark(userId, { ...bookmarkData, tagId: "tag_other" });
 
-    expect(result).toEqual({ error: "カテゴリが見つかりません" });
+    expect(result).toEqual({ error: "タグが見つかりません" });
     expect(mockBookmarkCreate).not.toHaveBeenCalled();
   });
 });
@@ -209,7 +209,7 @@ describe("updateBookmark", () => {
 
     const result = await updateBookmark(userId, "bm_1", { ...bookmarkData, tagId: "tag_other" });
 
-    expect(result).toEqual({ error: "カテゴリが見つかりません" });
+    expect(result).toEqual({ error: "タグが見つかりません" });
     expect(mockBookmarkUpdate).not.toHaveBeenCalled();
   });
 
@@ -337,13 +337,13 @@ describe("moveBookmark", () => {
     expect(mockBookmarkUpdate).not.toHaveBeenCalled();
   });
 
-  it("存在しないカテゴリは error を返す", async () => {
+  it("存在しないタグは error を返す", async () => {
     mockBookmarkFindUnique.mockResolvedValue(bookmark as never);
     mockTagFindFirst.mockResolvedValue(null);
 
     const result = await moveBookmark(userId, "bm_1", "tag_not_exist", 0);
 
-    expect(result).toEqual({ error: "カテゴリが見つかりません" });
+    expect(result).toEqual({ error: "タグが見つかりません" });
     expect(mockBookmarkUpdate).not.toHaveBeenCalled();
   });
 });

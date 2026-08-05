@@ -10,7 +10,7 @@ type SerializableBookmark = {
   tag: { id: string; name: string } | null;
 };
 
-/** ブックマークを外部 API レスポンス形式（camelCase / createdAt は ISO / category）に整形する。 */
+/** ブックマークを外部 API レスポンス形式（camelCase / createdAt は ISO / tag）に整形する。 */
 export function serializeBookmark(b: SerializableBookmark) {
   return {
     id: b.id,
@@ -18,7 +18,7 @@ export function serializeBookmark(b: SerializableBookmark) {
     title: b.title,
     memo: b.memo,
     ogImage: b.ogImage,
-    category: b.tag ? { id: b.tag.id, name: b.tag.name } : null,
+    tag: b.tag ? { id: b.tag.id, name: b.tag.name } : null,
     createdAt: b.createdAt.toISOString(),
   };
 }

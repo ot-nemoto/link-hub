@@ -66,7 +66,7 @@ describe("GET /api/bookmarks", () => {
           title: "A",
           memo: "memo",
           ogImage: null,
-          category: { id: "t1", name: "Cat" },
+          tag: { id: "t1", name: "Cat" },
           createdAt: "2026-01-02T03:04:05.000Z",
         },
       ],
@@ -120,12 +120,12 @@ describe("POST /api/bookmarks", () => {
 
   it("存在しない/他ユーザーの tagId は 404（lib がエラーを返す）", async () => {
     mockGetUser.mockResolvedValue({ id: "user_1" });
-    mockCreateBookmark.mockResolvedValue({ error: "カテゴリが見つかりません" });
+    mockCreateBookmark.mockResolvedValue({ error: "タグが見つかりません" });
 
     const res = await POST(jsonReq({ url: "https://a.com", title: "A", tagId: "nope" }));
 
     expect(res.status).toBe(404);
-    expect(await res.json()).toEqual({ error: "カテゴリが見つかりません" });
+    expect(await res.json()).toEqual({ error: "タグが見つかりません" });
   });
 
   it("正常系: 201 で作成リソースを返し lib を呼ぶ", async () => {
@@ -141,7 +141,7 @@ describe("POST /api/bookmarks", () => {
       title: "A",
       memo: "memo",
       ogImage: null,
-      category: { id: "t1", name: "Cat" },
+      tag: { id: "t1", name: "Cat" },
       createdAt: "2026-01-02T03:04:05.000Z",
     });
     expect(mockCreateBookmark).toHaveBeenCalledWith(

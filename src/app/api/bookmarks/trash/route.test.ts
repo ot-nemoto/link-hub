@@ -55,7 +55,7 @@ describe("GET /api/bookmarks/trash", () => {
           title: "A",
           memo: null,
           ogImage: null,
-          category: null,
+          tag: null,
           createdAt: "2026-01-02T03:04:05.000Z",
         },
       ],

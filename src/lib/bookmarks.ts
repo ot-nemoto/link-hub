@@ -64,7 +64,7 @@ export async function createBookmark(
       where: { id: data.tagId, userId },
       select: { id: true },
     });
-    if (!tag) return { error: "カテゴリが見つかりません" };
+    if (!tag) return { error: "タグが見つかりません" };
     validTagId = tag.id;
   }
 
@@ -100,7 +100,7 @@ export async function updateBookmark(
         where: { id: data.tagId, userId },
         select: { id: true },
       });
-      if (!tag) return { error: "カテゴリが見つかりません" };
+      if (!tag) return { error: "タグが見つかりません" };
       validTagId = tag.id;
     } else {
       validTagId = null; // 明示的な null は未分類化
@@ -139,7 +139,7 @@ export async function moveBookmark(
       where: { id: tagId, userId },
       select: { id: true },
     });
-    if (!tag) return { error: "カテゴリが見つかりません" };
+    if (!tag) return { error: "タグが見つかりません" };
   }
 
   await prisma.bookmark.update({
@@ -193,7 +193,7 @@ export async function restoreBookmark(
   if (!bookmark) return { error: "ブックマークが見つかりません" };
   if (bookmark.userId !== userId) return { error: "権限がありません" };
 
-  // deletedAt を null に戻す。tagId は保持されているため元のカテゴリに復帰する
+  // deletedAt を null に戻す。tagId は保持されているため元のタグに復帰する
   const restored = await prisma.bookmark.update({
     where: { id },
     data: { deletedAt: null },

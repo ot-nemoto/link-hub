@@ -1,6 +1,6 @@
 # 外部 REST API
 
-外部連携用の REST API（API キー認証）。API キーがあれば UI を介さずブックマーク・カテゴリを操作できる。
+外部連携用の REST API（API キー認証）。API キーがあれば UI を介さずブックマーク・タグを操作できる。
 
 書き込み系の業務ロジックは `src/lib/` に集約し、Server Actions（UI 用）と REST API（外部用）が同じ関数を共有する。Server Actions の仕様は [`docs/actions.md`](actions.md) を参照。
 
@@ -36,8 +36,8 @@
 | 400 | バリデーションエラー（`url`/`title` 不正、`tagId`/`sortOrder` の型・範囲、`ids` 不正、ボディ不正 等） |
 | 401 | API キーが未指定・無効 |
 | 403 | 他ユーザーのリソースを操作しようとした |
-| 404 | 対象リソースが存在しない（ブックマーク／指定した `tagId` のカテゴリ 等） |
-| 409 | 同名カテゴリが既に存在する |
+| 404 | 対象リソースが存在しない（ブックマーク／指定した `tagId` のタグ 等） |
+| 409 | 同名タグが既に存在する |
 
 ## エンドポイント一覧
 
@@ -49,14 +49,14 @@
 | `POST` | `/api/bookmarks/reorder` | 並び順を一括更新 |
 | `GET` | `/api/bookmarks/trash` | ゴミ箱（削除済み）一覧を取得 |
 | `DELETE` | `/api/bookmarks/trash` | ゴミ箱を空にする（完全削除） |
-| `PATCH` | `/api/bookmarks/:id` | ブックマークを更新（カテゴリ移動・並び順変更を含む） |
+| `PATCH` | `/api/bookmarks/:id` | ブックマークを更新（タグ移動・並び順変更を含む） |
 | `DELETE` | `/api/bookmarks/:id` | ブックマークを削除（ゴミ箱へ） |
 | `POST` | `/api/bookmarks/:id/restore` | ゴミ箱から復元 |
-| `GET` | `/api/tags` | カテゴリ一覧を取得（`?withCount=true` で件数付き） |
-| `POST` | `/api/tags` | カテゴリを作成 |
-| `POST` | `/api/tags/reorder` | カテゴリの並び順を一括更新 |
-| `PATCH` | `/api/tags/:id` | カテゴリ名を変更 |
-| `DELETE` | `/api/tags/:id` | カテゴリを削除（紐づくブックマークは未分類化） |
+| `GET` | `/api/tags` | タグ一覧を取得（`?withCount=true` で件数付き） |
+| `POST` | `/api/tags` | タグを作成 |
+| `POST` | `/api/tags/reorder` | タグの並び順を一括更新 |
+| `PATCH` | `/api/tags/:id` | タグ名を変更 |
+| `DELETE` | `/api/tags/:id` | タグを削除（紐づくブックマークは未分類化） |
 | `GET` | `/api/ogp?url=<url>` | 指定 URL の OGP メタデータ（タイトル・画像）を取得 |
 
 ## クイックスタート
