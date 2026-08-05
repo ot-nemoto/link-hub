@@ -263,57 +263,59 @@ export function BookmarkList({
 
   return (
     <div>
-      <div className="sticky top-4 z-10 mb-5 rounded-2xl border border-zinc-200 bg-white/95 p-4 shadow-sm backdrop-blur-sm">
-        <div className="mb-3 flex items-center gap-2">
-          <div className="relative min-w-0 flex-1">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2">
-              <SearchIcon />
-            </span>
-            <input
-              type="search"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="タイトル・URL・メモで検索"
-              aria-label="ブックマークを検索"
-              className="w-full rounded-full border border-zinc-300 bg-zinc-100 py-2 pl-9 pr-4 text-sm focus:border-zinc-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-zinc-500"
-            />
+      <div className="sticky top-16 z-10 mb-5 rounded-2xl border border-zinc-200 bg-white/95 p-4 shadow-sm backdrop-blur-sm">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <div className="relative min-w-0 flex-1">
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2">
+                <SearchIcon />
+              </span>
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="タイトル・URL・メモで検索"
+                aria-label="ブックマークを検索"
+                className="w-full rounded-full border border-zinc-300 bg-zinc-100 py-2 pl-9 pr-4 text-sm focus:border-zinc-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-zinc-500"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsTagModalOpen(true)}
+              className="shrink-0 cursor-pointer rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+            >
+              タグ管理
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsAddModalOpen(true)}
+              className="shrink-0 cursor-pointer rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700"
+            >
+              追加
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => setIsTagModalOpen(true)}
-            className="shrink-0 cursor-pointer rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
-          >
-            タグ管理
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsAddModalOpen(true)}
-            className="shrink-0 cursor-pointer rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700"
-          >
-            追加
-          </button>
+          {groupedBookmarks.length > 1 && (
+            <nav className="flex gap-1.5 overflow-x-auto" aria-label="タグナビゲーション">
+              {groupedBookmarks.map((group) => {
+                const color = group.tag ? getTagColor(group.tag.name) : null;
+                return (
+                  <button
+                    key={group.key}
+                    type="button"
+                    onClick={() => scrollToTag(group.key)}
+                    className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-zinc-200 px-3 py-1 text-xs font-medium text-zinc-600 transition-colors hover:border-zinc-400 hover:bg-zinc-50"
+                  >
+                    <span
+                      className={`inline-block h-2 w-2 rounded-full ${color ? color.activeBg : "bg-zinc-400"}`}
+                    />
+                    {group.tag ? group.tag.name : "未分類"}
+                    <span className="text-zinc-400">{group.bookmarks.length}</span>
+                  </button>
+                );
+              })}
+            </nav>
+          )}
         </div>
-        {groupedBookmarks.length > 1 && (
-          <nav className="flex gap-1.5 overflow-x-auto" aria-label="タグナビゲーション">
-            {groupedBookmarks.map((group) => {
-              const color = group.tag ? getTagColor(group.tag.name) : null;
-              return (
-                <button
-                  key={group.key}
-                  type="button"
-                  onClick={() => scrollToTag(group.key)}
-                  className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-zinc-200 px-3 py-1 text-xs font-medium text-zinc-600 transition-colors hover:border-zinc-400 hover:bg-zinc-50"
-                >
-                  <span
-                    className={`inline-block h-2 w-2 rounded-full ${color ? color.activeBg : "bg-zinc-400"}`}
-                  />
-                  {group.tag ? group.tag.name : "未分類"}
-                  <span className="text-zinc-400">{group.bookmarks.length}</span>
-                </button>
-              );
-            })}
-          </nav>
-        )}
       </div>
 
       {filteredItems.length === 0 ? (
@@ -364,7 +366,7 @@ export function BookmarkList({
             const isSortable = group.tag !== null;
             const segments = groupByConsecutiveDomain(group.bookmarks);
             return (
-              <div key={group.key} id={`tag-${group.key}`} className="mb-6 scroll-mt-40">
+              <div key={group.key} id={`tag-${group.key}`} className="mb-6 scroll-mt-52">
                 <div className="mb-2 flex w-full items-center gap-2 border-b border-zinc-200 pb-1.5">
                   {isSortable && (
                     <span className="shrink-0 text-zinc-400">

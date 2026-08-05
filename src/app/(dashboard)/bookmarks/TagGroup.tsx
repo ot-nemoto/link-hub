@@ -55,7 +55,7 @@ export function TagGroup({
   };
 
   return (
-    <div ref={setNodeRef} style={style} id={`tag-${tagKey}`} className="mb-6 scroll-mt-40">
+    <div ref={setNodeRef} style={style} id={`tag-${tagKey}`} className="mb-6 scroll-mt-52">
       <div className="mb-2 flex w-full items-center gap-2 border-b border-zinc-200 pb-1.5">
         {isSortable && (
           <button
