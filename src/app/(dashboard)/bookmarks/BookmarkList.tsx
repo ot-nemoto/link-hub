@@ -295,7 +295,10 @@ export function BookmarkList({
             </button>
           </div>
           {groupedBookmarks.length > 1 && (
-            <nav className="flex gap-1.5 overflow-x-auto" aria-label="タグナビゲーション">
+            <nav
+              className="scrollbar-hide flex gap-1.5 overflow-x-auto"
+              aria-label="タグナビゲーション"
+            >
               {groupedBookmarks.map((group) => {
                 const color = group.tag ? getTagColor(group.tag.name) : null;
                 return (
