@@ -263,7 +263,7 @@ export function BookmarkList({
 
   return (
     <div>
-      <div className="sticky top-16 z-10 mb-5 rounded-2xl border border-zinc-200 bg-white/95 p-4 shadow-sm backdrop-blur-sm">
+      <div className="sticky top-20 z-10 mb-5 rounded-2xl border border-zinc-200 bg-white/95 p-4 shadow-sm backdrop-blur-sm">
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-2">
             <div className="relative min-w-0 flex-1">
@@ -366,7 +366,7 @@ export function BookmarkList({
             const isSortable = group.tag !== null;
             const segments = groupByConsecutiveDomain(group.bookmarks);
             return (
-              <div key={group.key} id={`tag-${group.key}`} className="mb-6 scroll-mt-52">
+              <div key={group.key} id={`tag-${group.key}`} className="mb-6 scroll-mt-56">
                 <div className="mb-2 flex w-full items-center gap-2 border-b border-zinc-200 pb-1.5">
                   {isSortable && (
                     <span className="shrink-0 text-zinc-400">
