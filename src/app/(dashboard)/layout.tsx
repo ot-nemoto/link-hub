@@ -13,7 +13,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <div className="min-h-screen bg-zinc-50">
       <Header email={session.user.email} hasApiKey={apiKey !== null} />
-      <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
+      <main className="mx-auto max-w-5xl px-4 pb-8 pt-4">{children}</main>
     </div>
   );
 }
