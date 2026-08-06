@@ -43,7 +43,7 @@ export const bookmarkResponseSchema = z.object({
   title: z.string(),
   memo: z.string().nullable(),
   ogImage: z.string().nullable(),
-  category: z.object({ id: z.string(), name: z.string() }).nullable(),
+  tag: z.object({ id: z.string(), name: z.string() }).nullable(),
   createdAt: z.string(),
 });
 

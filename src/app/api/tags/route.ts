@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) return jsonError(firstZodError(parsed.error), 400);
 
   const result = await createTag(user.id, parsed.data.name);
-  if (result.conflict) return jsonError("同名のカテゴリが既に存在します", 409);
+  if (result.conflict) return jsonError("同名のタグが既に存在します", 409);
   if (result.error) return jsonError(result.error, statusForError(result.error));
   if (!result.tag) return jsonError("作成に失敗しました", 500);
 

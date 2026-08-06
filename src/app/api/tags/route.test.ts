@@ -40,7 +40,7 @@ describe("GET /api/tags", () => {
     expect(mockGetTags).not.toHaveBeenCalled();
   });
 
-  it("正常系: カテゴリ一覧を返す", async () => {
+  it("正常系: タグ一覧を返す", async () => {
     mockGetUser.mockResolvedValue({ id: "user_1" });
     mockGetTags.mockResolvedValue([{ id: "t1", name: "React" }] as never);
 
@@ -100,14 +100,14 @@ describe("POST /api/tags", () => {
     expect(mockCreateTag).not.toHaveBeenCalled();
   });
 
-  it("同名カテゴリは 409", async () => {
+  it("同名タグは 409", async () => {
     mockGetUser.mockResolvedValue({ id: "user_1" });
     mockCreateTag.mockResolvedValue({ conflict: true, tag: { id: "t1", name: "React" } });
 
     const res = await POST(jsonReq({ name: "React" }));
 
     expect(res.status).toBe(409);
-    expect(await res.json()).toEqual({ error: "同名のカテゴリが既に存在します" });
+    expect(await res.json()).toEqual({ error: "同名のタグが既に存在します" });
   });
 
   it("空/50字超など lib のバリデーションエラーは 400", async () => {
@@ -120,7 +120,7 @@ describe("POST /api/tags", () => {
     expect(await res.json()).toEqual({ error: "タグ名が不正です" });
   });
 
-  it("正常系: 201 で作成カテゴリを返す", async () => {
+  it("正常系: 201 で作成タグを返す", async () => {
     mockGetUser.mockResolvedValue({ id: "user_1" });
     mockCreateTag.mockResolvedValue({ tag: { id: "t1", name: "React" } });
 

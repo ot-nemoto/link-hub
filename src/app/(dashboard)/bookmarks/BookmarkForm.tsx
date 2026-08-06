@@ -197,8 +197,8 @@ export function BookmarkForm({ availableTags, defaultValues, action, onSuccess, 
       )}
 
       <div>
-        <label htmlFor="category" className="block text-sm font-medium text-zinc-700">
-          カテゴリ
+        <label htmlFor="tag" className="block text-sm font-medium text-zinc-700">
+          タグ
         </label>
         <div className="mt-1 flex flex-wrap gap-2">
           <button

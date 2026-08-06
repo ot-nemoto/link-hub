@@ -6,14 +6,14 @@ import { useState } from "react";
 import { writeCollapsedCookie } from "@/lib/collapsed-cookie";
 import { groupByConsecutiveDomain } from "@/lib/domain-groups";
 import { getTagColor } from "@/lib/tag-colors";
-import { CategoryDropZone } from "./CategoryDropZone";
 import { DragHandleIcon } from "./DragHandleIcon";
 import { GlobeIcon } from "./GlobeIcon";
 import { SortableBookmarkItem } from "./SortableBookmarkItem";
+import { TagDropZone } from "./TagDropZone";
 import type { Bookmark, TagItem } from "./types";
 
-export function CategoryGroup({
-  categoryKey,
+export function TagGroup({
+  tagKey,
   tag,
   bookmarks,
   isSearching,
@@ -21,7 +21,7 @@ export function CategoryGroup({
   onEdit,
   onDelete,
 }: {
-  categoryKey: string;
+  tagKey: string;
   tag: TagItem | null;
   bookmarks: Bookmark[];
   isSearching: boolean;
@@ -33,15 +33,15 @@ export function CategoryGroup({
   const color = tag ? getTagColor(tag.name) : null;
   const isSortable = tag !== null;
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: `category-${categoryKey}`,
+    id: `tag-${tagKey}`,
     disabled: !isSortable,
-    data: { type: "category" },
+    data: { type: "tag" },
   });
 
   const toggleCollapsed = () => {
     setCollapsed((prev) => {
       const next = !prev;
-      writeCollapsedCookie(categoryKey, next);
+      writeCollapsedCookie(tagKey, next);
       return next;
     });
   };
@@ -55,12 +55,7 @@ export function CategoryGroup({
   };
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      id={`category-${categoryKey}`}
-      className="mb-6 scroll-mt-28"
-    >
+    <div ref={setNodeRef} style={style} id={`tag-${tagKey}`} className="mb-6 scroll-mt-56">
       <div className="mb-2 flex w-full items-center gap-2 border-b border-zinc-200 pb-1.5">
         {isSortable && (
           <button
@@ -68,7 +63,7 @@ export function CategoryGroup({
             {...attributes}
             {...listeners}
             className="shrink-0 cursor-grab text-zinc-400 hover:text-zinc-600 active:cursor-grabbing"
-            aria-label="ドラッグしてカテゴリを並び替え"
+            aria-label="ドラッグしてタグを並び替え"
           >
             <DragHandleIcon />
           </button>
@@ -106,7 +101,7 @@ export function CategoryGroup({
       {!collapsed && (
         <div className="pl-5">
           <SortableContext
-            items={[...bookmarks.map((b) => b.id), `drop-zone-${categoryKey}`]}
+            items={[...bookmarks.map((b) => b.id), `drop-zone-${tagKey}`]}
             strategy={verticalListSortingStrategy}
           >
             <ul className="flex flex-col gap-2">
@@ -146,7 +141,7 @@ export function CategoryGroup({
                   />
                 ));
               })}
-              <CategoryDropZone categoryKey={categoryKey} />
+              <TagDropZone tagKey={tagKey} />
             </ul>
           </SortableContext>
         </div>

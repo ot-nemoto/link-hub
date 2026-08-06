@@ -41,7 +41,7 @@ erDiagram
 
     User ||--o{ Bookmark : "所有"
     User ||--o{ Tag : "所有"
-    Tag ||--o{ Bookmark : "カテゴリ"
+    Tag ||--o{ Bookmark : "分類"
 ```
 
 ---
@@ -72,7 +72,7 @@ erDiagram
 | hideOgImage | Boolean | OGP 画像を一覧で非表示にするか（デフォルト false）。画像 URL は保持し表示のみ切り替える |
 | sortOrder | Int | 表示順（デフォルト 0、D&D による並び替えで更新） |
 | userId | String | 外部キー → User.id（User 削除時に CASCADE） |
-| tagId | String? | 外部キー → Tag.id（Tag 削除時に SET NULL）。カテゴリ分類用。null は「未分類」 |
+| tagId | String? | 外部キー → Tag.id（Tag 削除時に SET NULL）。タグ分類用。null は「未分類」 |
 | deletedAt | DateTime? | ソフトデリート日時。非 null は「ゴミ箱」。一覧取得は `deletedAt IS NULL` のみ対象 |
 | createdAt | DateTime | 作成日時 |
 | updatedAt | DateTime | 更新日時 |
@@ -82,7 +82,7 @@ erDiagram
 | カラム | 型 | 説明 |
 |--------|-----|------|
 | id | String (CUID) | 主キー |
-| name | String | タグ名（ユーザー内でユニーク、最大 50 文字）。カテゴリとして使用 |
+| name | String | タグ名（ユーザー内でユニーク、最大 50 文字） |
 | sortOrder | Int | 表示順（デフォルト 0、D&D による並び替えで更新） |
 | userId | String | 外部キー → User.id（User 削除時に CASCADE） |
 | createdAt | DateTime | 作成日時 |
@@ -97,6 +97,6 @@ erDiagram
 | users | `email` | メールアドレス重複防止（UNIQUE） |
 | users | `api_key` | API キーによる認証時の高速ルックアップ（UNIQUE） |
 | bookmarks | `user_id` | ユーザー別ブックマーク取得の高速化 |
-| bookmarks | `tag_id` | カテゴリ別ブックマーク取得の高速化 |
+| bookmarks | `tag_id` | タグ別ブックマーク取得の高速化 |
 | tags | `(user_id, name)` | ユーザー内タグ名のユニーク制約・高速ルックアップ |
 | tags | `user_id` | ユーザー別タグ取得の高速化 |

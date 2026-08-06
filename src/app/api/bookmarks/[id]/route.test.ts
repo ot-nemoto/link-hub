@@ -97,7 +97,7 @@ describe("PATCH /api/bookmarks/:id", () => {
       title: "Updated",
       memo: null,
       ogImage: null,
-      category: null,
+      tag: null,
       createdAt: "2026-01-02T03:04:05.000Z",
     });
     expect(mockUpdate).toHaveBeenCalledWith(

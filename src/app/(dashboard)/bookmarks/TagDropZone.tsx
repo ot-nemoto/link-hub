@@ -1,10 +1,10 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { UNCATEGORIZED_KEY } from "./types";
 
-export function CategoryDropZone({ categoryKey }: { categoryKey: string }) {
+export function TagDropZone({ tagKey }: { tagKey: string }) {
   const { setNodeRef, isOver } = useSortable({
-    id: `drop-zone-${categoryKey}`,
-    data: { type: "drop-zone", tagId: categoryKey === UNCATEGORIZED_KEY ? null : categoryKey },
+    id: `drop-zone-${tagKey}`,
+    data: { type: "drop-zone", tagId: tagKey === UNCATEGORIZED_KEY ? null : tagKey },
   });
 
   if (!isOver) return <div ref={setNodeRef} className="h-1" />;

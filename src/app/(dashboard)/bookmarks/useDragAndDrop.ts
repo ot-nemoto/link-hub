@@ -34,11 +34,11 @@ export function useDragAndDrop({
 
   const collisionDetection: CollisionDetection = useCallback((args) => {
     const activeData = args.active.data.current as { type: string } | undefined;
-    if (activeData?.type === "category") {
-      const categoryContainers = args.droppableContainers.filter(
-        (c) => (c.data.current as { type: string } | undefined)?.type === "category",
+    if (activeData?.type === "tag") {
+      const tagContainers = args.droppableContainers.filter(
+        (c) => (c.data.current as { type: string } | undefined)?.type === "tag",
       );
-      return closestCenter({ ...args, droppableContainers: categoryContainers });
+      return closestCenter({ ...args, droppableContainers: tagContainers });
     }
     return closestCenter(args);
   }, []);
@@ -98,9 +98,9 @@ export function useDragAndDrop({
       if (!over) return;
 
       const activeData = active.data.current as { type: string } | undefined;
-      if (activeData?.type === "category") {
-        const activeKey = (active.id as string).replace("category-", "");
-        const overKey = (over.id as string).replace("category-", "");
+      if (activeData?.type === "tag") {
+        const activeKey = (active.id as string).replace("tag-", "");
+        const overKey = (over.id as string).replace("tag-", "");
         if (activeKey === overKey) return;
 
         const oldTags = allTagsRef.current;
@@ -141,28 +141,28 @@ export function useDragAndDrop({
       }
 
       const currentItems = itemsRef.current;
-      const categoryItems = currentItems
+      const tagItems = currentItems
         .filter((b) => b.tagId === targetTagId)
         .toSorted((a, b) => a.sortOrder - b.sortOrder);
       const overId = over.id as string;
 
       let newSortOrder: number;
       if (overData?.type === "drop-zone") {
-        const maxSort = categoryItems
+        const maxSort = tagItems
           .filter((b) => b.id !== draggedId)
           .reduce((max, b) => Math.max(max, b.sortOrder ?? 0), -1);
         newSortOrder = maxSort + 1;
       } else {
-        const overIndex = categoryItems.findIndex((b) => b.id === overId);
+        const overIndex = tagItems.findIndex((b) => b.id === overId);
         if (overIndex === -1) {
-          newSortOrder = categoryItems.length;
+          newSortOrder = tagItems.length;
         } else {
           newSortOrder = overIndex;
         }
       }
 
-      const sameCategory = categoryItems.filter((b) => b.id !== draggedId);
-      const reordered = [...sameCategory];
+      const sameTag = tagItems.filter((b) => b.id !== draggedId);
+      const reordered = [...sameTag];
       const movedBm = { ...bm, tagId: targetTagId, sortOrder: newSortOrder };
       reordered.splice(Math.min(newSortOrder, reordered.length), 0, movedBm);
 

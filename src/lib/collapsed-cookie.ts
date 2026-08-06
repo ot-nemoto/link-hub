@@ -1,4 +1,4 @@
-export const COLLAPSED_COOKIE_NAME = "lh_collapsed_categories";
+export const COLLAPSED_COOKIE_NAME = "lh_collapsed_tags";
 
 const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
 
@@ -32,7 +32,7 @@ function readRawCookie(name: string): string | undefined {
 }
 
 /**
- * 指定カテゴリの開閉状態を Cookie に書き込む（クライアント専用）。
+ * 指定タグの開閉状態を Cookie に書き込む（クライアント専用）。
  */
 export function writeCollapsedCookie(key: string, collapsed: boolean) {
   if (typeof document === "undefined") return;
