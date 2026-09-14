@@ -24,6 +24,7 @@ import { DragHandleIcon } from "./DragHandleIcon";
 import { GlobeIcon } from "./GlobeIcon";
 import { SearchIcon } from "./SearchIcon";
 import { TagGroup } from "./TagGroup";
+import { TagGroupHeader } from "./TagGroupHeader";
 import { TRASH_COLLAPSE_KEY, TrashGroup } from "./TrashGroup";
 import type { Bookmark, TagItem, TagWithCount } from "./types";
 import { UNCATEGORIZED_KEY } from "./types";
@@ -374,43 +375,20 @@ export function BookmarkList({
                 id={`tag-${group.key}`}
                 className={`mb-6 scroll-mt-56 border-l-4 pl-3 ${color ? color.border : "border-zinc-300"}`}
               >
-                <div
-                  className={`mb-2 flex w-full items-center gap-2 rounded-lg px-3 py-2 ${color ? color.bg : "bg-zinc-100"}`}
-                >
-                  {isSortable && (
-                    <span className={`shrink-0 opacity-60 ${color ? color.text : "text-zinc-500"}`}>
-                      <DragHandleIcon />
-                    </span>
-                  )}
-                  <div className="flex flex-1 items-center gap-2">
-                    <span
-                      className={`inline-block h-2.5 w-2.5 rounded-full ${color ? color.activeBg : "bg-zinc-500"}`}
-                    />
-                    <span
-                      className={`text-sm font-semibold ${color ? color.text : "text-zinc-600"}`}
-                    >
-                      {group.tag ? group.tag.name : "未分類"}
-                    </span>
-                    <span className={`text-xs opacity-70 ${color ? color.text : "text-zinc-500"}`}>
-                      {group.bookmarks.length}
-                    </span>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden="true"
-                      className={`ml-auto opacity-70 transition-transform ${color ? color.text : "text-zinc-500"} ${collapsed ? "-rotate-90" : ""}`}
-                    >
-                      <polyline points="6 9 12 15 18 9" />
-                    </svg>
-                  </div>
-                </div>
+                <TagGroupHeader
+                  tag={group.tag}
+                  count={group.bookmarks.length}
+                  collapsed={collapsed}
+                  dragHandle={
+                    isSortable ? (
+                      <span
+                        className={`shrink-0 opacity-60 ${color ? color.text : "text-zinc-500"}`}
+                      >
+                        <DragHandleIcon />
+                      </span>
+                    ) : undefined
+                  }
+                />
                 {!collapsed && (
                   <ul className="flex flex-col gap-2 pl-5">
                     {segments.flatMap((seg) => {
