@@ -26,9 +26,11 @@ describe("getTagColor", () => {
       expect(color).toHaveProperty("bg");
       expect(color).toHaveProperty("text");
       expect(color).toHaveProperty("activeBg");
+      expect(color).toHaveProperty("border");
       expect(color.bg).toMatch(/^bg-\w+-50$/);
       expect(color.text).toMatch(/^text-\w+-800$/);
       expect(color.activeBg).toMatch(/^bg-\w+-600$/);
+      expect(color.border).toMatch(/^border-\w+-500$/);
     }
   });
 

@@ -369,23 +369,31 @@ export function BookmarkList({
             const isSortable = group.tag !== null;
             const segments = groupByConsecutiveDomain(group.bookmarks);
             return (
-              <div key={group.key} id={`tag-${group.key}`} className="mb-6 scroll-mt-56">
-                <div className="mb-2 flex w-full items-center gap-2 border-b border-zinc-200 pb-1.5">
+              <div
+                key={group.key}
+                id={`tag-${group.key}`}
+                className={`mb-6 scroll-mt-56 border-l-4 pl-3 ${color ? color.border : "border-zinc-300"}`}
+              >
+                <div
+                  className={`mb-2 flex w-full items-center gap-2 rounded-lg px-3 py-2 ${color ? color.bg : "bg-zinc-100"}`}
+                >
                   {isSortable && (
-                    <span className="shrink-0 text-zinc-400">
+                    <span className={`shrink-0 opacity-60 ${color ? color.text : "text-zinc-500"}`}>
                       <DragHandleIcon />
                     </span>
                   )}
                   <div className="flex flex-1 items-center gap-2">
                     <span
-                      className={`inline-block h-2.5 w-2.5 rounded-full ${color ? color.activeBg : "bg-zinc-400"}`}
+                      className={`inline-block h-2.5 w-2.5 rounded-full ${color ? color.activeBg : "bg-zinc-500"}`}
                     />
                     <span
-                      className={`text-sm font-medium ${group.tag ? "text-zinc-900" : "text-zinc-500"}`}
+                      className={`text-sm font-semibold ${color ? color.text : "text-zinc-600"}`}
                     >
                       {group.tag ? group.tag.name : "未分類"}
                     </span>
-                    <span className="text-xs text-zinc-400">{group.bookmarks.length}</span>
+                    <span className={`text-xs opacity-70 ${color ? color.text : "text-zinc-500"}`}>
+                      {group.bookmarks.length}
+                    </span>
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       width="14"
@@ -397,7 +405,7 @@ export function BookmarkList({
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       aria-hidden="true"
-                      className={`ml-auto text-zinc-400 transition-transform ${collapsed ? "-rotate-90" : ""}`}
+                      className={`ml-auto opacity-70 transition-transform ${color ? color.text : "text-zinc-500"} ${collapsed ? "-rotate-90" : ""}`}
                     >
                       <polyline points="6 9 12 15 18 9" />
                     </svg>

@@ -55,14 +55,21 @@ export function TagGroup({
   };
 
   return (
-    <div ref={setNodeRef} style={style} id={`tag-${tagKey}`} className="mb-6 scroll-mt-56">
-      <div className="mb-2 flex w-full items-center gap-2 border-b border-zinc-200 pb-1.5">
+    <div
+      ref={setNodeRef}
+      style={style}
+      id={`tag-${tagKey}`}
+      className={`mb-6 scroll-mt-56 border-l-4 pl-3 ${color ? color.border : "border-zinc-300"}`}
+    >
+      <div
+        className={`mb-2 flex w-full items-center gap-2 rounded-lg px-3 py-2 ${color ? color.bg : "bg-zinc-100"}`}
+      >
         {isSortable && (
           <button
             type="button"
             {...attributes}
             {...listeners}
-            className="shrink-0 cursor-grab text-zinc-400 hover:text-zinc-600 active:cursor-grabbing"
+            className={`shrink-0 cursor-grab opacity-60 hover:opacity-100 active:cursor-grabbing ${color ? color.text : "text-zinc-500"}`}
             aria-label="ドラッグしてタグを並び替え"
           >
             <DragHandleIcon />
@@ -74,12 +81,14 @@ export function TagGroup({
           className="flex flex-1 cursor-pointer items-center gap-2"
         >
           <span
-            className={`inline-block h-2.5 w-2.5 rounded-full ${color ? color.activeBg : "bg-zinc-400"}`}
+            className={`inline-block h-2.5 w-2.5 rounded-full ${color ? color.activeBg : "bg-zinc-500"}`}
           />
-          <span className={`text-sm font-medium ${tag ? "text-zinc-900" : "text-zinc-500"}`}>
+          <span className={`text-sm font-semibold ${color ? color.text : "text-zinc-600"}`}>
             {tag ? tag.name : "未分類"}
           </span>
-          <span className="text-xs text-zinc-400">{bookmarks.length}</span>
+          <span className={`text-xs ${color ? color.text : "text-zinc-500"} opacity-70`}>
+            {bookmarks.length}
+          </span>
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="14"
@@ -91,7 +100,7 @@ export function TagGroup({
             strokeLinecap="round"
             strokeLinejoin="round"
             aria-hidden="true"
-            className={`ml-auto text-zinc-400 transition-transform ${collapsed ? "-rotate-90" : ""}`}
+            className={`ml-auto opacity-70 transition-transform ${color ? color.text : "text-zinc-500"} ${collapsed ? "-rotate-90" : ""}`}
           >
             <polyline points="6 9 12 15 18 9" />
           </svg>
