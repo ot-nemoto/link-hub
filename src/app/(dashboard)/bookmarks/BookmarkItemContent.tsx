@@ -1,3 +1,4 @@
+import { getDomain, getFaviconUrl } from "@/lib/domain-groups";
 import type { Bookmark } from "./types";
 
 export function BookmarkItemContent({
@@ -9,25 +10,38 @@ export function BookmarkItemContent({
   onEdit: (bm: Bookmark) => void;
   onDelete: (bm: Bookmark) => void;
 }) {
+  const faviconUrl = getFaviconUrl(bm.url);
+  const domain = getDomain(bm.url);
   return (
     <>
+      {faviconUrl && (
+        <img
+          src={faviconUrl}
+          alt=""
+          className="h-4 w-4 shrink-0 rounded-sm"
+          referrerPolicy="no-referrer"
+          onError={(e) => {
+            e.currentTarget.style.display = "none";
+          }}
+        />
+      )}
       <div className="min-w-0 flex-1">
         <a
           href={bm.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="block truncate text-sm font-medium text-zinc-900 transition-colors duration-150 hover:text-purple-700 hover:underline"
+          className="block truncate text-[15px] font-semibold text-zinc-900 transition-colors duration-150 hover:text-purple-700 hover:underline"
         >
           {bm.title}
         </a>
-        <p className="truncate text-xs text-zinc-400">{bm.url}</p>
-        {bm.memo && <p className="truncate text-sm text-zinc-600">{bm.memo}</p>}
+        <p className="truncate text-xs text-zinc-500">{domain || bm.url}</p>
+        {bm.memo && <p className="truncate text-xs text-zinc-600">{bm.memo}</p>}
       </div>
       {bm.ogImage && !bm.hideOgImage && (
         <img
           src={bm.ogImage}
           alt=""
-          className="h-20 w-36 shrink-0 rounded object-contain"
+          className="h-20 w-36 shrink-0 rounded-md object-cover"
           referrerPolicy="no-referrer"
         />
       )}

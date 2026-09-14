@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
 import type { Bookmark } from "@/app/(dashboard)/bookmarks/types";
-import { getDomain, groupByConsecutiveDomain } from "./domain-groups";
+import { getDomain, getFaviconUrl, groupByConsecutiveDomain } from "./domain-groups";
 
 function bm(id: string, url: string): Bookmark {
   return {
@@ -26,6 +26,25 @@ describe("getDomain", () => {
   it("不正な URL は空文字を返す", () => {
     expect(getDomain("not-a-url")).toBe("");
     expect(getDomain("")).toBe("");
+  });
+});
+
+describe("getFaviconUrl", () => {
+  it("ホストからファビコン URL を生成する", () => {
+    expect(getFaviconUrl("https://example.com/path")).toBe(
+      "https://www.google.com/s2/favicons?domain=example.com&sz=64",
+    );
+  });
+
+  it("size を指定できる", () => {
+    expect(getFaviconUrl("https://example.com", 32)).toBe(
+      "https://www.google.com/s2/favicons?domain=example.com&sz=32",
+    );
+  });
+
+  it("不正な URL は空文字を返す", () => {
+    expect(getFaviconUrl("not-a-url")).toBe("");
+    expect(getFaviconUrl("")).toBe("");
   });
 });
 
