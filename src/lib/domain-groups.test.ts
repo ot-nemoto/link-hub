@@ -42,6 +42,12 @@ describe("getFaviconUrl", () => {
     );
   });
 
+  it("IPv6 リテラルホストのブラケットをエンコードする", () => {
+    expect(getFaviconUrl("http://[::1]/")).toBe(
+      "https://www.google.com/s2/favicons?domain=%5B%3A%3A1%5D&sz=64",
+    );
+  });
+
   it("不正な URL は空文字を返す", () => {
     expect(getFaviconUrl("not-a-url")).toBe("");
     expect(getFaviconUrl("")).toBe("");

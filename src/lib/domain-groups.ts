@@ -17,7 +17,7 @@ export function getDomain(url: string): string {
 export function getFaviconUrl(url: string, size = 64): string {
   const host = getDomain(url);
   if (!host) return "";
-  return `https://www.google.com/s2/favicons?domain=${host}&sz=${size}`;
+  return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=${size}`;
 }
 
 export type DomainSegment<T> = {

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { getDomain, getFaviconUrl } from "@/lib/domain-groups";
 import type { Bookmark } from "./types";
 
@@ -12,17 +13,18 @@ export function BookmarkItemContent({
 }) {
   const faviconUrl = getFaviconUrl(bm.url);
   const domain = getDomain(bm.url);
+  // 読込失敗した favicon の URL を保持する。URL が変われば再表示される（DOM に display:none を残さない）
+  const [erroredFaviconUrl, setErroredFaviconUrl] = useState<string | null>(null);
+  const showFavicon = faviconUrl && erroredFaviconUrl !== faviconUrl;
   return (
     <>
-      {faviconUrl && (
+      {showFavicon && (
         <img
           src={faviconUrl}
           alt=""
           className="h-4 w-4 shrink-0 rounded-sm"
           referrerPolicy="no-referrer"
-          onError={(e) => {
-            e.currentTarget.style.display = "none";
-          }}
+          onError={() => setErroredFaviconUrl(faviconUrl)}
         />
       )}
       <div className="min-w-0 flex-1">
