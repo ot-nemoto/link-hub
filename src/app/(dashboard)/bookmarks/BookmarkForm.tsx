@@ -110,7 +110,13 @@ export function BookmarkForm({
     setErrors({});
     setSubmitting(true);
     onSubmittingChange?.(true);
-    const result = await action(data);
+    let result: { error?: string };
+    try {
+      result = await action(data);
+    } catch {
+      // action が reject した場合も送信中状態を解除し、モーダルを閉じられるようにする
+      result = { error: "保存に失敗しました。時間をおいて再度お試しください" };
+    }
 
     if (result.error) {
       setSubmitting(false);
