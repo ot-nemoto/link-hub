@@ -27,7 +27,7 @@ export function TagGroupHeader({
       <span
         className={`inline-block h-2.5 w-2.5 rounded-full ${color ? color.activeBg : "bg-zinc-500"}`}
       />
-      <span className={`text-sm font-semibold ${color ? color.text : "text-zinc-600"}`}>
+      <span className={`text-[15px] font-semibold ${color ? color.text : "text-zinc-600"}`}>
         {tag ? tag.name : "未分類"}
       </span>
       <span className={`text-xs opacity-70 ${color ? color.text : "text-zinc-500"}`}>{count}</span>

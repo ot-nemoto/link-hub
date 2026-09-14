@@ -32,7 +32,7 @@ export function BookmarkItemContent({
           href={bm.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="block truncate text-[15px] font-semibold text-zinc-900 transition-colors duration-150 hover:text-purple-700 hover:underline"
+          className="block truncate border-b border-zinc-300 text-[15px] font-normal text-zinc-900 transition-colors duration-150 hover:border-purple-700 hover:text-purple-700"
         >
           {bm.title}
         </a>
