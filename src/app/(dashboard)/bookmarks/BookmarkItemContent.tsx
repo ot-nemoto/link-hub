@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { MemoMarkdown } from "@/components/MemoMarkdown";
 import { getDomain, getFaviconUrl } from "@/lib/domain-groups";
 import type { Bookmark } from "./types";
 
@@ -37,7 +38,29 @@ export function BookmarkItemContent({
           {bm.title}
         </a>
         <p className="truncate text-xs text-zinc-500">{domain || bm.url}</p>
-        {bm.memo && <p className="truncate text-xs text-zinc-600">{bm.memo}</p>}
+        {bm.memo && (
+          <div className="mt-1.5 flex items-start gap-1.5">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              className="mt-1.5 shrink-0 text-zinc-400"
+            >
+              <path d="M16 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9Z" />
+              <path d="M15 3v4a2 2 0 0 0 2 2h4" />
+            </svg>
+            <div className="min-w-0 flex-1 break-words rounded-md bg-zinc-100 px-2.5 py-1.5 text-xs leading-relaxed text-zinc-700">
+              <MemoMarkdown text={bm.memo} />
+            </div>
+          </div>
+        )}
       </div>
       {bm.ogImage && !bm.hideOgImage && (
         <img
