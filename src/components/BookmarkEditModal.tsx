@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BookmarkForm } from "@/app/(dashboard)/bookmarks/BookmarkForm";
 
 type Tag = { id: string; name: string };
@@ -40,17 +40,18 @@ export function BookmarkEditModal({
   onSuccess,
 }: Props) {
   const overlayRef = useRef<HTMLDivElement>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape" && !submitting) onClose();
     }
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
+  }, [onClose, submitting]);
 
   function handleOverlayClick(e: React.MouseEvent) {
-    if (e.target === overlayRef.current) onClose();
+    if (e.target === overlayRef.current && !submitting) onClose();
   }
 
   return (
@@ -61,7 +62,7 @@ export function BookmarkEditModal({
       aria-label="ブックマーク編集"
       onClick={handleOverlayClick}
       onKeyDown={(e) => {
-        if (e.key === "Escape") onClose();
+        if (e.key === "Escape" && !submitting) onClose();
       }}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
     >
@@ -70,8 +71,9 @@ export function BookmarkEditModal({
           <h2 className="text-lg font-bold text-zinc-900">ブックマークを編集</h2>
           <button
             type="button"
+            disabled={submitting}
             onClick={onClose}
-            className="cursor-pointer rounded p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600"
+            className="cursor-pointer rounded p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 disabled:opacity-50"
             aria-label="閉じる"
           >
             <svg
@@ -97,6 +99,7 @@ export function BookmarkEditModal({
           action={action}
           onSuccess={onSuccess}
           onCancel={onClose}
+          onSubmittingChange={setSubmitting}
         />
       </div>
     </div>

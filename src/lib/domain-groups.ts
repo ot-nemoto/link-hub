@@ -10,6 +10,16 @@ export function getDomain(url: string): string {
   }
 }
 
+/**
+ * URL のホストからファビコン画像の URL を生成する。
+ * 不正な URL の場合は空文字を返す。
+ */
+export function getFaviconUrl(url: string, size = 64): string {
+  const host = getDomain(url);
+  if (!host) return "";
+  return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=${size}`;
+}
+
 export type DomainSegment<T> = {
   domain: string;
   bookmarks: T[];

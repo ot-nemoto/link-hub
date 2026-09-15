@@ -23,9 +23,17 @@ type Props = {
   action: (data: BookmarkFormData) => Promise<{ error?: string }>;
   onSuccess?: (data: BookmarkFormData) => void;
   onCancel?: () => void;
+  onSubmittingChange?: (submitting: boolean) => void;
 };
 
-export function BookmarkForm({ availableTags, defaultValues, action, onSuccess, onCancel }: Props) {
+export function BookmarkForm({
+  availableTags,
+  defaultValues,
+  action,
+  onSuccess,
+  onCancel,
+  onSubmittingChange,
+}: Props) {
   const router = useRouter();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -101,14 +109,23 @@ export function BookmarkForm({ availableTags, defaultValues, action, onSuccess, 
 
     setErrors({});
     setSubmitting(true);
-    const result = await action(data);
-    setSubmitting(false);
+    onSubmittingChange?.(true);
+    let result: { error?: string };
+    try {
+      result = await action(data);
+    } catch {
+      // action が reject した場合も送信中状態を解除し、モーダルを閉じられるようにする
+      result = { error: "保存に失敗しました。時間をおいて再度お試しください" };
+    }
 
     if (result.error) {
+      setSubmitting(false);
+      onSubmittingChange?.(false);
       setErrors({ form: result.error });
       return;
     }
 
+    // 成功時は submitting を維持し、モーダルが閉じる / 遷移するまでフォームを再有効化しない
     if (onSuccess) {
       onSuccess(data);
     } else {
@@ -118,139 +135,144 @@ export function BookmarkForm({ availableTags, defaultValues, action, onSuccess, 
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {errors.form && (
-        <p className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-600">{errors.form}</p>
-      )}
+    <form onSubmit={handleSubmit}>
+      <fieldset disabled={submitting} className="space-y-4">
+        {errors.form && (
+          <p className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-600">{errors.form}</p>
+        )}
 
-      <div>
-        <label htmlFor="url" className="block text-sm font-medium text-zinc-700">
-          URL <span className="text-red-500">*</span>
-        </label>
-        <input
-          id="url"
-          name="url"
-          type="text"
-          defaultValue={defaultValues?.url}
-          onBlur={handleUrlBlur}
-          className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
-          placeholder="https://example.com"
-        />
-        {errors.url && <p className="mt-1 text-xs text-red-500">{errors.url}</p>}
-      </div>
-
-      <div>
-        <label htmlFor="title" className="block text-sm font-medium text-zinc-700">
-          タイトル <span className="text-red-500">*</span>
-          {fetchingOgp && <span className="ml-2 text-xs font-normal text-zinc-400">取得中...</span>}
-        </label>
-        <input
-          id="title"
-          name="title"
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
-          placeholder="ページのタイトル"
-        />
-        {errors.title && <p className="mt-1 text-xs text-red-500">{errors.title}</p>}
-      </div>
-
-      <div>
-        <label htmlFor="memo" className="block text-sm font-medium text-zinc-700">
-          メモ
-        </label>
-        <textarea
-          id="memo"
-          name="memo"
-          defaultValue={defaultValues?.memo}
-          rows={4}
-          className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
-          placeholder="メモ（任意）"
-        />
-        {errors.memo && <p className="mt-1 text-xs text-red-500">{errors.memo}</p>}
-      </div>
-
-      {isEditing && ogImage && (
         <div>
-          <span className="block text-sm font-medium text-zinc-700">OGP画像</span>
-          <div className="mt-1 flex items-center gap-3">
-            <img
-              src={ogImage}
-              alt=""
-              referrerPolicy="no-referrer"
-              className={`h-16 w-28 shrink-0 rounded border border-zinc-200 object-contain ${
-                hideOgImage ? "opacity-40" : ""
-              }`}
-            />
-            <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-700">
-              <input
-                type="checkbox"
-                checked={hideOgImage}
-                onChange={(e) => setHideOgImage(e.target.checked)}
-                className="h-4 w-4 cursor-pointer rounded border-zinc-300"
+          <label htmlFor="url" className="block text-sm font-medium text-zinc-700">
+            URL <span className="text-red-500">*</span>
+          </label>
+          <input
+            id="url"
+            name="url"
+            type="text"
+            defaultValue={defaultValues?.url}
+            onBlur={handleUrlBlur}
+            className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 disabled:bg-zinc-50 disabled:text-zinc-500"
+            placeholder="https://example.com"
+          />
+          {errors.url && <p className="mt-1 text-xs text-red-500">{errors.url}</p>}
+        </div>
+
+        <div>
+          <label htmlFor="title" className="block text-sm font-medium text-zinc-700">
+            タイトル <span className="text-red-500">*</span>
+            {fetchingOgp && (
+              <span className="ml-2 text-xs font-normal text-zinc-400">取得中...</span>
+            )}
+          </label>
+          <input
+            id="title"
+            name="title"
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 disabled:bg-zinc-50 disabled:text-zinc-500"
+            placeholder="ページのタイトル"
+          />
+          {errors.title && <p className="mt-1 text-xs text-red-500">{errors.title}</p>}
+        </div>
+
+        <div>
+          <label htmlFor="memo" className="block text-sm font-medium text-zinc-700">
+            メモ
+          </label>
+          <textarea
+            id="memo"
+            name="memo"
+            defaultValue={defaultValues?.memo}
+            rows={4}
+            className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 disabled:bg-zinc-50 disabled:text-zinc-500"
+            placeholder="メモ（任意）"
+          />
+          {errors.memo && <p className="mt-1 text-xs text-red-500">{errors.memo}</p>}
+        </div>
+
+        {isEditing && ogImage && (
+          <div>
+            <span className="block text-sm font-medium text-zinc-700">OGP画像</span>
+            <div className="mt-1 flex items-center gap-3">
+              <img
+                src={ogImage}
+                alt=""
+                referrerPolicy="no-referrer"
+                className={`h-16 w-28 shrink-0 rounded border border-zinc-200 object-contain ${
+                  hideOgImage ? "opacity-40" : ""
+                }`}
               />
-              一覧に表示しない
-            </label>
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-700">
+                <input
+                  type="checkbox"
+                  checked={hideOgImage}
+                  onChange={(e) => setHideOgImage(e.target.checked)}
+                  className="h-4 w-4 cursor-pointer rounded border-zinc-300"
+                />
+                一覧に表示しない
+              </label>
+            </div>
+          </div>
+        )}
+
+        <div>
+          <label htmlFor="tag" className="block text-sm font-medium text-zinc-700">
+            タグ
+          </label>
+          <div className="mt-1 flex flex-wrap gap-2">
+            <button
+              type="button"
+              aria-pressed={selectedTagId === null}
+              onClick={() => setSelectedTagId(null)}
+              className={`cursor-pointer rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                selectedTagId === null
+                  ? "bg-zinc-800 text-white"
+                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+              }`}
+            >
+              未分類
+            </button>
+            {availableTags.map((tag) => {
+              const color = getTagColor(tag.name);
+              const isSelected = selectedTagId === tag.id;
+              return (
+                <button
+                  key={tag.id}
+                  type="button"
+                  aria-pressed={isSelected}
+                  onClick={() => setSelectedTagId(tag.id)}
+                  className={`cursor-pointer rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                    isSelected
+                      ? `${color.activeBg} text-white`
+                      : `${color.bg} ${color.text} hover:opacity-80`
+                  }`}
+                >
+                  {tag.name}
+                </button>
+              );
+            })}
           </div>
         </div>
-      )}
 
-      <div>
-        <label htmlFor="tag" className="block text-sm font-medium text-zinc-700">
-          タグ
-        </label>
-        <div className="mt-1 flex flex-wrap gap-2">
+        <div className="flex gap-3">
+          <button
+            type="submit"
+            disabled={submitting || fetchingOgp}
+            className="cursor-pointer rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-50"
+          >
+            {submitting ? "保存中..." : "保存"}
+          </button>
           <button
             type="button"
-            aria-pressed={selectedTagId === null}
-            onClick={() => setSelectedTagId(null)}
-            className={`cursor-pointer rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-              selectedTagId === null
-                ? "bg-zinc-800 text-white"
-                : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
-            }`}
+            disabled={submitting}
+            onClick={() => (onCancel ? onCancel() : router.push("/bookmarks"))}
+            className="cursor-pointer rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
           >
-            未分類
+            キャンセル
           </button>
-          {availableTags.map((tag) => {
-            const color = getTagColor(tag.name);
-            const isSelected = selectedTagId === tag.id;
-            return (
-              <button
-                key={tag.id}
-                type="button"
-                aria-pressed={isSelected}
-                onClick={() => setSelectedTagId(tag.id)}
-                className={`cursor-pointer rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                  isSelected
-                    ? `${color.activeBg} text-white`
-                    : `${color.bg} ${color.text} hover:opacity-80`
-                }`}
-              >
-                {tag.name}
-              </button>
-            );
-          })}
         </div>
-      </div>
-
-      <div className="flex gap-3">
-        <button
-          type="submit"
-          disabled={submitting || fetchingOgp}
-          className="cursor-pointer rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-50"
-        >
-          {submitting ? "保存中..." : "保存"}
-        </button>
-        <button
-          type="button"
-          onClick={() => (onCancel ? onCancel() : router.push("/bookmarks"))}
-          className="cursor-pointer rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
-        >
-          キャンセル
-        </button>
-      </div>
+      </fieldset>
     </form>
   );
 }
