@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { MemoMarkdown } from "@/components/MemoMarkdown";
-import { getDomain, getFaviconUrl } from "@/lib/domain-groups";
+import { getDisplayUrl, getFaviconUrl } from "@/lib/domain-groups";
 import type { Bookmark } from "./types";
 
 export function BookmarkItemContent({
@@ -13,7 +13,7 @@ export function BookmarkItemContent({
   onDelete: (bm: Bookmark) => void;
 }) {
   const faviconUrl = getFaviconUrl(bm.url);
-  const domain = getDomain(bm.url);
+  const displayUrl = getDisplayUrl(bm.url);
   // 読込失敗した favicon の URL を保持する。URL が変われば再表示される（DOM に display:none を残さない）
   const [erroredFaviconUrl, setErroredFaviconUrl] = useState<string | null>(null);
   const showFavicon = faviconUrl && erroredFaviconUrl !== faviconUrl;
@@ -37,7 +37,7 @@ export function BookmarkItemContent({
         >
           {bm.title}
         </a>
-        <p className="truncate text-xs text-zinc-500">{domain || bm.url}</p>
+        <p className="truncate text-xs text-zinc-500">{displayUrl}</p>
         {bm.memo && (
           <div className="mt-1.5 flex items-start gap-1.5">
             <svg
