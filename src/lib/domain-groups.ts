@@ -11,6 +11,20 @@ export function getDomain(url: string): string {
 }
 
 /**
+ * 一覧の URL 行に表示する文字列を返す（ホスト名 + パス + クエリ）。
+ * スキームとフラグメントは含めず、トップページ（パスが "/" のみ）は末尾の "/" を省く。
+ * 不正な URL の場合は入力をそのまま返す。
+ */
+export function getDisplayUrl(url: string): string {
+  try {
+    const { host, pathname, search } = new URL(url);
+    return `${host}${pathname === "/" ? "" : pathname}${search}`;
+  } catch {
+    return url;
+  }
+}
+
+/**
  * URL のホストからファビコン画像の URL を生成する。
  * 不正な URL の場合は空文字を返す。
  */
