@@ -1,4 +1,10 @@
-import type { Plugin } from "unified";
+import type { Options } from "react-markdown";
+
+/** react-markdown の remarkPlugins 要素のうち関数形式のもの（unified の Plugin。unified を直接依存に持たないため導出する） */
+type RemarkPlugin = Extract<
+  NonNullable<Options["remarkPlugins"]>[number],
+  (...args: never[]) => unknown
+>;
 
 /**
  * メモの Markdown 描画で許可する HTML 要素（react-markdown の allowedElements）。
@@ -29,7 +35,7 @@ export function memoUrlTransform(url: string): string | undefined {
  * 画像は構文としては通し、MemoMarkdown 側で入力どおりのテキストに戻して描画する
  * （構文を無効化すると `!` + リンクに分解されてしまうため）。
  */
-export const remarkInlineOnly: Plugin = function () {
+export const remarkInlineOnly: RemarkPlugin = function () {
   const data = this.data() as { micromarkExtensions?: unknown[] };
   data.micromarkExtensions ??= [];
   data.micromarkExtensions.push({

@@ -61,6 +61,13 @@ describe("MemoMarkdown", () => {
       ["引用", "> quote", "&gt; quote"],
       ["水平線", "---", "---"],
       ["画像", "![alt](https://example.com/a.png)", "![alt](https://example.com/a.png)"],
+      ["画像（相対パス）", "![alt](./rel.png)", "![alt](./rel.png)"],
+      [
+        "画像（title 付き）",
+        '![a](https://example.com/a.png "t")',
+        "![a](https://example.com/a.png &quot;t&quot;)",
+      ],
+      ["画像（許可外スキーム）", "![a](javascript:alert(1))", "![a](javascript:alert(1))"],
       ["テーブル", "| a | b |\n| - | - |", "| a | b |<br/>\n| - | - |"],
     ])("%s", (_name, input, expected) => {
       const html = render(input);
