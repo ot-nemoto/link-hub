@@ -49,6 +49,17 @@ describe("getDisplayUrl", () => {
     expect(getDisplayUrl("https://example.com/docs/")).toBe("example.com/docs/");
   });
 
+  it("パス・クエリのパーセントエンコードをデコードする（予約文字は保持）", () => {
+    expect(
+      getDisplayUrl("https://ja.wikipedia.org/wiki/%E6%97%A5%E6%9C%AC?q=%E6%A4%9C%E7%B4%A2"),
+    ).toBe("ja.wikipedia.org/wiki/日本?q=検索");
+    expect(getDisplayUrl("https://example.com/a%2Fb?x=1%263")).toBe("example.com/a%2Fb?x=1%263");
+  });
+
+  it("不正なパーセントシーケンスはデコードせずそのまま返す", () => {
+    expect(getDisplayUrl("https://example.com/bad%E0%A4%A")).toBe("example.com/bad%E0%A4%A");
+  });
+
   it("不正な URL は入力をそのまま返す", () => {
     expect(getDisplayUrl("not-a-url")).toBe("not-a-url");
     expect(getDisplayUrl("")).toBe("");

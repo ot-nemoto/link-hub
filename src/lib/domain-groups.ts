@@ -13,14 +13,25 @@ export function getDomain(url: string): string {
 /**
  * 一覧の URL 行に表示する文字列を返す（ホスト名 + パス + クエリ）。
  * スキームとフラグメントは含めず、トップページ（パスが "/" のみ）は末尾の "/" を省く。
+ * パス・クエリのパーセントエンコードは日本語などが読めるようデコードする
+ * （decodeURI は "/" "?" "&" 等の予約文字は復号しないため構造は崩れない。不正なシーケンスはそのまま）。
  * 不正な URL の場合は入力をそのまま返す。
  */
 export function getDisplayUrl(url: string): string {
   try {
     const { host, pathname, search } = new URL(url);
-    return `${host}${pathname === "/" ? "" : pathname}${search}`;
+    const path = `${pathname === "/" ? "" : pathname}${search}`;
+    return `${host}${safeDecodeURI(path)}`;
   } catch {
     return url;
+  }
+}
+
+function safeDecodeURI(s: string): string {
+  try {
+    return decodeURI(s);
+  } catch {
+    return s;
   }
 }
 
