@@ -186,7 +186,7 @@ export function BookmarkForm({
             defaultValue={defaultValues?.memo}
             rows={4}
             className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 disabled:bg-zinc-50 disabled:text-zinc-500"
-            placeholder="メモ（任意）"
+            placeholder="メモ（任意）　**太字** *斜体* `コード` [リンク](URL) ~~取り消し~~ が使えます"
           />
           {errors.memo && <p className="mt-1 text-xs text-red-500">{errors.memo}</p>}
         </div>

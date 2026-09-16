@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
 import type { Bookmark } from "@/app/(dashboard)/bookmarks/types";
-import { getDomain, getFaviconUrl, groupByConsecutiveDomain } from "./domain-groups";
+import { getDisplayUrl, getDomain, getFaviconUrl, groupByConsecutiveDomain } from "./domain-groups";
 
 function bm(id: string, url: string): Bookmark {
   return {
@@ -26,6 +26,43 @@ describe("getDomain", () => {
   it("不正な URL は空文字を返す", () => {
     expect(getDomain("not-a-url")).toBe("");
     expect(getDomain("")).toBe("");
+  });
+});
+
+describe("getDisplayUrl", () => {
+  it("ホスト名 + パス + クエリを返し、スキームは含めない", () => {
+    expect(getDisplayUrl("https://example.com/docs/app?tab=1")).toBe("example.com/docs/app?tab=1");
+    expect(getDisplayUrl("http://sub.example.com:8080/a/b")).toBe("sub.example.com:8080/a/b");
+  });
+
+  it("トップページは末尾の / を省いてホスト名のみ返す", () => {
+    expect(getDisplayUrl("https://example.com")).toBe("example.com");
+    expect(getDisplayUrl("https://example.com/")).toBe("example.com");
+    expect(getDisplayUrl("https://example.com/?q=1")).toBe("example.com?q=1");
+  });
+
+  it("フラグメントは含めない", () => {
+    expect(getDisplayUrl("https://example.com/docs#section")).toBe("example.com/docs");
+  });
+
+  it("末尾の / があるパスはそのまま返す", () => {
+    expect(getDisplayUrl("https://example.com/docs/")).toBe("example.com/docs/");
+  });
+
+  it("パス・クエリのパーセントエンコードをデコードする（予約文字は保持）", () => {
+    expect(
+      getDisplayUrl("https://ja.wikipedia.org/wiki/%E6%97%A5%E6%9C%AC?q=%E6%A4%9C%E7%B4%A2"),
+    ).toBe("ja.wikipedia.org/wiki/日本?q=検索");
+    expect(getDisplayUrl("https://example.com/a%2Fb?x=1%263")).toBe("example.com/a%2Fb?x=1%263");
+  });
+
+  it("不正なパーセントシーケンスはデコードせずそのまま返す", () => {
+    expect(getDisplayUrl("https://example.com/bad%E0%A4%A")).toBe("example.com/bad%E0%A4%A");
+  });
+
+  it("不正な URL は入力をそのまま返す", () => {
+    expect(getDisplayUrl("not-a-url")).toBe("not-a-url");
+    expect(getDisplayUrl("")).toBe("");
   });
 });
 
