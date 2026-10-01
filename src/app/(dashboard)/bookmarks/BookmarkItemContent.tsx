@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { MemoMarkdown } from "@/components/MemoMarkdown";
 import { getDisplayUrl, getFaviconUrl } from "@/lib/domain-groups";
+import { CopyUrlButton } from "./CopyUrlButton";
 import type { Bookmark } from "./types";
 
 export function BookmarkItemContent({
@@ -70,7 +71,8 @@ export function BookmarkItemContent({
           referrerPolicy="no-referrer"
         />
       )}
-      <div className="flex shrink-0 gap-2">
+      <div className="flex shrink-0 items-center gap-2">
+        <CopyUrlButton url={bm.url} />
         <button
           type="button"
           onClick={() => onEdit(bm)}
