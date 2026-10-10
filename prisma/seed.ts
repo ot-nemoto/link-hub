@@ -211,10 +211,12 @@ async function seedUser(
   await prisma.bookmark.deleteMany({ where: { userId: user.id } });
   await prisma.tag.deleteMany({ where: { userId: user.id } });
 
-  // タグを作成
+  // タグを作成。sortOrder を明示しないと全件 0 になり、sortOrder 昇順で引く
+  // アプリ側（lib/tags.ts）での並び順が非決定になるため定義順を入れる。
   const tagMap = new Map<string, string>();
-  for (const name of tagNames) {
-    const tag = await prisma.tag.create({ data: { name, userId: user.id } });
+  for (let i = 0; i < tagNames.length; i++) {
+    const name = tagNames[i];
+    const tag = await prisma.tag.create({ data: { name, sortOrder: i, userId: user.id } });
     tagMap.set(name, tag.id);
   }
 
