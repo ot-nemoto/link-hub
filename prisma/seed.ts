@@ -59,43 +59,43 @@ const USER1_BOOKMARKS: {
   url: string;
   title: string;
   memo: string;
-  tags: string[];
+  tag: string | null;
 }[] = [
   {
     url: "https://nextjs.org",
     title: "Next.js",
     memo: "React フレームワーク",
-    tags: ["Frontend"],
+    tag: "Frontend",
   },
   {
     url: "https://vercel.com",
     title: "Vercel",
     memo: "デプロイプラットフォーム",
-    tags: ["Frontend"],
+    tag: "Frontend",
   },
   {
     url: "https://www.prisma.io",
     title: "Prisma",
     memo: "TypeScript 向け ORM",
-    tags: ["Backend"],
+    tag: "Backend",
   },
   {
     url: "https://neon.tech",
     title: "Neon",
     memo: "サーバーレス PostgreSQL",
-    tags: ["Frontend", "Backend"], // AND フィルターテスト用
+    tag: "Frontend",
   },
   {
     url: "https://github.com",
     title: "GitHub",
     memo: "コードホスティング",
-    tags: [], // タグなしフィルターテスト用
+    tag: null, // タグなしフィルターテスト用
   },
   {
     url: "https://playwright.dev",
     title: "Playwright",
     memo: "E2E テストフレームワーク",
-    tags: [], // タグなしフィルターテスト用
+    tag: null, // タグなしフィルターテスト用
   },
 ];
 
@@ -108,19 +108,19 @@ const USER2_BOOKMARKS: {
   url: string;
   title: string;
   memo: string;
-  tags: string[];
+  tag: string | null;
 }[] = [
   {
     url: "https://www.figma.com",
     title: "Figma",
     memo: "デザインツール",
-    tags: ["Design"],
+    tag: "Design",
   },
   {
     url: "https://developer.mozilla.org",
     title: "MDN Web Docs",
     memo: "Web API リファレンス",
-    tags: [],
+    tag: null,
   },
 ];
 
@@ -133,37 +133,37 @@ const USER3_BOOKMARKS: {
   url: string;
   title: string;
   memo: string;
-  tags: string[];
+  tag: string | null;
 }[] = [
   {
     url: "https://www.typescriptlang.org",
     title: "TypeScript",
     memo: "型付き JavaScript",
-    tags: ["Tools"],
+    tag: "Tools",
   },
   {
     url: "https://nodejs.org",
     title: "Node.js",
     memo: "JavaScript ランタイム",
-    tags: ["Docs"],
+    tag: "Docs",
   },
   {
     url: "https://vitejs.dev",
     title: "Vite",
     memo: "ビルドツール",
-    tags: [],
+    tag: null,
   },
   {
     url: "https://biome.dev",
     title: "Biome",
     memo: "リンター・フォーマッタ",
-    tags: [],
+    tag: null,
   },
   {
     url: "https://www.npmjs.com",
     title: "npm",
     memo: "パッケージマネージャ",
-    tags: [],
+    tag: null,
   },
 ];
 
@@ -188,7 +188,7 @@ async function upsertClerkUser(email: string): Promise<string> {
 async function seedUser(
   email: string,
   tagNames: string[],
-  bookmarks: { url: string; title: string; memo: string; tags: string[] }[],
+  bookmarks: { url: string; title: string; memo: string; tag: string | null }[],
 ) {
   const clerkId = await upsertClerkUser(email);
 
@@ -212,7 +212,15 @@ async function seedUser(
 
   // ブックマークをタグ込みで作成
   for (let i = 0; i < bookmarks.length; i++) {
-    const { url, title, memo, tags } = bookmarks[i];
+    const { url, title, memo, tag } = bookmarks[i];
+    let tagId: string | null = null;
+    if (tag !== null) {
+      const resolved = tagMap.get(tag);
+      if (resolved === undefined) {
+        throw new Error(`Unknown tag "${tag}" for bookmark "${title}" (${url}) of user ${email}`);
+      }
+      tagId = resolved;
+    }
     await prisma.bookmark.create({
       data: {
         url,
@@ -220,17 +228,7 @@ async function seedUser(
         memo,
         sortOrder: i,
         userId: user.id,
-        tags: {
-          create: tags.map((name) => {
-            const tagId = tagMap.get(name);
-            if (tagId === undefined) {
-              throw new Error(
-                `Unknown tag "${name}" for bookmark "${title}" (${url}) of user ${email}`,
-              );
-            }
-            return { tagId };
-          }),
-        },
+        tagId,
       },
     });
   }

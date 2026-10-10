@@ -102,7 +102,7 @@ SEED_ALLOW_DESTRUCTIVE=1 npx tsx prisma/seed.ts
 
 | ユーザー | タグ | ブックマーク |
 |---------|------|------------|
-| `bonjiri@example.com` | Frontend, Backend | 6件（タグあり・タグなし・複数タグ混在） |
+| `bonjiri@example.com` | Frontend, Backend | 6件（タグあり・タグなし混在） |
 | `tsukune@example.com` | Design | 2件（ユーザー分離確認用） |
 | `tebasaki@example.com` | Tools, Docs | 5件（破壊的操作テスト用） |
 
@@ -113,7 +113,7 @@ bonjiri のブックマークとタグの対応：
 | Next.js | Frontend | タグフィルター |
 | Vercel | Frontend | タグフィルター |
 | Prisma | Backend | タグフィルター |
-| Neon | Frontend + Backend | AND フィルター |
+| Neon | Frontend | タグフィルター |
 | GitHub | なし | タグなしフィルター |
 | Playwright | なし | タグなしフィルター |
 
