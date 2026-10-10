@@ -9,6 +9,8 @@
  * - SEED_ALLOW_DESTRUCTIVE=1 ... 破壊的操作へのオプトイン（未設定なら中断）
  * - SEED_PASSWORD            ... テストユーザー共通パスワード
  * - SEED_ALLOW_UNSEEDED_DB=1 ... 任意。シード済みでない DB に対しても実行する
+ *
+ * CLERK_SECRET_KEY は開発インスタンス（sk_test_）である必要がある。
  */
 import { createClerkClient } from "@clerk/nextjs/server";
 import { PrismaNeon } from "@prisma/adapter-neon";
@@ -41,11 +43,13 @@ const prisma = new PrismaClient({ adapter });
 const clerkSecretKey = process.env.CLERK_SECRET_KEY;
 if (!clerkSecretKey) throw new Error("CLERK_SECRET_KEY is not set");
 
-// Clerk アプリは 3 リポジトリで共有しており、パスワード同期は既存ユーザーに
-// 無条件で書き込む。DB だけを見るガードでは「DB は dev・Clerk は本番」を止められない。
+// Clerk アプリは daily-hub / eval-hub と共有しており、upsertClerkUser は既存ユーザーの
+// パスワードを無条件で上書きする。DB を見る 2 段のガードはどちらも Postgres しか見ないため、
+// 「DB は dev・Clerk キーは本番」の組み合わせを止められない。キーの種別で弾く。
+// オプトインフラグは設けない（.env に居座ってガードを無効化するフラグを自ら増やさない）。
 if (!clerkSecretKey.startsWith("sk_test_")) {
   throw new Error(
-    "CLERK_SECRET_KEY が開発インスタンス（sk_test_）ではありません。シードは開発インスタンスに対してのみ実行する。",
+    "CLERK_SECRET_KEY が開発インスタンス（sk_test_）ではありません。シードは開発インスタンスに対してのみ実行してください。",
   );
 }
 
