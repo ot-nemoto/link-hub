@@ -41,6 +41,14 @@ const prisma = new PrismaClient({ adapter });
 const clerkSecretKey = process.env.CLERK_SECRET_KEY;
 if (!clerkSecretKey) throw new Error("CLERK_SECRET_KEY is not set");
 
+// Clerk アプリは 3 リポジトリで共有しており、パスワード同期は既存ユーザーに
+// 無条件で書き込む。DB だけを見るガードでは「DB は dev・Clerk は本番」を止められない。
+if (!clerkSecretKey.startsWith("sk_test_")) {
+  throw new Error(
+    "CLERK_SECRET_KEY が開発インスタンス（sk_test_）ではありません。シードは開発インスタンスに対してのみ実行する。",
+  );
+}
+
 const clerk = createClerkClient({ secretKey: clerkSecretKey });
 
 // テストユーザーの共通パスワード。手動ログインでも使うため実行ごとの生成ではなく環境変数で固定する。
