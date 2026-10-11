@@ -102,14 +102,62 @@ describe("buildOpenApiDocument", () => {
     expect(bookmarkBody.properties.url.description).toBeTruthy();
   });
 
-  it("全 $ref が components.schemas に解決できる（参照切れなし）", () => {
-    const refs = [...JSON.stringify(doc).matchAll(/"#\/components\/schemas\/([A-Za-z0-9]+)"/g)].map(
-      (m) => m[1],
-    );
-    const defined = new Set(Object.keys(doc.components.schemas));
-    expect(refs.length).toBeGreaterThan(0);
-    for (const name of refs) {
-      expect(defined.has(name), `未定義スキーマ参照: ${name}`).toBe(true);
+  it("全 $ref が components に解決でき（参照切れなし）、未使用の responses も無い", () => {
+    const json = JSON.stringify(doc);
+    const refs = [
+      ...json.matchAll(/"\$ref":"#\/components\/(schemas|responses)\/([A-Za-z0-9]+)"/g),
+    ];
+    const allRefs = [...json.matchAll(/"\$ref":"([^"]+)"/g)].map((m) => m[1]);
+    expect(refs.length).toBe(allRefs.length);
+
+    const defined = {
+      schemas: new Set(Object.keys(doc.components.schemas)),
+      responses: new Set(Object.keys(doc.components.responses)),
+    };
+    for (const [, kind, name] of refs) {
+      expect(defined[kind as keyof typeof defined].has(name), `未定義参照: ${kind}/${name}`).toBe(
+        true,
+      );
     }
+    const usedResponses = new Set(refs.filter((m) => m[1] === "responses").map((m) => m[2]));
+    expect(usedResponses).toEqual(defined.responses);
+  });
+
+  it("4xx はすべて components.responses への $ref（{ error } スキーマを持つ）", () => {
+    for (const [path, item] of Object.entries(doc.paths)) {
+      for (const [method, op] of Object.entries(item)) {
+        for (const [status, res] of Object.entries(op.responses)) {
+          if (Number(status) < 400) continue;
+          expect(res, `${method.toUpperCase()} ${path} ${status}`).toEqual({
+            $ref: expect.stringMatching(/^#\/components\/responses\//),
+          });
+        }
+      }
+    }
+    for (const res of Object.values(doc.components.responses)) {
+      expect(res.description).toBeTruthy();
+      expect(res.content["application/json"].schema).toEqual({
+        $ref: "#/components/schemas/Error",
+      });
+    }
+  });
+
+  it("info.description に認証・共通仕様・エラー形式・破壊的変更・クイックスタートを含む", () => {
+    const description = doc.info.description;
+    for (const expected of [
+      "Authorization: Bearer <api-key>",
+      "lh_",
+      "設定モーダル",
+      "Access-Control-Allow-Origin: *",
+      "strip",
+      "ソフトデリート",
+      '{ "error": "<メッセージ>" }',
+      "| 409 |",
+      "`category` から `tag` にリネーム",
+      "curl -s",
+    ]) {
+      expect(description).toContain(expected);
+    }
+    expect(description).not.toContain("平文");
   });
 });
