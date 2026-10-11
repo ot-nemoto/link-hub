@@ -83,7 +83,8 @@ export function buildOpenApiDocument(options: { version?: string; serverUrl?: st
         bearerAuth: {
           type: "http",
           scheme: "bearer",
-          description: "設定モーダルで発行した API キー",
+          description:
+            "設定モーダルで発行した API キー（書式: `lh_` + base64url 43 文字）。キーはハッシュ化して保存されるため、発行直後の一度しか表示されない",
         },
       },
       schemas: {

@@ -16,7 +16,7 @@
 ## 認証
 
 - `Authorization: Bearer <api-key>` ヘッダー必須
-- API キーはアプリのヘッダー「API キー」モーダルで生成・再生成できる（1 ユーザー 1 キー・平文保持）
+- API キーはアプリのヘッダー「API キー」モーダルで生成・再生成できる（1 ユーザー 1 キー）。書式は `lh_` + base64url（43 文字）。DB には SHA-256 ハッシュのみ保存するため、生値は発行直後の一度しか表示されない
 - キーが無効・未指定の場合は `401 Unauthorized`
 - `/api/bookmarks(.*)`・`/api/tags(.*)`・`/api/ogp(.*)` は `proxy.ts` の public ルートに含め、Clerk 認証ではなく API キー認証で保護する
 
