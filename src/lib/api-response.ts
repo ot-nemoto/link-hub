@@ -47,7 +47,9 @@ export function withApiErrorHandling<Args extends unknown[]>(
     try {
       return await handler(...args);
     } catch (e) {
-      console.error(e);
+      const req = args[0];
+      const where = req instanceof Request ? `${req.method} ${new URL(req.url).pathname}` : "";
+      console.error(`[api] 500 ${where}`.trimEnd(), e);
       return jsonError("Internal Server Error", 500);
     }
   };

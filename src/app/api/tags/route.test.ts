@@ -67,7 +67,7 @@ describe("GET /api/tags", () => {
   });
 
   it("lib が例外を投げたら 500 { error }（例外の内容は返さない）", async () => {
-    vi.spyOn(console, "error").mockImplementation(() => {});
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
     mockGetUser.mockResolvedValue({ id: "user_1" });
     mockGetTags.mockRejectedValue(new Error("connection error"));
 
@@ -75,6 +75,7 @@ describe("GET /api/tags", () => {
 
     expect(res.status).toBe(500);
     expect(await res.json()).toEqual({ error: "Internal Server Error" });
+    consoleError.mockRestore();
   });
 });
 
@@ -143,7 +144,7 @@ describe("POST /api/tags", () => {
   });
 
   it("lib が例外を投げたら 500 { error }（例外の内容は返さない）", async () => {
-    vi.spyOn(console, "error").mockImplementation(() => {});
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
     mockGetUser.mockResolvedValue({ id: "user_1" });
     mockCreateTag.mockRejectedValue(new Error("connection error"));
 
@@ -151,5 +152,6 @@ describe("POST /api/tags", () => {
 
     expect(res.status).toBe(500);
     expect(await res.json()).toEqual({ error: "Internal Server Error" });
+    consoleError.mockRestore();
   });
 });

@@ -84,7 +84,7 @@ describe("PATCH /api/tags/:id", () => {
   });
 
   it("lib が例外を投げたら 500 { error }（例外の内容は返さない）", async () => {
-    vi.spyOn(console, "error").mockImplementation(() => {});
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
     mockGetUser.mockResolvedValue({ id: "user_1" });
     mockUpdate.mockRejectedValue(new Error("connection error"));
 
@@ -92,6 +92,7 @@ describe("PATCH /api/tags/:id", () => {
 
     expect(res.status).toBe(500);
     expect(await res.json()).toEqual({ error: "Internal Server Error" });
+    consoleError.mockRestore();
   });
 });
 
@@ -136,7 +137,7 @@ describe("DELETE /api/tags/:id", () => {
   });
 
   it("lib が例外を投げたら 500 { error }（例外の内容は返さない）", async () => {
-    vi.spyOn(console, "error").mockImplementation(() => {});
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
     mockGetUser.mockResolvedValue({ id: "user_1" });
     mockDelete.mockRejectedValue(new Error("connection error"));
 
@@ -144,5 +145,6 @@ describe("DELETE /api/tags/:id", () => {
 
     expect(res.status).toBe(500);
     expect(await res.json()).toEqual({ error: "Internal Server Error" });
+    consoleError.mockRestore();
   });
 });

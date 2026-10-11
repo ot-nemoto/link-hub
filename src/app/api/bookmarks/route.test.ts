@@ -75,7 +75,7 @@ describe("GET /api/bookmarks", () => {
   });
 
   it("lib が例外を投げたら 500 { error }（例外の内容は返さない）", async () => {
-    vi.spyOn(console, "error").mockImplementation(() => {});
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
     mockGetUser.mockResolvedValue({ id: "user_1" });
     mockGetBookmarks.mockRejectedValue(new Error("connection error"));
 
@@ -83,6 +83,7 @@ describe("GET /api/bookmarks", () => {
 
     expect(res.status).toBe(500);
     expect(await res.json()).toEqual({ error: "Internal Server Error" });
+    consoleError.mockRestore();
   });
 });
 
@@ -162,7 +163,7 @@ describe("POST /api/bookmarks", () => {
   });
 
   it("lib が例外を投げたら 500 { error }（例外の内容は返さない）", async () => {
-    vi.spyOn(console, "error").mockImplementation(() => {});
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
     mockGetUser.mockResolvedValue({ id: "user_1" });
     mockCreateBookmark.mockRejectedValue(new Error("connection error"));
 
@@ -170,6 +171,7 @@ describe("POST /api/bookmarks", () => {
 
     expect(res.status).toBe(500);
     expect(await res.json()).toEqual({ error: "Internal Server Error" });
+    consoleError.mockRestore();
   });
 });
 
@@ -205,7 +207,7 @@ describe("DELETE /api/bookmarks", () => {
   });
 
   it("lib が例外を投げたら 500 { error }（例外の内容は返さない）", async () => {
-    vi.spyOn(console, "error").mockImplementation(() => {});
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
     mockGetUser.mockResolvedValue({ id: "user_1" });
     mockDeleteBookmarks.mockRejectedValue(new Error("connection error"));
 
@@ -213,5 +215,6 @@ describe("DELETE /api/bookmarks", () => {
 
     expect(res.status).toBe(500);
     expect(await res.json()).toEqual({ error: "Internal Server Error" });
+    consoleError.mockRestore();
   });
 });

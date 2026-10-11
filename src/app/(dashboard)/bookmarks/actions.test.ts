@@ -307,12 +307,16 @@ describe("createTag", () => {
     expect(mockRevalidatePath).not.toHaveBeenCalled();
   });
 
-  it("予期しない例外（DB 障害等）は { error } に変換して返す", async () => {
+  it("予期しない例外（DB 障害等）は { error } に変換して返し、ログに残す", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const error = new Error("connection error");
     mockGetSession.mockResolvedValue(session);
-    mockLibCreateTag.mockRejectedValue(new Error("connection error"));
+    mockLibCreateTag.mockRejectedValue(error);
 
     expect(await createTag("React")).toEqual({ error: "タグの作成に失敗しました" });
     expect(mockRevalidatePath).not.toHaveBeenCalled();
+    expect(consoleError).toHaveBeenCalledWith(error);
+    consoleError.mockRestore();
   });
 
   it("未認証の場合 redirect を呼ぶ", async () => {
@@ -356,12 +360,16 @@ describe("updateTag", () => {
     expect(mockRevalidatePath).not.toHaveBeenCalled();
   });
 
-  it("予期しない例外（DB 障害等）は { error } に変換して返す", async () => {
+  it("予期しない例外（DB 障害等）は { error } に変換して返し、ログに残す", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const error = new Error("connection error");
     mockGetSession.mockResolvedValue(session);
-    mockLibUpdateTag.mockRejectedValue(new Error("connection error"));
+    mockLibUpdateTag.mockRejectedValue(error);
 
     expect(await updateTag("tag_1", "Vue")).toEqual({ error: "タグの更新に失敗しました" });
     expect(mockRevalidatePath).not.toHaveBeenCalled();
+    expect(consoleError).toHaveBeenCalledWith(error);
+    consoleError.mockRestore();
   });
 
   it("未認証の場合 redirect を呼ぶ", async () => {

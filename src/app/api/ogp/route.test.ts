@@ -89,7 +89,7 @@ describe("GET /api/ogp", () => {
   });
 
   it("lib が例外を投げたら 500 { error }（例外の内容は返さない）", async () => {
-    vi.spyOn(console, "error").mockImplementation(() => {});
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
     mockGetUser.mockResolvedValue({ id: "user_1" });
     mockFetchOgpData.mockRejectedValue(new Error("connection error"));
 
@@ -97,5 +97,6 @@ describe("GET /api/ogp", () => {
 
     expect(res.status).toBe(500);
     expect(await res.json()).toEqual({ error: "Internal Server Error" });
+    consoleError.mockRestore();
   });
 });

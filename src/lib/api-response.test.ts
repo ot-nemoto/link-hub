@@ -74,10 +74,12 @@ describe("jsonError / unauthorized", () => {
 });
 
 describe("withApiErrorHandling", () => {
-  const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+  let consoleError: ReturnType<typeof vi.spyOn>;
 
-  beforeEach(() => vi.clearAllMocks());
-  afterEach(() => consoleError.mockClear());
+  beforeEach(() => {
+    consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+  });
+  afterEach(() => consoleError.mockRestore());
 
   it("正常系: ハンドラのレスポンスと引数をそのまま扱う", async () => {
     const handler = vi.fn(async (a: string, b: number) => Response.json({ a, b }, { status: 201 }));
@@ -100,6 +102,17 @@ describe("withApiErrorHandling", () => {
     const body = await res.json();
     expect(body).toEqual({ error: "Internal Server Error" });
     expect(JSON.stringify(body)).not.toContain("db-host");
-    expect(consoleError).toHaveBeenCalledWith(error);
+    expect(consoleError).toHaveBeenCalledWith("[api] 500", error);
+  });
+
+  it("引数が Request なら、ログにメソッドとパス（クエリは含めない）を付ける", async () => {
+    const error = new Error("boom");
+    const req = new Request("http://localhost:3000/api/tags?withCount=true", { method: "POST" });
+
+    await withApiErrorHandling(async (_req: Request) => {
+      throw error;
+    })(req);
+
+    expect(consoleError).toHaveBeenCalledWith("[api] 500 POST /api/tags", error);
   });
 });
