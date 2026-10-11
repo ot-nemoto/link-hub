@@ -57,6 +57,7 @@ const ERROR_RESPONSES = {
   TagNotFound: "指定した tagId のタグが存在しない",
   NotFoundOrTagNotFound: "未存在 / 指定した tagId のタグが存在しない",
   TagNameConflict: "同名タグが既に存在",
+  InternalError: "サーバー内部エラー（DB 障害等）。詳細は返さない",
 } as const;
 
 const errorRef = (name: keyof typeof ERROR_RESPONSES) => ({
@@ -134,6 +135,7 @@ export function buildOpenApiDocument(options: { version?: string; serverUrl?: st
               required: ["bookmarks"],
             }),
             401: errorRef("Unauthorized"),
+            500: errorRef("InternalError"),
           },
         },
         post: {
@@ -145,6 +147,7 @@ export function buildOpenApiDocument(options: { version?: string; serverUrl?: st
             400: errorRef("ValidationError"),
             401: errorRef("Unauthorized"),
             404: errorRef("TagNotFound"),
+            500: errorRef("InternalError"),
           },
         },
         delete: {
@@ -165,6 +168,7 @@ export function buildOpenApiDocument(options: { version?: string; serverUrl?: st
             204: { description: "削除成功（ボディなし）" },
             400: errorRef("IdsRequired"),
             401: errorRef("Unauthorized"),
+            500: errorRef("InternalError"),
           },
         },
       },
@@ -178,6 +182,7 @@ export function buildOpenApiDocument(options: { version?: string; serverUrl?: st
             400: errorRef("InvalidIds"),
             401: errorRef("Unauthorized"),
             403: errorRef("ForbiddenIds"),
+            500: errorRef("InternalError"),
           },
         },
       },
@@ -192,6 +197,7 @@ export function buildOpenApiDocument(options: { version?: string; serverUrl?: st
               required: ["bookmarks"],
             }),
             401: errorRef("Unauthorized"),
+            500: errorRef("InternalError"),
           },
         },
         delete: {
@@ -200,6 +206,7 @@ export function buildOpenApiDocument(options: { version?: string; serverUrl?: st
           responses: {
             204: { description: "完全削除成功（ボディなし）" },
             401: errorRef("Unauthorized"),
+            500: errorRef("InternalError"),
           },
         },
       },
@@ -215,6 +222,7 @@ export function buildOpenApiDocument(options: { version?: string; serverUrl?: st
             401: errorRef("Unauthorized"),
             403: errorRef("Forbidden"),
             404: errorRef("NotFoundOrTagNotFound"),
+            500: errorRef("InternalError"),
           },
         },
         delete: {
@@ -226,6 +234,7 @@ export function buildOpenApiDocument(options: { version?: string; serverUrl?: st
             401: errorRef("Unauthorized"),
             403: errorRef("Forbidden"),
             404: errorRef("NotFound"),
+            500: errorRef("InternalError"),
           },
         },
       },
@@ -239,6 +248,7 @@ export function buildOpenApiDocument(options: { version?: string; serverUrl?: st
             401: errorRef("Unauthorized"),
             403: errorRef("Forbidden"),
             404: errorRef("NotFound"),
+            500: errorRef("InternalError"),
           },
         },
       },
@@ -263,6 +273,7 @@ export function buildOpenApiDocument(options: { version?: string; serverUrl?: st
               required: ["tags"],
             }),
             401: errorRef("Unauthorized"),
+            500: errorRef("InternalError"),
           },
         },
         post: {
@@ -274,6 +285,7 @@ export function buildOpenApiDocument(options: { version?: string; serverUrl?: st
             400: errorRef("ValidationError"),
             401: errorRef("Unauthorized"),
             409: errorRef("TagNameConflict"),
+            500: errorRef("InternalError"),
           },
         },
       },
@@ -287,6 +299,7 @@ export function buildOpenApiDocument(options: { version?: string; serverUrl?: st
             400: errorRef("InvalidIds"),
             401: errorRef("Unauthorized"),
             403: errorRef("ForbiddenIds"),
+            500: errorRef("InternalError"),
           },
         },
       },
@@ -303,6 +316,7 @@ export function buildOpenApiDocument(options: { version?: string; serverUrl?: st
             403: errorRef("Forbidden"),
             404: errorRef("NotFound"),
             409: errorRef("TagNameConflict"),
+            500: errorRef("InternalError"),
           },
         },
         delete: {
@@ -314,6 +328,7 @@ export function buildOpenApiDocument(options: { version?: string; serverUrl?: st
             401: errorRef("Unauthorized"),
             403: errorRef("Forbidden"),
             404: errorRef("NotFound"),
+            500: errorRef("InternalError"),
           },
         },
       },
@@ -334,6 +349,7 @@ export function buildOpenApiDocument(options: { version?: string; serverUrl?: st
             200: jsonResponse("OGP メタデータ（取得失敗時も 200 で null）", ref("Ogp")),
             400: errorRef("InvalidUrl"),
             401: errorRef("Unauthorized"),
+            500: errorRef("InternalError"),
           },
         },
       },

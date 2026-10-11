@@ -1,12 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 import { getUserByApiKey } from "@/lib/api-auth";
-import { jsonError, unauthorized } from "@/lib/api-response";
+import { jsonError, unauthorized, withApiErrorHandling } from "@/lib/api-response";
 import { fetchOgpData } from "@/lib/ogp";
 import { firstZodError } from "@/lib/schemas/_zod-error";
 import { ogpQuerySchema } from "@/lib/schemas/ogp";
 
-export async function GET(req: NextRequest) {
+export const GET = withApiErrorHandling(async (req: NextRequest) => {
   const user = await getUserByApiKey(req);
   if (!user) return unauthorized();
 
@@ -17,4 +17,4 @@ export async function GET(req: NextRequest) {
   const result = await fetchOgpData(parsed.data.url);
 
   return NextResponse.json({ title: result.title ?? null, image: result.image ?? null });
-}
+});

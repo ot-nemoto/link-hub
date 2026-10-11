@@ -28,7 +28,7 @@ export async function createBookmark(data: BookmarkData): Promise<{ error?: stri
 
   const result = await libCreateBookmark(session.user.id, data);
   revalidatePath("/bookmarks");
-  return result;
+  return "error" in result ? { error: result.error } : {};
 }
 
 export async function updateBookmark(id: string, data: BookmarkData): Promise<{ error?: string }> {
@@ -37,7 +37,7 @@ export async function updateBookmark(id: string, data: BookmarkData): Promise<{ 
 
   const result = await libUpdateBookmark(session.user.id, id, data);
   revalidatePath("/bookmarks");
-  return result;
+  return "error" in result ? { error: result.error } : {};
 }
 
 export async function moveBookmark(
@@ -72,9 +72,15 @@ export async function createTag(
   const session = await getSession();
   if (!session) redirect("/sign-in");
 
-  const result = await libCreateTag(session.user.id, name);
-  if (result.tag && !result.conflict) revalidatePath("/bookmarks");
-  return result;
+  // DB 障害等は lib が throw する。UI には従来どおりの文言を { error } で返す
+  // （本番では Server Action の例外メッセージが汎用文言に置き換わるため）
+  try {
+    const result = await libCreateTag(session.user.id, name);
+    if (!("error" in result) && !result.conflict) revalidatePath("/bookmarks");
+    return result;
+  } catch {
+    return { error: "タグの作成に失敗しました" };
+  }
 }
 
 export async function updateTag(
@@ -84,9 +90,13 @@ export async function updateTag(
   const session = await getSession();
   if (!session) redirect("/sign-in");
 
-  const result = await libUpdateTag(session.user.id, id, name);
-  if (result.tag && !result.conflict) revalidatePath("/bookmarks");
-  return result;
+  try {
+    const result = await libUpdateTag(session.user.id, id, name);
+    if (!("error" in result) && !result.conflict) revalidatePath("/bookmarks");
+    return result;
+  } catch {
+    return { error: "タグの更新に失敗しました" };
+  }
 }
 
 export async function reorderTags(
@@ -137,7 +147,7 @@ export async function restoreBookmark(id: string): Promise<{ error?: string }> {
 
   const result = await libRestoreBookmark(session.user.id, id);
   revalidatePath("/bookmarks");
-  return result;
+  return "error" in result ? { error: result.error } : {};
 }
 
 export async function emptyTrash(): Promise<{ error?: string }> {

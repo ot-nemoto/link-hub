@@ -1,12 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 import { getUserByApiKey } from "@/lib/api-auth";
-import { jsonError, statusForError, unauthorized } from "@/lib/api-response";
+import { jsonError, statusForError, unauthorized, withApiErrorHandling } from "@/lib/api-response";
 import { reorderBookmarks } from "@/lib/bookmarks";
 import { firstZodError } from "@/lib/schemas/_zod-error";
 import { reorderBodySchema } from "@/lib/schemas/common";
 
-export async function POST(req: NextRequest) {
+export const POST = withApiErrorHandling(async (req: NextRequest) => {
   const user = await getUserByApiKey(req);
   if (!user) return unauthorized();
 
@@ -18,4 +18,4 @@ export async function POST(req: NextRequest) {
   if (result.error) return jsonError(result.error, statusForError(result.error));
 
   return new NextResponse(null, { status: 200 });
-}
+});

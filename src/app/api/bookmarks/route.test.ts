@@ -73,6 +73,17 @@ describe("GET /api/bookmarks", () => {
     });
     expect(mockGetBookmarks).toHaveBeenCalledWith("user_1");
   });
+
+  it("lib が例外を投げたら 500 { error }（例外の内容は返さない）", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    mockGetUser.mockResolvedValue({ id: "user_1" });
+    mockGetBookmarks.mockRejectedValue(new Error("connection error"));
+
+    const res = await GET({} as never);
+
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: "Internal Server Error" });
+  });
 });
 
 describe("POST /api/bookmarks", () => {
@@ -149,6 +160,17 @@ describe("POST /api/bookmarks", () => {
       expect.objectContaining({ url: "https://a.com", title: "A", memo: "memo" }),
     );
   });
+
+  it("lib が例外を投げたら 500 { error }（例外の内容は返さない）", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    mockGetUser.mockResolvedValue({ id: "user_1" });
+    mockCreateBookmark.mockRejectedValue(new Error("connection error"));
+
+    const res = await POST(jsonReq({ url: "https://a.com", title: "A" }));
+
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: "Internal Server Error" });
+  });
 });
 
 describe("DELETE /api/bookmarks", () => {
@@ -180,5 +202,16 @@ describe("DELETE /api/bookmarks", () => {
 
     expect(res.status).toBe(204);
     expect(mockDeleteBookmarks).toHaveBeenCalledWith("user_1", ["bm_1", "bm_2"]);
+  });
+
+  it("lib が例外を投げたら 500 { error }（例外の内容は返さない）", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    mockGetUser.mockResolvedValue({ id: "user_1" });
+    mockDeleteBookmarks.mockRejectedValue(new Error("connection error"));
+
+    const res = await DELETE(deleteReq("ids=bm_1"));
+
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: "Internal Server Error" });
   });
 });

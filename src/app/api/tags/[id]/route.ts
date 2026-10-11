@@ -1,14 +1,14 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 import { getUserByApiKey } from "@/lib/api-auth";
-import { jsonError, statusForError, unauthorized } from "@/lib/api-response";
+import { jsonError, statusForError, unauthorized, withApiErrorHandling } from "@/lib/api-response";
 import { firstZodError } from "@/lib/schemas/_zod-error";
 import { tagBodySchema } from "@/lib/schemas/tag";
 import { deleteTag, updateTag } from "@/lib/tags";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function PATCH(req: NextRequest, { params }: RouteContext) {
+export const PATCH = withApiErrorHandling(async (req: NextRequest, { params }: RouteContext) => {
   const user = await getUserByApiKey(req);
   if (!user) return unauthorized();
 
@@ -19,14 +19,13 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
   if (!parsed.success) return jsonError(firstZodError(parsed.error), 400);
 
   const result = await updateTag(user.id, id, parsed.data.name);
+  if ("error" in result) return jsonError(result.error, statusForError(result.error));
   if (result.conflict) return jsonError("同名のタグが既に存在します", 409);
-  if (result.error) return jsonError(result.error, statusForError(result.error));
-  if (!result.tag) return jsonError("更新に失敗しました", 500);
 
   return NextResponse.json(result.tag);
-}
+});
 
-export async function DELETE(req: NextRequest, { params }: RouteContext) {
+export const DELETE = withApiErrorHandling(async (req: NextRequest, { params }: RouteContext) => {
   const user = await getUserByApiKey(req);
   if (!user) return unauthorized();
 
@@ -36,4 +35,4 @@ export async function DELETE(req: NextRequest, { params }: RouteContext) {
   if (result.error) return jsonError(result.error, statusForError(result.error));
 
   return new NextResponse(null, { status: 204 });
-}
+});

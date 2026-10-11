@@ -53,6 +53,9 @@ Client (Browser)
 - **writes（書き込み操作）**: ドメインロジックは `src/lib/` に集約し、UI からは Server Actions（`actions.ts`）、外部クライアントからは API キー認証の REST API（`src/app/api/`）が同じ lib 関数を呼ぶ（API 仕様はアプリ内 `/api-reference` を参照）
 - **バリデーション**: UI はクライアント側で実施（Zod 不使用）。**REST API はサーバー側で Zod スキーマ（`src/lib/schemas/`）により検証**し、同じスキーマから OpenAPI 仕様を生成する。OpenAPI JSON は実行時ルート `/openapi.json`、リファレンス UI（Stoplight Elements）はアプリ内 `/api-reference`（ログイン必須）で提供する。API の概要・認証・共通仕様などの散文も spec の `info.description` に集約し、別途 API ドキュメントは持たない
 - ユーザー分離は全 Server Actions・API ルートで認証チェック（`getSession()` / API キー）を必須とする
+- **エラー分類の契約**: lib（`src/lib/`）が返す `{ error }` は**クライアント起因のエラー（不正入力・未存在・権限）に限る**。DB 障害などサーバー起因の失敗は `{ error }` にせず throw する
+  - REST API はメッセージから 400 / 403 / 404 に変換し（`statusForError()`。既定は 400）、throw された例外は全ハンドラ共通のラッパーで `500 { "error": "Internal Server Error" }` にする（例外の内容はサーバーログのみに残す）
+  - この契約があるので「既定 400」が成り立つ。lib にサーバー起因の失敗を `{ error }` で返す経路を足すと、クライアントに 400 として返ってしまう
 
 ### 機能追加時のガイドライン
 

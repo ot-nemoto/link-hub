@@ -1,12 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 import { getUserByApiKey } from "@/lib/api-auth";
-import { jsonError, statusForError, unauthorized } from "@/lib/api-response";
+import { jsonError, statusForError, unauthorized, withApiErrorHandling } from "@/lib/api-response";
 import { firstZodError } from "@/lib/schemas/_zod-error";
 import { tagBodySchema } from "@/lib/schemas/tag";
 import { createTag, getTags, getTagsWithCount } from "@/lib/tags";
 
-export async function GET(req: NextRequest) {
+export const GET = withApiErrorHandling(async (req: NextRequest) => {
   const user = await getUserByApiKey(req);
   if (!user) return unauthorized();
 
@@ -14,9 +14,9 @@ export async function GET(req: NextRequest) {
   const tags = withCount ? await getTagsWithCount(user.id) : await getTags(user.id);
 
   return NextResponse.json({ tags });
-}
+});
 
-export async function POST(req: NextRequest) {
+export const POST = withApiErrorHandling(async (req: NextRequest) => {
   const user = await getUserByApiKey(req);
   if (!user) return unauthorized();
 
@@ -25,9 +25,8 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) return jsonError(firstZodError(parsed.error), 400);
 
   const result = await createTag(user.id, parsed.data.name);
+  if ("error" in result) return jsonError(result.error, statusForError(result.error));
   if (result.conflict) return jsonError("同名のタグが既に存在します", 409);
-  if (result.error) return jsonError(result.error, statusForError(result.error));
-  if (!result.tag) return jsonError("作成に失敗しました", 500);
 
   return NextResponse.json(result.tag, { status: 201 });
-}
+});

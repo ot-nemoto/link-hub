@@ -82,6 +82,17 @@ describe("PATCH /api/tags/:id", () => {
     expect(await res.json()).toEqual({ id: "t1", name: "Vue" });
     expect(mockUpdate).toHaveBeenCalledWith("user_1", "t1", "Vue");
   });
+
+  it("lib が例外を投げたら 500 { error }（例外の内容は返さない）", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    mockGetUser.mockResolvedValue({ id: "user_1" });
+    mockUpdate.mockRejectedValue(new Error("connection error"));
+
+    const res = await PATCH(jsonReq({ name: "Vue" }), ctx);
+
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: "Internal Server Error" });
+  });
 });
 
 describe("DELETE /api/tags/:id", () => {
@@ -122,5 +133,16 @@ describe("DELETE /api/tags/:id", () => {
 
     expect(res.status).toBe(204);
     expect(mockDelete).toHaveBeenCalledWith("user_1", "t1");
+  });
+
+  it("lib が例外を投げたら 500 { error }（例外の内容は返さない）", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    mockGetUser.mockResolvedValue({ id: "user_1" });
+    mockDelete.mockRejectedValue(new Error("connection error"));
+
+    const res = await DELETE({} as never, ctx);
+
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: "Internal Server Error" });
   });
 });

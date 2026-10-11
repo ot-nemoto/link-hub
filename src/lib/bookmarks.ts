@@ -48,10 +48,13 @@ export async function getDeletedBookmarks(userId: string) {
   });
 }
 
-export async function createBookmark(
-  userId: string,
-  data: BookmarkData,
-): Promise<{ bookmark?: BookmarkWithTag; error?: string }> {
+/**
+ * 作成・更新・復元の結果。`error` はクライアント起因（未存在・権限・タグ不正）のみで、
+ * DB 障害などサーバー起因の失敗は throw する（API では共通ラッパーが 500 に変換する）。
+ */
+export type BookmarkResult = { bookmark: BookmarkWithTag } | { error: string };
+
+export async function createBookmark(userId: string, data: BookmarkData): Promise<BookmarkResult> {
   const agg = await prisma.bookmark.aggregate({
     where: { userId },
     _max: { sortOrder: true },
@@ -88,7 +91,7 @@ export async function updateBookmark(
   userId: string,
   id: string,
   data: BookmarkData,
-): Promise<{ bookmark?: BookmarkWithTag; error?: string }> {
+): Promise<BookmarkResult> {
   const bookmark = await prisma.bookmark.findUnique({ where: { id } });
   if (!bookmark) return { error: "ブックマークが見つかりません" };
   if (bookmark.userId !== userId) return { error: "権限がありません" };
@@ -185,10 +188,7 @@ export async function deleteBookmarks(userId: string, ids: string[]): Promise<{ 
   return {};
 }
 
-export async function restoreBookmark(
-  userId: string,
-  id: string,
-): Promise<{ bookmark?: BookmarkWithTag; error?: string }> {
+export async function restoreBookmark(userId: string, id: string): Promise<BookmarkResult> {
   const bookmark = await prisma.bookmark.findUnique({ where: { id } });
   if (!bookmark) return { error: "ブックマークが見つかりません" };
   if (bookmark.userId !== userId) return { error: "権限がありません" };

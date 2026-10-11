@@ -32,3 +32,4 @@
 - 戻り値は少なくとも `error?: string` を含む型にする
 - DB 変更後は `revalidatePath()` でキャッシュを更新する（`skipRevalidate` オプションが有効な場合を除く）
 - `src/lib/` の関数が返す `{ error }` はそのまま返す。予期しないエラーは再 throw する
+  - 例外: `createTag` / `updateTag` は予期しない例外（DB 障害等）を捕捉し、`{ error: "タグの作成に失敗しました" }` / `{ error: "タグの更新に失敗しました" }` を返す。タグ管理モーダルにこの文言を表示するため（本番では Server Action の例外メッセージが汎用文言に置き換わる）

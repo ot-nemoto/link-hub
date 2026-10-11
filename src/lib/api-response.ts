@@ -35,6 +35,24 @@ export function jsonError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status });
 }
 
+/**
+ * ルートハンドラを包み、捕捉されない例外を `500 { error }` に変換する。
+ * lib の `{ error }` はクライアント起因のみで、サーバー起因の失敗は throw される前提。
+ * 例外の内容はサーバーログにのみ残し、レスポンスには出さない。
+ */
+export function withApiErrorHandling<Args extends unknown[]>(
+  handler: (...args: Args) => Promise<Response>,
+): (...args: Args) => Promise<Response> {
+  return async (...args) => {
+    try {
+      return await handler(...args);
+    } catch (e) {
+      console.error(e);
+      return jsonError("Internal Server Error", 500);
+    }
+  };
+}
+
 /** 認証失敗（401）レスポンス。 */
 export function unauthorized() {
   return jsonError("Unauthorized", 401);
