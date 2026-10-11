@@ -76,20 +76,36 @@ MOCK_USER_EMAIL="your@example.com"
 npx prisma migrate dev --name <migration-name>
 ```
 
-### テストデータ投入（Seed）
+### テストデータ投入（Seed・ローカル専用）
 
 `prisma/seed.ts` を使って E2E テスト用のデータを投入できる。
 実行のたびに対象ユーザーのブックマーク・タグを全削除してからデータを投入するため、テスト前に実行することでクリーンな状態を保証できる。
 
+**ローカル専用**。本番・ステージングに対して実行してはならない。
+
 ```bash
-npx tsx prisma/seed.ts
+SEED_ALLOW_DESTRUCTIVE=1 npx tsx prisma/seed.ts
 ```
+
+#### 誤実行に対する歯止め
+
+| 段 | 条件 | 回避方法 |
+|----|------|---------|
+| 1 | `SEED_ALLOW_DESTRUCTIVE=1` が未設定なら中断する | 上記のとおり実行時に前置する |
+| 2 | `CLERK_SECRET_KEY` が `sk_test_` で始まらなければ中断する | 回避不可（開発インスタンスに対してのみ実行する） |
+| 3 | シード定義のユーザーが 1 件も存在しない DB なら中断する（本番 DB・未シードの新規 DB の可能性） | 意図した実行であれば `SEED_ALLOW_UNSEEDED_DB=1` を併せて前置する |
+
+> **バイパスフラグ（`SEED_ALLOW_DESTRUCTIVE` / `SEED_ALLOW_UNSEEDED_DB`）は `.env` に書かない。** `.env` に置くと恒久的に有効になり、「毎回明示的に意図を示す」というガードの前提が崩れる。実行時にコマンドラインで前置する。`.env` に置くのは `SEED_PASSWORD` のみ。
+> `SEED_ALLOW_UNSEEDED_DB=1` は新規 DB の初回シードでのみ必要。2 回目以降は不要なので付けない。
+> 2 段目は Clerk を見る。シードは既存 Clerk ユーザーのパスワードを無条件で上書きするため、DB 側のガードだけでは「DB は dev・Clerk キーは本番」の組み合わせを止められない。Clerk アプリは daily-hub / eval-hub と共有しており、誤実行は 3 リポジトリのユーザーに波及する。
+> 3 段目は「定義外ユーザーの存在」ではなく「シード済みでないこと」で判定する。dev DB には開発者本人のアカウントが混在するため、定義外ユーザーの存在自体は正常とみなす必要がある。空の DB も通さない（削除対象が無くても、テストユーザーを既知のパスワードで作ってしまうため）。
+> ただし 3 段目は万全ではない。シードユーザー行はアプリがサインイン時にも作る（`src/lib/auth.ts`）ため「シードが作った証拠」にはならない。そのため**削除は対象ユーザーに絞り込み**、ガードをすり抜けた場合の被害範囲を限定している。
 
 #### 対象ユーザーと投入データ
 
 | ユーザー | タグ | ブックマーク |
 |---------|------|------------|
-| `bonjiri@example.com` | Frontend, Backend | 6件（タグあり・タグなし・複数タグ混在） |
+| `bonjiri@example.com` | Frontend, Backend | 6件（タグあり・タグなし混在） |
 | `tsukune@example.com` | Design | 2件（ユーザー分離確認用） |
 | `tebasaki@example.com` | Tools, Docs | 5件（破壊的操作テスト用） |
 
@@ -100,15 +116,17 @@ bonjiri のブックマークとタグの対応：
 | Next.js | Frontend | タグフィルター |
 | Vercel | Frontend | タグフィルター |
 | Prisma | Backend | タグフィルター |
-| Neon | Frontend + Backend | AND フィルター |
+| Neon | Frontend | タグフィルター |
 | GitHub | なし | タグなしフィルター |
 | Playwright | なし | タグなしフィルター |
 
 #### 注意事項
 
-- Clerk にユーザーが存在しない場合は自動作成される（パスワード: `Yakitori2026`）
+- Clerk にユーザーが存在しない場合は自動作成される。パスワードは環境変数 `SEED_PASSWORD` の値（`.env` に設定する）
+- **既存の Clerk ユーザーにも `SEED_PASSWORD` を同期する**ため、値を変更したら次回シードで反映される
+- **`SEED_PASSWORD` の変更は daily-hub / eval-hub にも影響する。** Clerk アプリとテストユーザーを 3 リポジトリで共有しているため、値を変えるときは 3 リポジトリ揃えて行う
 - 既存のブックマーク・タグは全削除されるため、手動で追加したデータは失われる
-- `CLERK_SECRET_KEY` が `.env` に設定されていること
+- `CLERK_SECRET_KEY` が `.env` に設定されており、かつ **`sk_test_`（開発インスタンス）であること**
 
 ---
 
