@@ -149,6 +149,8 @@ export function buildOpenApiDocument(options: { version?: string; serverUrl?: st
         },
         delete: {
           summary: "複数ブックマークを一括削除（ゴミ箱へ）",
+          description:
+            "他ユーザーの ID・存在しない ID は無視される（403 / 404 にはならず、該当分のみ削除して 204 を返す）。",
           tags: ["bookmarks"],
           parameters: [
             {

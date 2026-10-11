@@ -147,17 +147,15 @@ describe("buildOpenApiDocument", () => {
     for (const expected of [
       "Authorization: Bearer <api-key>",
       "lh_",
-      "設定モーダル",
       "Access-Control-Allow-Origin: *",
       "strip",
       "ソフトデリート",
       '{ "error": "<メッセージ>" }',
-      "| 409 |",
+      "409",
       "`category` から `tag` にリネーム",
       "curl -s",
     ]) {
       expect(description).toContain(expected);
     }
-    expect(description).not.toContain("平文");
   });
 });

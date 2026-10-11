@@ -25,7 +25,7 @@ export const API_DESCRIPTION = `link-hub の外部 REST API。API キーがあ�
 
 ## エラーレスポンス
 
-エラー時は \`{ "error": "<メッセージ>" }\` を返す。ステータスの割り当ては全エンドポイント共通。
+エラー時は \`{ "error": "<メッセージ>" }\` を返す。下表はステータスと意味の対応（全エンドポイント共通）で、各オペレーションが実際に返し得るステータスはそれぞれの Responses を参照。
 
 | ステータス | 条件 |
 |-----------|------|
@@ -39,7 +39,7 @@ export const API_DESCRIPTION = `link-hub の外部 REST API。API キーがあ�
 
 \`\`\`bash
 export LH_API_KEY="<設定モーダルで発行したキー>"
-export BASE="http://localhost:3000"
+export BASE="<本リファレンス上部の API Base URL>"
 
 # 一覧取得
 curl -s -H "Authorization: Bearer \${LH_API_KEY}" "$BASE/api/bookmarks" | jq
