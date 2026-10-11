@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { API_DESCRIPTION } from "@/lib/openapi/description";
 import { bookmarkBodySchema, bookmarkResponseSchema } from "@/lib/schemas/bookmark";
 import { errorResponseSchema, reorderBodySchema } from "@/lib/schemas/common";
 import { ogpResponseSchema } from "@/lib/schemas/ogp";
@@ -39,8 +40,28 @@ const jsonResponse = (description: string, schema: object) => ({
   content: { "application/json": { schema } },
 });
 
-/** `{ error }` を返す 4xx レスポンス定義。 */
-const errorResponse = (description: string) => jsonResponse(description, ref("Error"));
+/**
+ * `{ error }` を返す 4xx レスポンス（`components.responses`）。名前 → description。
+ * 文脈固有の文言を残すため、汎用の 1 つに寄せず文脈ごとに名前付きで定義する
+ * （Reference Object の description 上書きは 3.1 のみでツールによっては無視されるため使わない）。
+ */
+const ERROR_RESPONSES = {
+  Unauthorized: "認証エラー",
+  ValidationError: "バリデーションエラー",
+  IdsRequired: "ids 未指定",
+  InvalidIds: "ids 不正",
+  InvalidUrl: "url 未指定・形式不正",
+  Forbidden: "他ユーザーのリソース",
+  ForbiddenIds: "他ユーザーの ID を含む",
+  NotFound: "未存在",
+  TagNotFound: "指定した tagId のタグが存在しない",
+  NotFoundOrTagNotFound: "未存在 / 指定した tagId のタグが存在しない",
+  TagNameConflict: "同名タグが既に存在",
+} as const;
+
+const errorRef = (name: keyof typeof ERROR_RESPONSES) => ({
+  $ref: `#/components/responses/${name}`,
+});
 
 /** JSON リクエストボディ定義。 */
 const jsonBody = (name: string) => ({
@@ -72,9 +93,7 @@ export function buildOpenApiDocument(options: { version?: string; serverUrl?: st
     info: {
       title: "link-hub API",
       version: options.version ?? "0.0.0",
-      description:
-        "link-hub の外部 REST API。API キー（`Authorization: Bearer <api-key>`）で認証する。\n\n" +
-        "**破壊的変更**: ブックマークレスポンスのタグ情報フィールドは `category` から `tag` にリネームされた（本 API はバージョニングされていない）。",
+      description: API_DESCRIPTION,
     },
     servers,
     security: [{ bearerAuth: [] }],
@@ -96,6 +115,12 @@ export function buildOpenApiDocument(options: { version?: string; serverUrl?: st
         Tag: toSchema(tagResponseSchema),
         Ogp: toSchema(ogpResponseSchema),
       },
+      responses: Object.fromEntries(
+        Object.entries(ERROR_RESPONSES).map(([name, description]) => [
+          name,
+          jsonResponse(description, ref("Error")),
+        ]),
+      ),
     },
     paths: {
       "/api/bookmarks": {
@@ -108,7 +133,7 @@ export function buildOpenApiDocument(options: { version?: string; serverUrl?: st
               properties: { bookmarks: { type: "array", items: ref("Bookmark") } },
               required: ["bookmarks"],
             }),
-            401: errorResponse("認証エラー"),
+            401: errorRef("Unauthorized"),
           },
         },
         post: {
@@ -117,13 +142,15 @@ export function buildOpenApiDocument(options: { version?: string; serverUrl?: st
           requestBody: jsonBody("BookmarkBody"),
           responses: {
             201: jsonResponse("作成されたブックマーク", ref("Bookmark")),
-            400: errorResponse("バリデーションエラー"),
-            401: errorResponse("認証エラー"),
-            404: errorResponse("指定した tagId のタグが存在しない"),
+            400: errorRef("ValidationError"),
+            401: errorRef("Unauthorized"),
+            404: errorRef("TagNotFound"),
           },
         },
         delete: {
           summary: "複数ブックマークを一括削除（ゴミ箱へ）",
+          description:
+            "他ユーザーの ID・存在しない ID は無視される（403 / 404 にはならず、該当分のみ削除して 204 を返す）。",
           tags: ["bookmarks"],
           parameters: [
             {
@@ -136,8 +163,8 @@ export function buildOpenApiDocument(options: { version?: string; serverUrl?: st
           ],
           responses: {
             204: { description: "削除成功（ボディなし）" },
-            400: errorResponse("ids 未指定"),
-            401: errorResponse("認証エラー"),
+            400: errorRef("IdsRequired"),
+            401: errorRef("Unauthorized"),
           },
         },
       },
@@ -148,9 +175,9 @@ export function buildOpenApiDocument(options: { version?: string; serverUrl?: st
           requestBody: jsonBody("ReorderBody"),
           responses: {
             200: { description: "並び替え成功（ボディなし）" },
-            400: errorResponse("ids 不正"),
-            401: errorResponse("認証エラー"),
-            403: errorResponse("他ユーザーの ID を含む"),
+            400: errorRef("InvalidIds"),
+            401: errorRef("Unauthorized"),
+            403: errorRef("ForbiddenIds"),
           },
         },
       },
@@ -164,7 +191,7 @@ export function buildOpenApiDocument(options: { version?: string; serverUrl?: st
               properties: { bookmarks: { type: "array", items: ref("Bookmark") } },
               required: ["bookmarks"],
             }),
-            401: errorResponse("認証エラー"),
+            401: errorRef("Unauthorized"),
           },
         },
         delete: {
@@ -172,7 +199,7 @@ export function buildOpenApiDocument(options: { version?: string; serverUrl?: st
           tags: ["bookmarks"],
           responses: {
             204: { description: "完全削除成功（ボディなし）" },
-            401: errorResponse("認証エラー"),
+            401: errorRef("Unauthorized"),
           },
         },
       },
@@ -184,10 +211,10 @@ export function buildOpenApiDocument(options: { version?: string; serverUrl?: st
           requestBody: jsonBody("BookmarkBody"),
           responses: {
             200: jsonResponse("更新後のブックマーク", ref("Bookmark")),
-            400: errorResponse("バリデーションエラー"),
-            401: errorResponse("認証エラー"),
-            403: errorResponse("他ユーザーのリソース"),
-            404: errorResponse("未存在 / 指定した tagId のタグが存在しない"),
+            400: errorRef("ValidationError"),
+            401: errorRef("Unauthorized"),
+            403: errorRef("Forbidden"),
+            404: errorRef("NotFoundOrTagNotFound"),
           },
         },
         delete: {
@@ -196,9 +223,9 @@ export function buildOpenApiDocument(options: { version?: string; serverUrl?: st
           parameters: [idParam],
           responses: {
             204: { description: "削除成功（ボディなし）" },
-            401: errorResponse("認証エラー"),
-            403: errorResponse("他ユーザーのリソース"),
-            404: errorResponse("未存在"),
+            401: errorRef("Unauthorized"),
+            403: errorRef("Forbidden"),
+            404: errorRef("NotFound"),
           },
         },
       },
@@ -209,9 +236,9 @@ export function buildOpenApiDocument(options: { version?: string; serverUrl?: st
           parameters: [idParam],
           responses: {
             200: jsonResponse("復元後のブックマーク", ref("Bookmark")),
-            401: errorResponse("認証エラー"),
-            403: errorResponse("他ユーザーのリソース"),
-            404: errorResponse("未存在"),
+            401: errorRef("Unauthorized"),
+            403: errorRef("Forbidden"),
+            404: errorRef("NotFound"),
           },
         },
       },
@@ -235,7 +262,7 @@ export function buildOpenApiDocument(options: { version?: string; serverUrl?: st
               properties: { tags: { type: "array", items: ref("Tag") } },
               required: ["tags"],
             }),
-            401: errorResponse("認証エラー"),
+            401: errorRef("Unauthorized"),
           },
         },
         post: {
@@ -244,9 +271,9 @@ export function buildOpenApiDocument(options: { version?: string; serverUrl?: st
           requestBody: jsonBody("TagBody"),
           responses: {
             201: jsonResponse("作成されたタグ", ref("Tag")),
-            400: errorResponse("バリデーションエラー"),
-            401: errorResponse("認証エラー"),
-            409: errorResponse("同名タグが既に存在"),
+            400: errorRef("ValidationError"),
+            401: errorRef("Unauthorized"),
+            409: errorRef("TagNameConflict"),
           },
         },
       },
@@ -257,9 +284,9 @@ export function buildOpenApiDocument(options: { version?: string; serverUrl?: st
           requestBody: jsonBody("ReorderBody"),
           responses: {
             200: { description: "並び替え成功（ボディなし）" },
-            400: errorResponse("ids 不正"),
-            401: errorResponse("認証エラー"),
-            403: errorResponse("他ユーザーの ID を含む"),
+            400: errorRef("InvalidIds"),
+            401: errorRef("Unauthorized"),
+            403: errorRef("ForbiddenIds"),
           },
         },
       },
@@ -271,11 +298,11 @@ export function buildOpenApiDocument(options: { version?: string; serverUrl?: st
           requestBody: jsonBody("TagBody"),
           responses: {
             200: jsonResponse("更新後のタグ", ref("Tag")),
-            400: errorResponse("バリデーションエラー"),
-            401: errorResponse("認証エラー"),
-            403: errorResponse("他ユーザーのリソース"),
-            404: errorResponse("未存在"),
-            409: errorResponse("同名タグが既に存在"),
+            400: errorRef("ValidationError"),
+            401: errorRef("Unauthorized"),
+            403: errorRef("Forbidden"),
+            404: errorRef("NotFound"),
+            409: errorRef("TagNameConflict"),
           },
         },
         delete: {
@@ -284,9 +311,9 @@ export function buildOpenApiDocument(options: { version?: string; serverUrl?: st
           parameters: [idParam],
           responses: {
             204: { description: "削除成功（ボディなし）" },
-            401: errorResponse("認証エラー"),
-            403: errorResponse("他ユーザーのリソース"),
-            404: errorResponse("未存在"),
+            401: errorRef("Unauthorized"),
+            403: errorRef("Forbidden"),
+            404: errorRef("NotFound"),
           },
         },
       },
@@ -305,8 +332,8 @@ export function buildOpenApiDocument(options: { version?: string; serverUrl?: st
           ],
           responses: {
             200: jsonResponse("OGP メタデータ（取得失敗時も 200 で null）", ref("Ogp")),
-            400: errorResponse("url 未指定・形式不正"),
-            401: errorResponse("認証エラー"),
+            400: errorRef("InvalidUrl"),
+            401: errorRef("Unauthorized"),
           },
         },
       },

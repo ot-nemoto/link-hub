@@ -156,7 +156,7 @@ npm run migrate
 
 ## API リファレンス（OpenAPI）
 
-外部 REST API の仕様は、`src/lib/schemas/` の Zod スキーマを唯一の正として OpenAPI 3.1 を生成する（[`docs/api.md`](api.md)）。**リファレンスはアプリに同梱してホスティングし、外部 Pages 等には公開しない**。
+外部 REST API の仕様は、`src/lib/schemas/` の Zod スキーマを唯一の正として OpenAPI 3.1 を生成する。API の概要・認証・共通仕様などの散文も `src/lib/openapi/description.ts` から `info.description` に載せ、別途 API ドキュメントは持たない。**リファレンスはアプリに同梱してホスティングし、外部 Pages 等には公開しない**。
 
 - **OpenAPI JSON**: 実行時ルート `/openapi.json`（`src/app/openapi.json/route.ts`）が `buildOpenApiDocument()` で都度生成する。`servers` はリクエストのオリジンから自動導出するため、環境変数や生成物ファイルは不要
 - **リファレンス UI**: `/api-reference`（`src/app/api-reference/route.ts`）が Stoplight Elements（CDN 版 Web Component）で `/openapi.json` を描画する
