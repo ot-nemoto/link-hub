@@ -20,6 +20,7 @@ import {
   deleteTag as libDeleteTag,
   reorderTags as libReorderTags,
   updateTag as libUpdateTag,
+  type TagResult,
 } from "@/lib/tags";
 
 export async function createBookmark(data: BookmarkData): Promise<{ error?: string }> {
@@ -28,7 +29,7 @@ export async function createBookmark(data: BookmarkData): Promise<{ error?: stri
 
   const result = await libCreateBookmark(session.user.id, data);
   revalidatePath("/bookmarks");
-  return result;
+  return "error" in result ? { error: result.error } : {};
 }
 
 export async function updateBookmark(id: string, data: BookmarkData): Promise<{ error?: string }> {
@@ -37,7 +38,7 @@ export async function updateBookmark(id: string, data: BookmarkData): Promise<{ 
 
   const result = await libUpdateBookmark(session.user.id, id, data);
   revalidatePath("/bookmarks");
-  return result;
+  return "error" in result ? { error: result.error } : {};
 }
 
 export async function moveBookmark(
@@ -66,26 +67,35 @@ export async function reorderBookmarks(
   return result;
 }
 
-export async function createTag(
-  name: string,
-): Promise<{ tag?: { id: string; name: string }; conflict?: boolean; error?: string }> {
+export async function createTag(name: string): Promise<TagResult> {
   const session = await getSession();
   if (!session) redirect("/sign-in");
 
-  const result = await libCreateTag(session.user.id, name);
-  if (result.tag && !result.conflict) revalidatePath("/bookmarks");
+  // DB 障害等は lib が throw する。UI には従来どおりの文言を { error } で返す
+  // （本番では Server Action の例外メッセージが汎用文言に置き換わるため）
+  let result: TagResult;
+  try {
+    result = await libCreateTag(session.user.id, name);
+  } catch (e) {
+    console.error(e);
+    return { error: "タグの作成に失敗しました" };
+  }
+  if (!("error" in result) && !result.conflict) revalidatePath("/bookmarks");
   return result;
 }
 
-export async function updateTag(
-  id: string,
-  name: string,
-): Promise<{ tag?: { id: string; name: string }; conflict?: boolean; error?: string }> {
+export async function updateTag(id: string, name: string): Promise<TagResult> {
   const session = await getSession();
   if (!session) redirect("/sign-in");
 
-  const result = await libUpdateTag(session.user.id, id, name);
-  if (result.tag && !result.conflict) revalidatePath("/bookmarks");
+  let result: TagResult;
+  try {
+    result = await libUpdateTag(session.user.id, id, name);
+  } catch (e) {
+    console.error(e);
+    return { error: "タグの更新に失敗しました" };
+  }
+  if (!("error" in result) && !result.conflict) revalidatePath("/bookmarks");
   return result;
 }
 
@@ -137,7 +147,7 @@ export async function restoreBookmark(id: string): Promise<{ error?: string }> {
 
   const result = await libRestoreBookmark(session.user.id, id);
   revalidatePath("/bookmarks");
-  return result;
+  return "error" in result ? { error: result.error } : {};
 }
 
 export async function emptyTrash(): Promise<{ error?: string }> {

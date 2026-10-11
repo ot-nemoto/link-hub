@@ -65,6 +65,18 @@ describe("GET /api/tags", () => {
     expect(mockGetTagsWithCount).toHaveBeenCalledWith("user_1");
     expect(mockGetTags).not.toHaveBeenCalled();
   });
+
+  it("lib が例外を投げたら 500 { error }（例外の内容は返さない）", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockGetUser.mockResolvedValue({ id: "user_1" });
+    mockGetTags.mockRejectedValue(new Error("connection error"));
+
+    const res = await GET(getReq());
+
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: "Internal Server Error" });
+    consoleError.mockRestore();
+  });
 });
 
 describe("POST /api/tags", () => {
@@ -129,5 +141,17 @@ describe("POST /api/tags", () => {
     expect(res.status).toBe(201);
     expect(await res.json()).toEqual({ id: "t1", name: "React" });
     expect(mockCreateTag).toHaveBeenCalledWith("user_1", "React");
+  });
+
+  it("lib が例外を投げたら 500 { error }（例外の内容は返さない）", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockGetUser.mockResolvedValue({ id: "user_1" });
+    mockCreateTag.mockRejectedValue(new Error("connection error"));
+
+    const res = await POST(jsonReq({ name: "React" }));
+
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: "Internal Server Error" });
+    consoleError.mockRestore();
   });
 });

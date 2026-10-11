@@ -86,4 +86,16 @@ describe("POST /api/bookmarks/reorder", () => {
     expect(res.status).toBe(200);
     expect(mockReorder).toHaveBeenCalledWith("user_1", ["a", "b"]);
   });
+
+  it("lib が例外を投げたら 500 { error }（例外の内容は返さない）", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockGetUser.mockResolvedValue({ id: "user_1" });
+    mockReorder.mockRejectedValue(new Error("connection error"));
+
+    const res = await POST(jsonReq({ ids: ["a", "b"] }));
+
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: "Internal Server Error" });
+    consoleError.mockRestore();
+  });
 });

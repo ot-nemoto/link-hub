@@ -152,6 +152,14 @@ describe("createTag", () => {
 
     expect(result).toEqual({ conflict: true, tag: { id: "tag_1", name: "React" } });
   });
+
+  it("P2002 以外の DB 例外は { error } にせず再 throw する（API で 500 にするため）", async () => {
+    mockTagFindUnique.mockResolvedValue(null);
+    mockTagAggregate.mockResolvedValue({ _max: { sortOrder: 0 } } as never);
+    mockTagCreate.mockRejectedValue(new Error("connection error"));
+
+    await expect(createTag(userId, "React")).rejects.toThrow("connection error");
+  });
 });
 
 describe("updateTag", () => {
@@ -262,6 +270,15 @@ describe("updateTag", () => {
     const result = await updateTag(userId, "tag_1", "Vue");
 
     expect(result).toEqual({ conflict: true, tag: { id: "tag_2", name: "Vue" } });
+  });
+
+  it("P2002 以外の DB 例外は { error } にせず再 throw する（API で 500 にするため）", async () => {
+    mockTagFindUnique
+      .mockResolvedValueOnce(tag as never) // 対象タグ取得
+      .mockResolvedValueOnce(null); // 重複チェックは通過
+    mockTagUpdate.mockRejectedValue(new Error("connection error"));
+
+    await expect(updateTag(userId, "tag_1", "Vue")).rejects.toThrow("connection error");
   });
 });
 

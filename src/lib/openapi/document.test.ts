@@ -123,7 +123,7 @@ describe("buildOpenApiDocument", () => {
     expect(usedResponses).toEqual(defined.responses);
   });
 
-  it("4xx はすべて components.responses への $ref（{ error } スキーマを持つ）", () => {
+  it("4xx / 5xx はすべて components.responses への $ref（{ error } スキーマを持つ）", () => {
     for (const [path, item] of Object.entries(doc.paths)) {
       for (const [method, op] of Object.entries(item)) {
         for (const [status, res] of Object.entries(op.responses)) {
@@ -142,6 +142,17 @@ describe("buildOpenApiDocument", () => {
     }
   });
 
+  it("全オペレーションが 500 InternalError を持つ（共通ラッパーで例外を 500 { error } にするため）", () => {
+    for (const [path, item] of Object.entries(doc.paths)) {
+      for (const [method, op] of Object.entries(item)) {
+        expect(
+          (op.responses as Record<string, unknown>)[500],
+          `${method.toUpperCase()} ${path}`,
+        ).toEqual({ $ref: "#/components/responses/InternalError" });
+      }
+    }
+  });
+
   it("info.description に認証・共通仕様・エラー形式・破壊的変更・クイックスタートを含む", () => {
     const description = doc.info.description;
     for (const expected of [
@@ -152,6 +163,7 @@ describe("buildOpenApiDocument", () => {
       "ソフトデリート",
       '{ "error": "<メッセージ>" }',
       "409",
+      "500",
       "`category` から `tag` にリネーム",
       "curl -s",
     ]) {

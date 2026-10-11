@@ -73,13 +73,20 @@ describe("createBookmark", () => {
 
   it("正常系: lib を呼び revalidatePath して結果を返す", async () => {
     mockGetSession.mockResolvedValue(session);
-    mockLibCreateBookmark.mockResolvedValue({});
+    mockLibCreateBookmark.mockResolvedValue({ bookmark: { id: "bm_1" } } as never);
 
     const result = await createBookmark(bookmarkData);
 
     expect(mockLibCreateBookmark).toHaveBeenCalledWith("user_1", bookmarkData);
     expect(mockRevalidatePath).toHaveBeenCalledWith("/bookmarks");
     expect(result).toEqual({});
+  });
+
+  it("lib の { error } はそのまま返し、成功時のエンティティはクライアントに返さない", async () => {
+    mockGetSession.mockResolvedValue(session);
+    mockLibCreateBookmark.mockResolvedValue({ error: "権限がありません" });
+
+    expect(await createBookmark(bookmarkData)).toEqual({ error: "権限がありません" });
   });
 
   it("未認証の場合 redirect を呼ぶ", async () => {
@@ -96,13 +103,20 @@ describe("updateBookmark", () => {
 
   it("正常系: lib を呼び revalidatePath して結果を返す", async () => {
     mockGetSession.mockResolvedValue(session);
-    mockLibUpdateBookmark.mockResolvedValue({});
+    mockLibUpdateBookmark.mockResolvedValue({ bookmark: { id: "bm_1" } } as never);
 
     const result = await updateBookmark("bm_1", bookmarkData);
 
     expect(mockLibUpdateBookmark).toHaveBeenCalledWith("user_1", "bm_1", bookmarkData);
     expect(mockRevalidatePath).toHaveBeenCalledWith("/bookmarks");
     expect(result).toEqual({});
+  });
+
+  it("lib の { error } はそのまま返し、成功時のエンティティはクライアントに返さない", async () => {
+    mockGetSession.mockResolvedValue(session);
+    mockLibUpdateBookmark.mockResolvedValue({ error: "権限がありません" });
+
+    expect(await updateBookmark("bm_1", bookmarkData)).toEqual({ error: "権限がありません" });
   });
 
   it("未認証の場合 redirect を呼ぶ", async () => {
@@ -213,13 +227,20 @@ describe("restoreBookmark", () => {
 
   it("正常系: lib を呼び revalidatePath して結果を返す", async () => {
     mockGetSession.mockResolvedValue(session);
-    mockLibRestoreBookmark.mockResolvedValue({});
+    mockLibRestoreBookmark.mockResolvedValue({ bookmark: { id: "bm_1" } } as never);
 
     const result = await restoreBookmark("bm_1");
 
     expect(mockLibRestoreBookmark).toHaveBeenCalledWith("user_1", "bm_1");
     expect(mockRevalidatePath).toHaveBeenCalledWith("/bookmarks");
     expect(result).toEqual({});
+  });
+
+  it("lib の { error } はそのまま返し、成功時のエンティティはクライアントに返さない", async () => {
+    mockGetSession.mockResolvedValue(session);
+    mockLibRestoreBookmark.mockResolvedValue({ error: "権限がありません" });
+
+    expect(await restoreBookmark("bm_1")).toEqual({ error: "権限がありません" });
   });
 
   it("未認証の場合 redirect を呼ぶ", async () => {
@@ -278,6 +299,26 @@ describe("createTag", () => {
     expect(result).toEqual({ conflict: true, tag: { id: "tag_1", name: "React" } });
   });
 
+  it("lib の { error } はそのまま返し、revalidatePath を呼ばない", async () => {
+    mockGetSession.mockResolvedValue(session);
+    mockLibCreateTag.mockResolvedValue({ error: "タグ名が不正です" });
+
+    expect(await createTag("React")).toEqual({ error: "タグ名が不正です" });
+    expect(mockRevalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("予期しない例外（DB 障害等）は { error } に変換して返し、ログに残す", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const error = new Error("connection error");
+    mockGetSession.mockResolvedValue(session);
+    mockLibCreateTag.mockRejectedValue(error);
+
+    expect(await createTag("React")).toEqual({ error: "タグの作成に失敗しました" });
+    expect(mockRevalidatePath).not.toHaveBeenCalled();
+    expect(consoleError).toHaveBeenCalledWith(error);
+    consoleError.mockRestore();
+  });
+
   it("未認証の場合 redirect を呼ぶ", async () => {
     mockGetSession.mockResolvedValue(null);
 
@@ -309,6 +350,26 @@ describe("updateTag", () => {
 
     expect(mockRevalidatePath).not.toHaveBeenCalled();
     expect(result).toEqual({ conflict: true, tag: { id: "tag_2", name: "Vue" } });
+  });
+
+  it("lib の { error } はそのまま返し、revalidatePath を呼ばない", async () => {
+    mockGetSession.mockResolvedValue(session);
+    mockLibUpdateTag.mockResolvedValue({ error: "タグ名が不正です" });
+
+    expect(await updateTag("tag_1", "Vue")).toEqual({ error: "タグ名が不正です" });
+    expect(mockRevalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("予期しない例外（DB 障害等）は { error } に変換して返し、ログに残す", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const error = new Error("connection error");
+    mockGetSession.mockResolvedValue(session);
+    mockLibUpdateTag.mockRejectedValue(error);
+
+    expect(await updateTag("tag_1", "Vue")).toEqual({ error: "タグの更新に失敗しました" });
+    expect(mockRevalidatePath).not.toHaveBeenCalled();
+    expect(consoleError).toHaveBeenCalledWith(error);
+    consoleError.mockRestore();
   });
 
   it("未認証の場合 redirect を呼ぶ", async () => {
