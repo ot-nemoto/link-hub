@@ -1,10 +1,14 @@
 import type { NextRequest } from "next/server";
 
+import { hashApiKey } from "@/lib/api-key";
 import { prisma } from "@/lib/prisma";
+
+// 棚卸し用途には時間単位の粒度で足りるため、毎リクエストの書き込みを避ける
+const LAST_USED_UPDATE_INTERVAL_MS = 60 * 60 * 1000;
 
 /**
  * `Authorization: Bearer <apiKey>` ヘッダーから API キーを取り出し、
- * 対応するユーザーを返す。ヘッダー不正・キー未一致の場合は null。
+ * ハッシュ化して対応するユーザーを返す。ヘッダー不正・キー未一致の場合は null。
  */
 export async function getUserByApiKey(req: NextRequest): Promise<{ id: string } | null> {
   const authHeader = req.headers.get("authorization");
@@ -14,8 +18,17 @@ export async function getUserByApiKey(req: NextRequest): Promise<{ id: string } 
   if (!apiKey) return null;
 
   const user = await prisma.user.findUnique({
-    where: { apiKey },
-    select: { id: true },
+    where: { apiKeyHash: await hashApiKey(apiKey) },
+    select: { id: true, apiKeyLastUsedAt: true },
   });
-  return user;
+  if (!user) return null;
+
+  const now = new Date();
+  if (
+    !user.apiKeyLastUsedAt ||
+    now.getTime() - user.apiKeyLastUsedAt.getTime() >= LAST_USED_UPDATE_INTERVAL_MS
+  ) {
+    await prisma.user.update({ where: { id: user.id }, data: { apiKeyLastUsedAt: now } });
+  }
+  return { id: user.id };
 }

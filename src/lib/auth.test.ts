@@ -32,7 +32,10 @@ const dbUser = {
   clerkId: "clerk_123",
   email: "test@example.com",
   name: "Test User",
-  apiKey: null,
+  apiKeyHash: null,
+  apiKeyPrefix: null,
+  apiKeyCreatedAt: null,
+  apiKeyLastUsedAt: null,
   createdAt: new Date(),
   updatedAt: new Date(),
 };

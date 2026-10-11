@@ -13,7 +13,10 @@ erDiagram
         String clerkId UK
         String email UK
         String name "nullable"
-        String apiKey UK "nullable"
+        String apiKeyHash UK "nullable"
+        String apiKeyPrefix "nullable"
+        DateTime apiKeyCreatedAt "nullable"
+        DateTime apiKeyLastUsedAt "nullable"
         DateTime createdAt
         DateTime updatedAt
     }
@@ -56,7 +59,10 @@ erDiagram
 | clerkId | String | ユニーク。Clerk ユーザー ID（初回ログイン時に同期） |
 | email | String | ユニーク。メールアドレス |
 | name | String? | 表示名（任意） |
-| apiKey | String? | 外部 REST API 用の API キー（ユニーク・平文）。未発行は null。ヘッダーのモーダルで生成・再生成 |
+| apiKeyHash | String? | 外部 REST API 用 API キーの SHA-256（hex・ソルト無し・ユニーク）。**平文は保存しない**（生値は発行直後に一度だけ返す）。未発行は null。ヘッダーのモーダルで生成・再生成 |
+| apiKeyPrefix | String? | キーの先頭 8 文字（`lh_` + 5 文字）。どのキーかを識別する表示用。未発行は null |
+| apiKeyCreatedAt | DateTime? | キーの発行日時（棚卸し用）。平文保存からの移行分は移行時刻 |
+| apiKeyLastUsedAt | DateTime? | キーで最後に認証した日時（棚卸し用）。書き込み抑制のため前回更新から 1 時間以上経過時のみ更新するので、最大 1 時間古い |
 | createdAt | DateTime | 作成日時 |
 | updatedAt | DateTime | 更新日時 |
 
@@ -95,7 +101,7 @@ erDiagram
 |----------|------------|------|
 | users | `clerk_id` | Clerk ID による高速ルックアップ（UNIQUE） |
 | users | `email` | メールアドレス重複防止（UNIQUE） |
-| users | `api_key` | API キーによる認証時の高速ルックアップ（UNIQUE） |
+| users | `api_key_hash` | API キー認証時のハッシュによる高速ルックアップ（UNIQUE） |
 | bookmarks | `user_id` | ユーザー別ブックマーク取得の高速化 |
 | bookmarks | `tag_id` | タグ別ブックマーク取得の高速化 |
 | tags | `(user_id, name)` | ユーザー内タグ名のユニーク制約・高速ルックアップ |
