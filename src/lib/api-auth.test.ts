@@ -93,6 +93,14 @@ describe("getUserByApiKey", () => {
   });
 
   describe("異常系", () => {
+    it("lastUsedAt の更新が失敗しても認証結果を返す", async () => {
+      mockUserFindUnique.mockResolvedValue({ id: "user_1", apiKeyLastUsedAt: null } as never);
+      mockUserUpdate.mockRejectedValue(new Error("connection error"));
+
+      expect(await getUserByApiKey(reqWith("Bearer lh_abc"))).toEqual({ id: "user_1" });
+      expect(mockUserUpdate).toHaveBeenCalledTimes(1);
+    });
+
     it("Authorization ヘッダーが無い場合は null", async () => {
       expect(await getUserByApiKey(reqWith(undefined))).toBeNull();
       expect(mockUserFindUnique).not.toHaveBeenCalled();

@@ -62,7 +62,7 @@ erDiagram
 | apiKeyHash | String? | 外部 REST API 用 API キーの SHA-256（hex・ソルト無し・ユニーク）。**平文は保存しない**（生値は発行直後に一度だけ返す）。未発行は null。ヘッダーのモーダルで生成・再生成 |
 | apiKeyPrefix | String? | キーの先頭 8 文字（`lh_` + 5 文字）。どのキーかを識別する表示用。未発行は null |
 | apiKeyCreatedAt | DateTime? | キーの発行日時（棚卸し用）。平文保存からの移行分は移行時刻 |
-| apiKeyLastUsedAt | DateTime? | キーで最後に認証した日時（棚卸し用）。書き込み抑制のため前回更新から 1 時間以上経過時のみ更新するので、最大 1 時間古い |
+| apiKeyLastUsedAt | DateTime? | キーで最後に認証した日時（棚卸し用）。書き込み抑制のため前回更新から 1 時間以上経過時のみ更新するので、最大 1 時間古い。更新失敗は認証結果に影響させず握りつぶす（次回リクエストで再試行）ため、その場合はさらに古くなり得る |
 | createdAt | DateTime | 作成日時 |
 | updatedAt | DateTime | 更新日時 |
 

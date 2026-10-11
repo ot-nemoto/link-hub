@@ -28,7 +28,10 @@ export async function getUserByApiKey(req: NextRequest): Promise<{ id: string } 
     !user.apiKeyLastUsedAt ||
     now.getTime() - user.apiKeyLastUsedAt.getTime() >= LAST_USED_UPDATE_INTERVAL_MS
   ) {
-    await prisma.user.update({ where: { id: user.id }, data: { apiKeyLastUsedAt: now } });
+    // 棚卸し用の付随情報であり、更新失敗で認証済みリクエストを落とさない（次回リクエストで再試行される）
+    try {
+      await prisma.user.update({ where: { id: user.id }, data: { apiKeyLastUsedAt: now } });
+    } catch {}
   }
   return { id: user.id };
 }
