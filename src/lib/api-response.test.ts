@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { notFound, redirect } from "next/navigation";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -103,6 +104,25 @@ describe("withApiErrorHandling", () => {
     expect(body).toEqual({ error: "Internal Server Error" });
     expect(JSON.stringify(body)).not.toContain("db-host");
     expect(consoleError).toHaveBeenCalledWith("[api] 500", error);
+  });
+
+  it("redirect() の制御フロー例外は 500 にせず再 throw する", async () => {
+    const handler = withApiErrorHandling(async () => {
+      redirect("/sign-in");
+    });
+
+    // unstable_rethrow が無いと 500 レスポンスに化ける
+    await expect(handler()).rejects.toThrow("NEXT_REDIRECT");
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it("notFound() の制御フロー例外は 500 にせず再 throw する", async () => {
+    const handler = withApiErrorHandling(async () => {
+      notFound();
+    });
+
+    await expect(handler()).rejects.toThrow("NEXT_HTTP_ERROR_FALLBACK;404");
+    expect(consoleError).not.toHaveBeenCalled();
   });
 
   it("引数が Request なら、ログにメソッドとパス（クエリは含めない）を付ける", async () => {

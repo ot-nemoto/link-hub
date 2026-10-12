@@ -56,6 +56,8 @@ Client (Browser)
 - **エラー分類の契約**: lib（`src/lib/`）が返す `{ error }` は**クライアント起因のエラー（不正入力・未存在・権限）に限る**。DB 障害などサーバー起因の失敗は `{ error }` にせず throw する
   - REST API はメッセージから 400 / 403 / 404 に変換し（`statusForError()`。既定は 400）、throw された例外は全ハンドラ共通のラッパーで `500 { "error": "Internal Server Error" }` にする（例外の内容はサーバーログのみに残す）
   - この契約があるので「既定 400」が成り立つ。lib にサーバー起因の失敗を `{ error }` で返す経路を足すと、クライアントに 400 として返ってしまう
+  - ラッパーは Next.js の制御フロー例外（`redirect()` / `notFound()` 等）を `unstable_rethrow()` で先に再 throw する（500 に化けさせない）
+  - 全ハンドラが `export const <METHOD> = withApiErrorHandling(...)` で包まれていることを構造テスト（`src/app/api/route-wrapping.test.ts`）で検査する。拾う側（ルートファイル名・export の形）を広く取り、包まれていなければ失敗にする（「包まれていない形」を列挙する作りにしない）
 
 ### 機能追加時のガイドライン
 
