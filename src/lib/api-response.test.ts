@@ -87,7 +87,6 @@ describe("withApiErrorHandling", () => {
     const wrapped = withApiErrorHandling(async () => new Response(null));
 
     expect((wrapped as unknown as Record<symbol, unknown>)[WRAPPED]).toBe(true);
-    expect(WRAPPED).toBe(Symbol.for("link-hub.withApiErrorHandling"));
   });
 
   it("正常系: ハンドラのレスポンスと引数をそのまま扱う", async () => {

@@ -60,6 +60,8 @@ Client (Browser)
   - 全ハンドラが `withApiErrorHandling` で包まれていることを構造テスト（`src/app/api/route-wrapping.test.ts`）で検査する。**判定はソースの文字列マッチではなく実体で行う**: ラッパーは返す関数に印（`WRAPPED` = `Symbol.for("link-hub.withApiErrorHandling")`）を付け、テストは `src/app/api/` 配下の `route.*`（`.ts` / `.tsx` / `.js` / `.jsx` / `.mts` / `.mjs`）を動的 import して、export された HTTP メソッドに印があるかを見る
     - export の書き方（`export function`・分割代入・`export *`・再 export・別ファイル定義・型注釈付き等）に依存しない。文字列で「包まれている形」を探す作りは想定した書き方の列挙になり、列挙漏れが素通りするため採らない（daily-hub で同じ理由により 3 回穴が出た）
     - テストはルートモジュールの import 時に実 DB へ触れないよう `@/lib/prisma` をモックする。ルートが import 時に外部へ触れるモジュールを増やしたら、モックも追加する
+    - **検査の範囲**は「`src/app/api/` 配下」「上記の拡張子の `route.*`」「`GET` / `POST` / `PATCH` / `PUT` / `DELETE` / `OPTIONS` / `HEAD`」で決まる。この外にあるもの（`src/app/api/` 外のルート・`route.cts` 等の拡張子・一覧に無いメソッド）は検査されない。`/openapi.json`・`/api-reference` は外部 API の `{ error }` 契約の対象外のため、意図的に範囲外としている
+    - 印は一番外側の関数にしか付かない。他の高階関数で重ねる場合は `withApiErrorHandling` を一番外側に置く（内側に置くと未包装と判定される）
 
 ### 機能追加時のガイドライン
 
