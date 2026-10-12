@@ -27,8 +27,7 @@
 | [docs/product.md](./docs/product.md) | プロダクトの目的・対象ユーザー・ゴール・成功指標 |
 | [docs/architecture.md](./docs/architecture.md) | 技術スタック・実装方針・環境変数 |
 | [docs/schema.md](./docs/schema.md) | DB テーブル定義・リレーション図 |
-| [docs/api.md](./docs/api.md) | 外部 REST API の概要・認証（詳細な仕様は下記リファレンス） |
-| API リファレンス（Stoplight Elements）: アプリ内 `/api-reference`（ログイン必須） | Zod スキーマから生成した OpenAPI 3.1 仕様をアプリ内でホスティング |
+| 外部 REST API: アプリ内 `/api-reference`（リファレンス UI）・`/openapi.json`（OpenAPI 3.1）。いずれもログイン必須 | 外部 REST API の概要・認証・共通仕様・エンドポイント仕様（Zod スキーマから生成した spec に一本化） |
 | [docs/actions.md](./docs/actions.md) | Server Actions 一覧 |
 | [docs/auth.md](./docs/auth.md) | 認証フロー・保護対象ルート・セッション管理 |
 | [docs/ui.md](./docs/ui.md) | 画面一覧・画面遷移図・UI 規約 |

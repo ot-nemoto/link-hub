@@ -27,10 +27,15 @@ export async function getTagsWithCount(userId: string) {
   }));
 }
 
-export async function createTag(
-  userId: string,
-  name: string,
-): Promise<{ tag?: { id: string; name: string }; conflict?: boolean; error?: string }> {
+/**
+ * 作成・更新の結果。`conflict` は同名タグが既に存在する場合（`tag` は既存タグ）。
+ * `error` はクライアント起因（名前不正・未存在・権限）のみで、DB 障害などサーバー起因の失敗は throw する。
+ */
+export type TagResult =
+  | { tag: { id: string; name: string }; conflict?: boolean }
+  | { error: string };
+
+export async function createTag(userId: string, name: string): Promise<TagResult> {
   const trimmed = name.trim();
   if (!trimmed || trimmed.length > 50) return { error: "タグ名が不正です" };
 
@@ -60,15 +65,11 @@ export async function createTag(
       });
       if (conflicted) return { conflict: true, tag: { id: conflicted.id, name: conflicted.name } };
     }
-    return { error: "タグの作成に失敗しました" };
+    throw e;
   }
 }
 
-export async function updateTag(
-  userId: string,
-  id: string,
-  name: string,
-): Promise<{ tag?: { id: string; name: string }; conflict?: boolean; error?: string }> {
+export async function updateTag(userId: string, id: string, name: string): Promise<TagResult> {
   const trimmed = name.trim();
   if (!trimmed || trimmed.length > 50) return { error: "タグ名が不正です" };
 
@@ -101,7 +102,7 @@ export async function updateTag(
       });
       if (conflicted) return { conflict: true, tag: { id: conflicted.id, name: conflicted.name } };
     }
-    return { error: "タグの更新に失敗しました" };
+    throw e;
   }
 }
 

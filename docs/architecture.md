@@ -50,9 +50,18 @@ Client (Browser)
 
 - ページコンポーネントは Server Components を基本とし、インタラクションが必要な部分のみ Client Components を使用する
 - **reads（データ取得）**: Server Components から Prisma を直接呼ぶ
-- **writes（書き込み操作）**: ドメインロジックは `src/lib/` に集約し、UI からは Server Actions（`actions.ts`）、外部クライアントからは API キー認証の REST API（`src/app/api/`）が同じ lib 関数を呼ぶ（[`docs/api.md`](api.md)）
-- **バリデーション**: UI はクライアント側で実施（Zod 不使用）。**REST API はサーバー側で Zod スキーマ（`src/lib/schemas/`）により検証**し、同じスキーマから OpenAPI 仕様を生成する。OpenAPI JSON は実行時ルート `/openapi.json`、リファレンス UI（Stoplight Elements）はアプリ内 `/api-reference`（ログイン必須）で提供する（[`docs/api.md`](api.md)）
+- **writes（書き込み操作）**: ドメインロジックは `src/lib/` に集約し、UI からは Server Actions（`actions.ts`）、外部クライアントからは API キー認証の REST API（`src/app/api/`）が同じ lib 関数を呼ぶ（API 仕様はアプリ内 `/api-reference` を参照）
+- **バリデーション**: UI はクライアント側で実施（Zod 不使用）。**REST API はサーバー側で Zod スキーマ（`src/lib/schemas/`）により検証**し、同じスキーマから OpenAPI 仕様を生成する。OpenAPI JSON は実行時ルート `/openapi.json`、リファレンス UI（Stoplight Elements）はアプリ内 `/api-reference`（ログイン必須）で提供する。API の概要・認証・共通仕様などの散文も spec の `info.description` に集約し、別途 API ドキュメントは持たない
 - ユーザー分離は全 Server Actions・API ルートで認証チェック（`getSession()` / API キー）を必須とする
+- **エラー分類の契約**: lib（`src/lib/`）が返す `{ error }` は**クライアント起因のエラー（不正入力・未存在・権限）に限る**。DB 障害などサーバー起因の失敗は `{ error }` にせず throw する
+  - REST API はメッセージから 400 / 403 / 404 に変換し（`statusForError()`。既定は 400）、throw された例外は全ハンドラ共通のラッパーで `500 { "error": "Internal Server Error" }` にする（例外の内容はサーバーログのみに残す）
+  - この契約があるので「既定 400」が成り立つ。lib にサーバー起因の失敗を `{ error }` で返す経路を足すと、クライアントに 400 として返ってしまう
+  - ラッパーは Next.js の制御フロー例外（`redirect()` / `notFound()` 等）を `unstable_rethrow()` で先に再 throw する（500 に化けさせない）
+  - 全ハンドラが `withApiErrorHandling` で包まれていることを構造テスト（`src/app/api/route-wrapping.test.ts`）で検査する。**判定はソースの文字列マッチではなく実体で行う**: ラッパーは返す関数に印（`WRAPPED` = `Symbol.for("link-hub.withApiErrorHandling")`）を付け、テストは `src/app/api/` 配下の `route.*`（`.ts` / `.tsx` / `.js` / `.jsx` / `.mts` / `.mjs`）を動的 import して、export された HTTP メソッドに印があるかを見る
+    - export の書き方（`export function`・分割代入・`export *`・再 export・別ファイル定義・型注釈付き等）に依存しない。文字列で「包まれている形」を探す作りは想定した書き方の列挙になり、列挙漏れが素通りするため採らない（daily-hub で同じ理由により 3 回穴が出た）
+    - テストはルートモジュールの import 時に実 DB へ触れないよう `@/lib/prisma` をモックする。ルートが import 時に外部へ触れるモジュールを増やしたら、モックも追加する
+    - **検査の範囲**は「`src/app/api/` 配下」「上記の拡張子の `route.*`」「`GET` / `POST` / `PATCH` / `PUT` / `DELETE` / `OPTIONS` / `HEAD`」で決まる。この外にあるもの（`src/app/api/` 外のルート・`route.cts` 等の拡張子・一覧に無いメソッド）は検査されない。`/openapi.json`・`/api-reference` は外部 API の `{ error }` 契約の対象外のため、意図的に範囲外としている
+    - 印は一番外側の関数にしか付かない。他の高階関数で重ねる場合は `withApiErrorHandling` を一番外側に置く（内側に置くと未包装と判定される）
 
 ### 機能追加時のガイドライン
 

@@ -74,4 +74,16 @@ describe("POST /api/bookmarks/:id/restore", () => {
     });
     expect(mockRestore).toHaveBeenCalledWith("user_1", "bm_1");
   });
+
+  it("lib が例外を投げたら 500 { error }（例外の内容は返さない）", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockGetUser.mockResolvedValue({ id: "user_1" });
+    mockRestore.mockRejectedValue(new Error("connection error"));
+
+    const res = await POST({} as never, ctx);
+
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: "Internal Server Error" });
+    consoleError.mockRestore();
+  });
 });

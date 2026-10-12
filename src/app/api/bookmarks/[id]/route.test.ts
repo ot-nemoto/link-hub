@@ -135,6 +135,18 @@ describe("PATCH /api/bookmarks/:id", () => {
     });
     expect(mockUpdate).not.toHaveBeenCalled();
   });
+
+  it("lib が例外を投げたら 500 { error }（例外の内容は返さない）", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockGetUser.mockResolvedValue({ id: "user_1" });
+    mockUpdate.mockRejectedValue(new Error("connection error"));
+
+    const res = await PATCH(patchReq({ url: "https://a.com", title: "A" }), ctx);
+
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: "Internal Server Error" });
+    consoleError.mockRestore();
+  });
 });
 
 describe("DELETE /api/bookmarks/:id", () => {
@@ -175,5 +187,17 @@ describe("DELETE /api/bookmarks/:id", () => {
 
     expect(res.status).toBe(204);
     expect(mockDelete).toHaveBeenCalledWith("user_1", "bm_1");
+  });
+
+  it("lib が例外を投げたら 500 { error }（例外の内容は返さない）", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockGetUser.mockResolvedValue({ id: "user_1" });
+    mockDelete.mockRejectedValue(new Error("connection error"));
+
+    const res = await DELETE({} as never, ctx);
+
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: "Internal Server Error" });
+    consoleError.mockRestore();
   });
 });
