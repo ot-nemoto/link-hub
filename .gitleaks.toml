@@ -22,17 +22,24 @@ description = "ビルド生成物"
 # ローカルで `gitleaks dir` を使うとビルド生成物のハッシュ値を大量に拾うため除外する
 # （git スキャンでは gitignore 済みのため元々現れない）。
 #
+# この paths は git スキャンにも効く。**このリポジトリで gitignore 済みのディレクトリだけ**を
+# 列挙すること（.gitignore と一致させる）。gitignore していないディレクトリ（例: dist/）を
+# 入れると、そこにコミットされた秘密情報を git スキャンでも見逃す。
+#
 # 注意: `.env` は**除外しない**。gitignore 済みで git スキャンには現れないが、除外すると
 # 万一コミットされた場合に検出できなくなる。`gitleaks dir` では常に検出されるが、既知として読み飛ばす。
 paths = [
   '''^\.next/''',
-  '''^dist/''',
+  '''^\.next-e2e/''',
   '''^out/''',
   '''^build/''',
   '''^coverage/''',
   '''^node_modules/''',
   '''^playwright-report/''',
   '''^test-results/''',
+  '''^blob-report/''',
+  '''^\.playwright-mcp/''',
+  '''^\.vercel/''',
 ]
 
 # 公開リポジトリの履歴に残ってしまった既知の値はここに追加する。
@@ -51,12 +58,17 @@ paths = [
 # 既定ルールは自前の接頭辞を知らないため、接頭辞を実際の検出へ結びつけるのはこのルール。
 # GitHub の secret scanning でこれを行うには custom patterns（有料）が必要。
 #
-# regex はキーの書式どおり `lh_` + base64url(32 bytes) = 43 文字の固定長にする（src/lib/api-key.ts）。
-# 雛形の `{20,}` では Cookie 名 `lh_collapsed_categories` 等の識別子まで拾うため、allowlist で
-# 黙らせるより書式に合わせて誤検知の元を断つ。先頭の \b は他の識別子の一部としての一致を避ける。
+# regex はキーの書式どおり `lh_` + base64url(32 bytes) = **ちょうど 43 文字**に一致させる（src/lib/api-key.ts）。
+# - 雛形の `{20,}` だと、履歴にある旧 Cookie 名 `lh_collapsed_categories`（c45d215。6f485f7 で
+#   `lh_collapsed_tags` に改名）を拾い、週次の全履歴スキャンが失敗する。現在のコードに無くても
+#   履歴には残るため、この制限は外さないこと
+# - 末尾の `(?:[^A-Za-z0-9_-]|$)` で 44 文字以上の `lh_` 識別子（長い定数名・Cookie 名等）を除外する。
+#   ちょうど 43 文字の識別子は区別できず誤検知しうる（その場合は .gitleaksignore で個別に抑止する）
+# - 先頭には境界を置かない。`%20lh_…`（URL エンコード）・`\nlh_…`（エスケープ改行）・
+#   `KEY_lh_…` のように直前が英数字でも本物のキーは検出したいため
 # キーの書式を変えるときは、このルールも必ず追随させること。
 [[rules]]
 id = "link-hub-api-key"
 description = "link-hub の外部連携 APIキー（lh_ prefix）"
-regex = '''\blh_[A-Za-z0-9_-]{43}'''
+regex = '''lh_[A-Za-z0-9_-]{43}(?:[^A-Za-z0-9_-]|$)'''
 keywords = ["lh_"]
