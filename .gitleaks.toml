@@ -1,0 +1,62 @@
+# gitleaks（秘密情報スキャナ）の設定。
+#
+# このファイルは **このリポジトリ所有**。カスタムルールの接頭辞や allowlist の対象は
+# リポジトリ固有のため、dev-commons からは配布しない（`.claude/project.md` と同じ扱い）。
+# 実行するワークフローは `.github/workflows/secret-scan.yml`（dev-commons が配布）。
+#
+# ローカル実行:
+#   gitleaks git . --redact -v                                   # 全履歴
+#   gitleaks git . --redact -v --log-opts="--no-merges origin/develop..HEAD"  # PR 相当の差分
+#   gitleaks dir . --redact -v                                   # 作業ツリー（未コミット分も含む）
+#
+# -v を付けないと検出時に件数しか出ない（--redact 併用で値は REDACTED になる）。
+# なお git log -p はマージコミットの patch を既定で出さないため、コンフリクト解決時にのみ
+# 混入した値は `gitleaks git` では拾えない。CI の週次実行は `gitleaks dir` も併せて走らせている。
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "ビルド生成物"
+
+# ローカルで `gitleaks dir` を使うとビルド生成物のハッシュ値を大量に拾うため除外する
+# （git スキャンでは gitignore 済みのため元々現れない）。
+#
+# 注意: `.env` は**除外しない**。gitignore 済みで git スキャンには現れないが、除外すると
+# 万一コミットされた場合に検出できなくなる。`gitleaks dir` では常に検出されるが、既知として読み飛ばす。
+paths = [
+  '''^\.next/''',
+  '''^dist/''',
+  '''^out/''',
+  '''^build/''',
+  '''^coverage/''',
+  '''^node_modules/''',
+  '''^playwright-report/''',
+  '''^test-results/''',
+]
+
+# 公開リポジトリの履歴に残ってしまった既知の値はここに追加する。
+# 本ファイル追加時点（T145 / #399）で、全履歴（既定ルール＋下のカスタムルール）は 0 件のため空。
+# より狭く抑止したい場合は `.gitleaksignore` に Fingerprint（<commit>:<file>:<rule>:<line>）を
+# 書く方法もある（ワークフローは既定で読む）。値そのものを無効化したいなら下の regexes、
+# 特定箇所だけ黙らせたいなら .gitleaksignore を使う。
+# 除外しないと週次の全履歴スキャンが恒久的に失敗し、検査そのものが無視されるようになる。
+# 追加するときは、その値が無効化済み（ローテーション済み・本番未使用など）である旨を
+# コメントで必ず添えること。
+# regexes = [
+#   '''<履歴に残る既知の値>''',
+# ]
+
+# 外部連携 APIキー（#383 で導入した lh_ prefix 付きの書式）。
+# 既定ルールは自前の接頭辞を知らないため、接頭辞を実際の検出へ結びつけるのはこのルール。
+# GitHub の secret scanning でこれを行うには custom patterns（有料）が必要。
+#
+# regex はキーの書式どおり `lh_` + base64url(32 bytes) = 43 文字の固定長にする（src/lib/api-key.ts）。
+# 雛形の `{20,}` では Cookie 名 `lh_collapsed_categories` 等の識別子まで拾うため、allowlist で
+# 黙らせるより書式に合わせて誤検知の元を断つ。先頭の \b は他の識別子の一部としての一致を避ける。
+# キーの書式を変えるときは、このルールも必ず追随させること。
+[[rules]]
+id = "link-hub-api-key"
+description = "link-hub の外部連携 APIキー（lh_ prefix）"
+regex = '''\blh_[A-Za-z0-9_-]{43}'''
+keywords = ["lh_"]
