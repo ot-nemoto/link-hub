@@ -57,10 +57,11 @@ Client (Browser)
   - REST API はメッセージから 400 / 403 / 404 に変換し（`statusForError()`。既定は 400）、throw された例外は全ハンドラ共通のラッパーで `500 { "error": "Internal Server Error" }` にする（例外の内容はサーバーログのみに残す）
   - この契約があるので「既定 400」が成り立つ。lib にサーバー起因の失敗を `{ error }` で返す経路を足すと、クライアントに 400 として返ってしまう
   - ラッパーは Next.js の制御フロー例外（`redirect()` / `notFound()` 等）を `unstable_rethrow()` で先に再 throw する（500 に化けさせない）
-  - 全ハンドラが `export const <METHOD> = withApiErrorHandling(...)` で包まれていることを構造テスト（`src/app/api/route-wrapping.test.ts`）で検査する。export されたハンドラを拾ってから包まれていなければ失敗にする作りで、「包まれていない形」を列挙する作りにはしない
-    - 拾うルートファイル: `route.ts` / `.tsx` / `.js` / `.jsx` / `.mts` / `.mjs`
-    - 拾う export の形: `export function` / `export async function` / `export const` / `export { … }`
-    - **検出対象外の形**: 分割代入（`export const { GET } = …`）・`export let` / `export var`・`export * from`。ハンドラはこれらの形で書かない
+  - 全ハンドラが `withApiErrorHandling` で包まれていることを構造テスト（`src/app/api/route-wrapping.test.ts`）で検査する。**判定はソースの文字列マッチではなく実体で行う**: ラッパーは返す関数に印（`WRAPPED` = `Symbol.for("link-hub.withApiErrorHandling")`）を付け、テストは `src/app/api/` 配下の `route.*`（`.ts` / `.tsx` / `.js` / `.jsx` / `.mts` / `.mjs`）を動的 import して、export された HTTP メソッドに印があるかを見る
+    - export の書き方（`export function`・分割代入・`export *`・再 export・別ファイル定義・型注釈付き等）に依存しない。文字列で「包まれている形」を探す作りは想定した書き方の列挙になり、列挙漏れが素通りするため採らない（daily-hub で同じ理由により 3 回穴が出た）
+    - テストはルートモジュールの import 時に実 DB へ触れないよう `@/lib/prisma` をモックする。ルートが import 時に外部へ触れるモジュールを増やしたら、モックも追加する
+    - **検査の範囲**は「`src/app/api/` 配下」「上記の拡張子の `route.*`」「`GET` / `POST` / `PATCH` / `PUT` / `DELETE` / `OPTIONS` / `HEAD`」で決まる。この外にあるもの（`src/app/api/` 外のルート・`route.cts` 等の拡張子・一覧に無いメソッド）は検査されない。`/openapi.json`・`/api-reference` は外部 API の `{ error }` 契約の対象外のため、意図的に範囲外としている
+    - 印は一番外側の関数にしか付かない。他の高階関数で重ねる場合は `withApiErrorHandling` を一番外側に置く（内側に置くと未包装と判定される）
 
 ### 機能追加時のガイドライン
 

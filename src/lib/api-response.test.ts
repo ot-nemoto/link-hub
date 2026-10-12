@@ -7,6 +7,7 @@ import {
   serializeBookmark,
   statusForError,
   unauthorized,
+  WRAPPED,
   withApiErrorHandling,
 } from "./api-response";
 
@@ -81,6 +82,12 @@ describe("withApiErrorHandling", () => {
     consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
   });
   afterEach(() => consoleError.mockRestore());
+
+  it("包んだ関数に WRAPPED の印を付ける（構造テストが実体で判定するため）", () => {
+    const wrapped = withApiErrorHandling(async () => new Response(null));
+
+    expect((wrapped as unknown as Record<symbol, unknown>)[WRAPPED]).toBe(true);
+  });
 
   it("正常系: ハンドラのレスポンスと引数をそのまま扱う", async () => {
     const handler = vi.fn(async (a: string, b: number) => Response.json({ a, b }, { status: 201 }));

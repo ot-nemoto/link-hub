@@ -36,6 +36,9 @@ export function jsonError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status });
 }
 
+/** 包まれていることを実行時に判定するための印（route-wrapping.test.ts が参照する） */
+export const WRAPPED = Symbol.for("link-hub.withApiErrorHandling");
+
 /**
  * ルートハンドラを包み、捕捉されない例外を `500 { error }` に変換する。
  * lib の `{ error }` はクライアント起因のみで、サーバー起因の失敗は throw される前提。
@@ -44,7 +47,7 @@ export function jsonError(message: string, status: number) {
 export function withApiErrorHandling<Args extends unknown[]>(
   handler: (...args: Args) => Promise<Response>,
 ): (...args: Args) => Promise<Response> {
-  return async (...args) => {
+  const wrapped = async (...args: Args) => {
     try {
       return await handler(...args);
     } catch (e) {
@@ -57,6 +60,9 @@ export function withApiErrorHandling<Args extends unknown[]>(
       return jsonError("Internal Server Error", 500);
     }
   };
+  // 文字列マッチではなく実体で判定できるようにする。
+  // 書き方（export * / 再 export / 別ファイル定義）に依存せず検査できる。
+  return Object.defineProperty(wrapped, WRAPPED, { value: true });
 }
 
 /** 認証失敗（401）レスポンス。 */
