@@ -16,6 +16,9 @@ const makeBytesResponse = (bytes: Uint8Array, contentType: string) =>
     headers: { "Content-Type": contentType },
   });
 
+const makeRedirectResponse = (location: string, status = 302) =>
+  new Response(null, { status, headers: { location } });
+
 // "日本語" を各エンコーディングで表したバイト列（ASCII 部分は latin1 でそのまま）
 const ascii = (str: string) => Array.from(str, (c) => c.charCodeAt(0));
 const buildBytes = (before: string, jaBytes: number[], after: string) =>
@@ -312,13 +315,6 @@ describe("fetchOgpData", () => {
     expect(result.title).toBe("OK");
     expect(mockFetch).toHaveBeenCalled();
   });
-});
-
-const makeRedirectResponse = (location: string, status = 302) =>
-  new Response(null, { status, headers: { location } });
-
-describe("fetchOgpData（favicon）", () => {
-  beforeEach(() => vi.clearAllMocks());
 
   it('<link rel="icon"> の絶対 href を採用する', async () => {
     mockFetch.mockResolvedValue(
@@ -418,6 +414,26 @@ describe("fetchOgpData（favicon）", () => {
     const result = await fetchOgpData("https://example.com");
 
     expect(result.favicon).toBeUndefined();
+  });
+
+  it("クオート無しの属性値（HTML5 として有効）でも favicon を抽出できる", async () => {
+    mockFetch.mockResolvedValue(
+      makeHtmlResponse(`<html><head><link rel=icon href=/icon.png></head></html>`),
+    );
+
+    const result = await fetchOgpData("https://example.com");
+
+    expect(result.favicon).toBe("https://example.com/icon.png");
+  });
+
+  it("たまたま http から始まる相対パスの href も base 相対として正しく解決する", async () => {
+    mockFetch.mockResolvedValue(
+      makeHtmlResponse(`<html><head><link rel="icon" href="httpdocs/icon.png" /></head></html>`),
+    );
+
+    const result = await fetchOgpData("https://example.com/site/");
+
+    expect(result.favicon).toBe("https://example.com/site/httpdocs/icon.png");
   });
 
   it("ページがリダイレクトした場合、相対 href はリダイレクト後の URL を基準に解決する", async () => {

@@ -5,7 +5,7 @@ import { firstZodError } from "./_zod-error";
 import { httpUrlField, reorderBodySchema } from "./common";
 
 function urlError(input: unknown): string | null {
-  const r = httpUrlField.safeParse(input);
+  const r = httpUrlField("url").safeParse(input);
   return r.success ? null : firstZodError(r.error);
 }
 
@@ -30,6 +30,11 @@ describe("httpUrlField", () => {
   it("形式不正・非 http/https はそれぞれのエラー", () => {
     expect(urlError("not a url")).toBe("url の形式が不正です");
     expect(urlError("ftp://example.com")).toBe("url は http または https のみ対応しています");
+  });
+
+  it("fieldName を差し替えるとエラーメッセージに反映される", () => {
+    const r = httpUrlField("favicon").safeParse("not a url");
+    expect(r.success ? null : firstZodError(r.error)).toBe("favicon の形式が不正です");
   });
 });
 

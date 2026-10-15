@@ -18,28 +18,11 @@ const titleField = z
  */
 export const bookmarkBodySchema = z.object(
   {
-    url: httpUrlField,
+    url: httpUrlField("url"),
     title: titleField,
     memo: z.string({ error: "memo は文字列で指定してください" }).optional(),
     ogImage: z.string({ error: "ogImage は文字列で指定してください" }).optional(),
-    favicon: z
-      .string({ error: "favicon は文字列で指定してください" })
-      .superRefine((val, ctx) => {
-        let parsed: URL;
-        try {
-          parsed = new URL(val);
-        } catch {
-          ctx.addIssue({ code: "custom", message: "favicon の形式が不正です" });
-          return;
-        }
-        if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-          ctx.addIssue({
-            code: "custom",
-            message: "favicon は http または https のみ対応しています",
-          });
-        }
-      })
-      .optional(),
+    favicon: httpUrlField("favicon").optional(),
     tagId: z.string({ error: "tagId の形式が不正です" }).nullable().optional(),
     hideOgImage: z.boolean({ error: "hideOgImage は真偽値で指定してください" }).optional(),
     sortOrder: z

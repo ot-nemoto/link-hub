@@ -43,10 +43,13 @@ describe("bookmarkBodySchema", () => {
     ).toBeNull();
   });
 
-  it("favicon は非文字列だとエラー", () => {
+  it("favicon は非文字列・空文字だとエラー", () => {
     expect(parseError(bookmarkBodySchema, { url: "https://a.com", title: "x", favicon: 123 })).toBe(
-      "favicon は文字列で指定してください",
+      "favicon は必須です",
     );
+    expect(
+      parseError(bookmarkBodySchema, { url: "https://a.com", title: "x", favicon: "  " }),
+    ).toBe("favicon は必須です");
   });
 
   it("favicon の形式が不正だとエラー", () => {

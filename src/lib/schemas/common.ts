@@ -4,28 +4,34 @@ import { z } from "zod";
 export const errorResponseSchema = z.object({ error: z.string() });
 
 /**
- * http/https の URL を検証する共有フィールド（必須/形式/スキームの 3 メッセージ）。
- * ブックマークの `url` と OGP 取得の `url` クエリで共有する。
+ * http/https の URL を検証する共有フィールドを生成する（必須/形式/スキームの 3 メッセージ）。
+ * `fieldName` をエラーメッセージに差し込む。ブックマークの `url` / `favicon` と
+ * OGP 取得の `url` クエリで共有する。
  */
-export const httpUrlField = z
-  .string({ error: "url は必須です" })
-  .superRefine((val, ctx) => {
-    if (val.trim() === "") {
-      ctx.addIssue({ code: "custom", message: "url は必須です" });
-      return;
-    }
-    let parsed: URL;
-    try {
-      parsed = new URL(val);
-    } catch {
-      ctx.addIssue({ code: "custom", message: "url の形式が不正です" });
-      return;
-    }
-    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-      ctx.addIssue({ code: "custom", message: "url は http または https のみ対応しています" });
-    }
-  })
-  .meta({ description: "http または https の URL" });
+export function httpUrlField(fieldName: string) {
+  return z
+    .string({ error: `${fieldName} は必須です` })
+    .superRefine((val, ctx) => {
+      if (val.trim() === "") {
+        ctx.addIssue({ code: "custom", message: `${fieldName} は必須です` });
+        return;
+      }
+      let parsed: URL;
+      try {
+        parsed = new URL(val);
+      } catch {
+        ctx.addIssue({ code: "custom", message: `${fieldName} の形式が不正です` });
+        return;
+      }
+      if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+        ctx.addIssue({
+          code: "custom",
+          message: `${fieldName} は http または https のみ対応しています`,
+        });
+      }
+    })
+    .meta({ description: "http または https の URL" });
+}
 
 /**
  * 並び替え（reorder）の body スキーマ（ブックマーク・タグ共通）。

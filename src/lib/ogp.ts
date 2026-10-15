@@ -126,8 +126,15 @@ type RedirectFetchResult = { res: Response; finalUrl: string } | { error: string
  * リダイレクトを 1 ホップずつ手動で追跡しながら fetch する。
  * 各ホップで `isAllowedUrl()` を検査するため、外部ホストから内部アドレスへのリダイレクトを遮断できる
  * （`fetch` 既定の自動追従では転送先が検査されない）。ホップ数は `MAX_REDIRECTS` まで。
+ *
+ * `signal` は呼び出し元（`fetchOgpData`）が 1 回だけ生成したものを使い回す。ホップごとに
+ * 新しいタイムアウトを割り当てないため、メインページ取得 + `/favicon.ico` フォールバックを
+ * 合わせた呼び出し全体が `TIMEOUT_MS` で頭打ちになる（ホップを重ねるほど待てる時間が伸びない）。
  */
-async function fetchFollowingRedirects(url: string): Promise<RedirectFetchResult> {
+async function fetchFollowingRedirects(
+  url: string,
+  signal: AbortSignal,
+): Promise<RedirectFetchResult> {
   let currentUrl = url;
   let redirects = 0;
   while (true) {
@@ -135,7 +142,7 @@ async function fetchFollowingRedirects(url: string): Promise<RedirectFetchResult
     let res: Response;
     try {
       res = await fetch(currentUrl, {
-        signal: AbortSignal.timeout(TIMEOUT_MS),
+        signal,
         redirect: "manual",
         headers: { "User-Agent": USER_AGENT },
       });
@@ -145,6 +152,8 @@ async function fetchFollowingRedirects(url: string): Promise<RedirectFetchResult
     const location = res.headers.get("location");
     const isRedirect = res.status >= 300 && res.status < 400 && !!location;
     if (!isRedirect) return { res, finalUrl: currentUrl };
+    // 次のホップへ進む前に未使用のボディを読み捨てる（undici の接続プールを塞がないため）
+    res.body?.cancel().catch(() => {});
     if (redirects >= MAX_REDIRECTS) return { error: "取得できませんでした" };
     redirects++;
     try {
@@ -189,12 +198,30 @@ async function readLimited(res: Response, maxBytes: number): Promise<ArrayBuffer
   return merged.buffer;
 }
 
+/**
+ * 相対/絶対どちらの href も `base` を基準に絶対 URL へ解決する。
+ * まず `raw` 単体を絶対 URL として解釈し、それが失敗した場合のみ `base` 相対として解決する
+ * （"http" で始まるかどうかの文字列判定だと、たまたま "http" から始まる相対パスを
+ * 絶対 URL と誤判定してしまうため）。
+ */
 function resolveUrl(raw: string, base: string): string | undefined {
   try {
-    return raw.startsWith("http") ? raw : new URL(raw, base).href;
+    return new URL(raw).href;
   } catch {
-    return undefined;
+    try {
+      return new URL(raw, base).href;
+    } catch {
+      return undefined;
+    }
   }
+}
+
+/** `<link>` タグから指定属性の値を取り出す（ダブル/シングルクオート・無クオートのいずれにも対応）。 */
+function extractAttr(tag: string, name: string): string | undefined {
+  return (
+    tag.match(new RegExp(`\\b${name}=["']([^"']+)["']`, "i"))?.[1] ??
+    tag.match(new RegExp(`\\b${name}=([^\\s"'>]+)`, "i"))?.[1]
+  );
 }
 
 /**
@@ -206,11 +233,8 @@ function extractFaviconHref(html: string): string | undefined {
   const linkTags = html.match(/<link\b[^>]*>/gi) ?? [];
   const candidates = new Map<string, string>();
   for (const tag of linkTags) {
-    const rel = tag
-      .match(/\brel=["']([^"']+)["']/i)?.[1]
-      ?.trim()
-      .toLowerCase();
-    const href = tag.match(/\bhref=["']([^"']+)["']/i)?.[1];
+    const rel = extractAttr(tag, "rel")?.trim().toLowerCase();
+    const href = extractAttr(tag, "href");
     if (!rel || !href || candidates.has(rel) || !FAVICON_LINK_REL_PRIORITY.includes(rel)) continue;
     candidates.set(rel, href);
   }
@@ -226,7 +250,10 @@ function extractFaviconHref(html: string): string | undefined {
  * `<オリジン>/favicon.ico` を取得し、`Content-Type` が `image/*` の場合だけ URL を採用する
  * （SPA 等では HTML が返ることがあるため）。本文は読み捨て、ヘッダーのみ確認する。
  */
-async function fetchFaviconIcoFallback(pageUrl: string): Promise<string | undefined> {
+async function fetchFaviconIcoFallback(
+  pageUrl: string,
+  signal: AbortSignal,
+): Promise<string | undefined> {
   let icoUrl: string;
   try {
     icoUrl = new URL("/favicon.ico", pageUrl).href;
@@ -234,7 +261,7 @@ async function fetchFaviconIcoFallback(pageUrl: string): Promise<string | undefi
     return undefined;
   }
 
-  const result = await fetchFollowingRedirects(icoUrl);
+  const result = await fetchFollowingRedirects(icoUrl, signal);
   if ("error" in result) return undefined;
 
   const { res, finalUrl } = result;
@@ -250,7 +277,11 @@ async function fetchFaviconIcoFallback(pageUrl: string): Promise<string | undefi
 export async function fetchOgpData(
   url: string,
 ): Promise<{ title?: string; image?: string; favicon?: string; error?: string }> {
-  const fetched = await fetchFollowingRedirects(url);
+  // メインページ取得〜/favicon.ico フォールバックまで含めた呼び出し全体で 1 つのタイムアウトを共有する
+  // （ホップごとに個別のタイムアウトを割り当てると、リダイレクトを重ねるたびに許容時間が延びてしまうため）
+  const signal = AbortSignal.timeout(TIMEOUT_MS);
+
+  const fetched = await fetchFollowingRedirects(url, signal);
   if ("error" in fetched) return { error: fetched.error };
 
   const { res, finalUrl } = fetched;
@@ -279,7 +310,7 @@ export async function fetchOgpData(
     const faviconHref = extractFaviconHref(html);
     const rawFavicon = faviconHref
       ? resolveUrl(faviconHref, finalUrl)
-      : await fetchFaviconIcoFallback(finalUrl);
+      : await fetchFaviconIcoFallback(finalUrl, signal);
     const favicon = rawFavicon && isHttpUrl(rawFavicon) ? rawFavicon : undefined;
 
     return { title, image, favicon };
