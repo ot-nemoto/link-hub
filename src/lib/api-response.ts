@@ -7,6 +7,7 @@ type SerializableBookmark = {
   title: string;
   memo: string | null;
   ogImage: string | null;
+  favicon: string | null;
   createdAt: Date;
   tag: { id: string; name: string } | null;
 };
@@ -19,6 +20,7 @@ export function serializeBookmark(b: SerializableBookmark) {
     title: b.title,
     memo: b.memo,
     ogImage: b.ogImage,
+    favicon: b.favicon,
     tag: b.tag ? { id: b.tag.id, name: b.tag.name } : null,
     createdAt: b.createdAt.toISOString(),
   };

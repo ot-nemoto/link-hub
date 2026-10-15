@@ -1,7 +1,13 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
 import type { Bookmark } from "@/app/(dashboard)/bookmarks/types";
-import { getDisplayUrl, getDomain, getFaviconUrl, groupByConsecutiveDomain } from "./domain-groups";
+import {
+  getDisplayUrl,
+  getDomain,
+  getFaviconDisplayUrl,
+  getFaviconUrl,
+  groupByConsecutiveDomain,
+} from "./domain-groups";
 
 function bm(id: string, url: string): Bookmark {
   return {
@@ -10,6 +16,7 @@ function bm(id: string, url: string): Bookmark {
     title: id,
     memo: null,
     ogImage: null,
+    favicon: null,
     hideOgImage: false,
     sortOrder: 0,
     tag: null,
@@ -88,6 +95,44 @@ describe("getFaviconUrl", () => {
   it("不正な URL は空文字を返す", () => {
     expect(getFaviconUrl("not-a-url")).toBe("");
     expect(getFaviconUrl("")).toBe("");
+  });
+});
+
+describe("getFaviconDisplayUrl", () => {
+  it("favicon が http/https の URL ならそれを使う", () => {
+    expect(getFaviconDisplayUrl("https://example.com", "https://cdn.example.com/icon.png")).toBe(
+      "https://cdn.example.com/icon.png",
+    );
+  });
+
+  it("favicon が null なら Google のファビコンサービスにフォールバックする", () => {
+    expect(getFaviconDisplayUrl("https://example.com", null)).toBe(
+      "https://www.google.com/s2/favicons?domain=example.com&sz=64",
+    );
+  });
+
+  it("favicon が未指定でも Google のファビコンサービスにフォールバックする", () => {
+    expect(getFaviconDisplayUrl("https://example.com")).toBe(
+      "https://www.google.com/s2/favicons?domain=example.com&sz=64",
+    );
+  });
+
+  it("favicon が http/https 以外の URL なら Google にフォールバックする", () => {
+    expect(getFaviconDisplayUrl("https://example.com", "javascript:alert(1)")).toBe(
+      "https://www.google.com/s2/favicons?domain=example.com&sz=64",
+    );
+  });
+
+  it("favicon が不正な URL 文字列なら Google にフォールバックする", () => {
+    expect(getFaviconDisplayUrl("https://example.com", "not-a-url")).toBe(
+      "https://www.google.com/s2/favicons?domain=example.com&sz=64",
+    );
+  });
+
+  it("size を指定できる", () => {
+    expect(getFaviconDisplayUrl("https://example.com", null, 32)).toBe(
+      "https://www.google.com/s2/favicons?domain=example.com&sz=32",
+    );
   });
 });
 

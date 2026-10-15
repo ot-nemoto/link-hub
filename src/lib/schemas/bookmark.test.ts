@@ -23,12 +23,46 @@ describe("bookmarkBodySchema", () => {
       title: "Example",
       memo: "メモ",
       ogImage: "https://example.com/og.png",
+      favicon: "https://example.com/favicon.png",
       tagId: null,
       hideOgImage: true,
       sortOrder: 0,
     });
     expect(r.success).toBe(true);
     if (r.success) expect(r.data.tagId).toBeNull();
+  });
+
+  it("favicon は省略で通過、http/https の URL なら通過する", () => {
+    expect(parseError(bookmarkBodySchema, { url: "https://a.com", title: "x" })).toBeNull();
+    expect(
+      parseError(bookmarkBodySchema, {
+        url: "https://a.com",
+        title: "x",
+        favicon: "https://example.com/icon.png",
+      }),
+    ).toBeNull();
+  });
+
+  it("favicon は非文字列だとエラー", () => {
+    expect(parseError(bookmarkBodySchema, { url: "https://a.com", title: "x", favicon: 123 })).toBe(
+      "favicon は文字列で指定してください",
+    );
+  });
+
+  it("favicon の形式が不正だとエラー", () => {
+    expect(
+      parseError(bookmarkBodySchema, { url: "https://a.com", title: "x", favicon: "not a url" }),
+    ).toBe("favicon の形式が不正です");
+  });
+
+  it("favicon が http/https 以外のスキームだとエラー", () => {
+    expect(
+      parseError(bookmarkBodySchema, {
+        url: "https://a.com",
+        title: "x",
+        favicon: "javascript:alert(1)",
+      }),
+    ).toBe("favicon は http または https のみ対応しています");
   });
 
   it("url が無い・空・非文字列は url エラー", () => {

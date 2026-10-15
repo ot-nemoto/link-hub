@@ -26,6 +26,7 @@ erDiagram
         String title
         String memo "nullable"
         String ogImage "nullable"
+        String favicon "nullable"
         Boolean hideOgImage
         Int sortOrder
         String userId FK
@@ -75,6 +76,7 @@ erDiagram
 | title | String | タイトル（必須、最大 200 文字） |
 | memo | String? | メモ（任意、最大 1000 文字） |
 | ogImage | String? | OGP 画像 URL（URL 入力時に自動取得、任意） |
+| favicon | String? | ブックマーク先サイトのファビコン URL（保存時に自動取得、任意）。未取得・取得失敗は null。null の場合、一覧表示は Google のファビコンサービスにフォールバックする（取得の契約は `docs/architecture.md` 参照） |
 | hideOgImage | Boolean | OGP 画像を一覧で非表示にするか（デフォルト false）。画像 URL は保持し表示のみ切り替える |
 | sortOrder | Int | 表示順（デフォルト 0、D&D による並び替えで更新） |
 | userId | String | 外部キー → User.id（User 削除時に CASCADE） |

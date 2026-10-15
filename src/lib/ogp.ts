@@ -104,22 +104,160 @@ function isAllowedUrl(url: string): boolean {
   return !isBlockedHostname(parsed.hostname);
 }
 
+/** http/https の URL かどうかのみを判定する（表示用 URL の採用可否チェック用。ホストは問わない）。 */
+function isHttpUrl(url: string): boolean {
+  try {
+    const protocol = new URL(url).protocol;
+    return protocol === "http:" || protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+const TIMEOUT_MS = 3000;
+const MAX_REDIRECTS = 5;
+const MAX_HTML_BYTES = 300 * 1024; // 300KB（先頭部分のみあれば og:* / <link rel="icon"> は判定できる）
+const USER_AGENT = "Mozilla/5.0 (compatible; link-hub-bot/1.0)";
+const FAVICON_LINK_REL_PRIORITY = ["icon", "shortcut icon", "apple-touch-icon"];
+
+type RedirectFetchResult = { res: Response; finalUrl: string } | { error: string };
+
 /**
- * 指定 URL の OGP メタデータ（title / image）を取得する。認証は含まない（呼び出し側で行う）。
+ * リダイレクトを 1 ホップずつ手動で追跡しながら fetch する。
+ * 各ホップで `isAllowedUrl()` を検査するため、外部ホストから内部アドレスへのリダイレクトを遮断できる
+ * （`fetch` 既定の自動追従では転送先が検査されない）。ホップ数は `MAX_REDIRECTS` まで。
+ */
+async function fetchFollowingRedirects(url: string): Promise<RedirectFetchResult> {
+  let currentUrl = url;
+  let redirects = 0;
+  while (true) {
+    if (!isAllowedUrl(currentUrl)) return { error: "取得できませんでした" };
+    let res: Response;
+    try {
+      res = await fetch(currentUrl, {
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+        redirect: "manual",
+        headers: { "User-Agent": USER_AGENT },
+      });
+    } catch {
+      return { error: "取得できませんでした" };
+    }
+    const location = res.headers.get("location");
+    const isRedirect = res.status >= 300 && res.status < 400 && !!location;
+    if (!isRedirect) return { res, finalUrl: currentUrl };
+    if (redirects >= MAX_REDIRECTS) return { error: "取得できませんでした" };
+    redirects++;
+    try {
+      currentUrl = new URL(location, currentUrl).href;
+    } catch {
+      return { error: "取得できませんでした" };
+    }
+  }
+}
+
+/**
+ * レスポンスボディを `maxBytes` までだけ読み取る。上限超過分は読み捨てて接続を打ち切る
+ * （巨大なレスポンスをそのまま最後まで読み込まないためのサイズ上限）。
+ */
+async function readLimited(res: Response, maxBytes: number): Promise<ArrayBuffer> {
+  const reader = res.body?.getReader();
+  if (!reader) return res.arrayBuffer();
+
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (!value) continue;
+    total += value.byteLength;
+    if (total > maxBytes) {
+      const take = value.byteLength - (total - maxBytes);
+      if (take > 0) chunks.push(value.subarray(0, take));
+      reader.cancel().catch(() => {});
+      break;
+    }
+    chunks.push(value);
+  }
+
+  const size = chunks.reduce((sum, c) => sum + c.byteLength, 0);
+  const merged = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) {
+    merged.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return merged.buffer;
+}
+
+function resolveUrl(raw: string, base: string): string | undefined {
+  try {
+    return raw.startsWith("http") ? raw : new URL(raw, base).href;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * HTML から favicon の候補 href を抽出する。
+ * `<link rel="icon">` → `rel="shortcut icon"` → `rel="apple-touch-icon"` の優先順位で採用し、
+ * 同じ rel が複数ある場合は出現順で先頭を採用する。
+ */
+function extractFaviconHref(html: string): string | undefined {
+  const linkTags = html.match(/<link\b[^>]*>/gi) ?? [];
+  const candidates = new Map<string, string>();
+  for (const tag of linkTags) {
+    const rel = tag
+      .match(/\brel=["']([^"']+)["']/i)?.[1]
+      ?.trim()
+      .toLowerCase();
+    const href = tag.match(/\bhref=["']([^"']+)["']/i)?.[1];
+    if (!rel || !href || candidates.has(rel) || !FAVICON_LINK_REL_PRIORITY.includes(rel)) continue;
+    candidates.set(rel, href);
+  }
+  for (const rel of FAVICON_LINK_REL_PRIORITY) {
+    const href = candidates.get(rel);
+    if (href) return href;
+  }
+  return undefined;
+}
+
+/**
+ * `<link rel="icon">` 系が見つからない場合のフォールバック。
+ * `<オリジン>/favicon.ico` を取得し、`Content-Type` が `image/*` の場合だけ URL を採用する
+ * （SPA 等では HTML が返ることがあるため）。本文は読み捨て、ヘッダーのみ確認する。
+ */
+async function fetchFaviconIcoFallback(pageUrl: string): Promise<string | undefined> {
+  let icoUrl: string;
+  try {
+    icoUrl = new URL("/favicon.ico", pageUrl).href;
+  } catch {
+    return undefined;
+  }
+
+  const result = await fetchFollowingRedirects(icoUrl);
+  if ("error" in result) return undefined;
+
+  const { res, finalUrl } = result;
+  const isImage = res.ok && (res.headers.get("content-type")?.startsWith("image/") ?? false);
+  res.body?.cancel().catch(() => {});
+  return isImage ? finalUrl : undefined;
+}
+
+/**
+ * 指定 URL の OGP メタデータ（title / image）とファビコン URL を取得する。認証は含まない（呼び出し側で行う）。
  * SSRF 遮断・取得失敗・タイムアウト時は `{ error }` を返す。
  */
 export async function fetchOgpData(
   url: string,
-): Promise<{ title?: string; image?: string; error?: string }> {
-  if (!isAllowedUrl(url)) return { error: "取得できませんでした" };
-  try {
-    const res = await fetch(url, {
-      signal: AbortSignal.timeout(3000),
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; link-hub-bot/1.0)" },
-    });
-    if (!res.ok) return { error: "取得できませんでした" };
+): Promise<{ title?: string; image?: string; favicon?: string; error?: string }> {
+  const fetched = await fetchFollowingRedirects(url);
+  if ("error" in fetched) return { error: fetched.error };
 
-    const buffer = await res.arrayBuffer();
+  const { res, finalUrl } = fetched;
+  if (!res.ok) return { error: "取得できませんでした" };
+
+  try {
+    const buffer = await readLimited(res, MAX_HTML_BYTES);
     const charset = detectCharset(buffer, res.headers.get("content-type"));
     const html = decodeBuffer(buffer, charset);
 
@@ -136,12 +274,15 @@ export async function fetchOgpData(
     const title = rawTitle ? decodeHtmlEntities(rawTitle) : undefined;
 
     const rawImage = getMetaContent("og:image");
-    let image: string | undefined;
-    if (rawImage) {
-      image = rawImage.startsWith("http") ? rawImage : new URL(rawImage, url).href;
-    }
+    const image = rawImage ? resolveUrl(rawImage, finalUrl) : undefined;
 
-    return { title, image };
+    const faviconHref = extractFaviconHref(html);
+    const rawFavicon = faviconHref
+      ? resolveUrl(faviconHref, finalUrl)
+      : await fetchFaviconIcoFallback(finalUrl);
+    const favicon = rawFavicon && isHttpUrl(rawFavicon) ? rawFavicon : undefined;
+
+    return { title, image, favicon };
   } catch {
     return { error: "取得できませんでした" };
   }

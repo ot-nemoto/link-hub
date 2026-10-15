@@ -17,6 +17,7 @@ const base = {
   title: "Example",
   memo: "メモ",
   ogImage: "https://example.com/og.png",
+  favicon: "https://example.com/favicon.png",
   createdAt: new Date("2026-01-02T03:04:05.000Z"),
 };
 
@@ -30,17 +31,25 @@ describe("serializeBookmark", () => {
       title: "Example",
       memo: "メモ",
       ogImage: "https://example.com/og.png",
+      favicon: "https://example.com/favicon.png",
       tag: { id: "t1", name: "Cat" },
       createdAt: "2026-01-02T03:04:05.000Z",
     });
   });
 
   it("tag が null の場合は tag: null", () => {
-    const result = serializeBookmark({ ...base, memo: null, ogImage: null, tag: null });
+    const result = serializeBookmark({
+      ...base,
+      memo: null,
+      ogImage: null,
+      favicon: null,
+      tag: null,
+    });
 
     expect(result.tag).toBeNull();
     expect(result.memo).toBeNull();
     expect(result.ogImage).toBeNull();
+    expect(result.favicon).toBeNull();
   });
 });
 

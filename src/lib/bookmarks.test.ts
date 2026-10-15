@@ -59,6 +59,7 @@ const bookmark = {
   title: "Example",
   memo: null,
   ogImage: null,
+  favicon: null,
   hideOgImage: false,
   sortOrder: 0,
   tagId: null,
@@ -144,6 +145,30 @@ describe("createBookmark", () => {
     );
   });
 
+  it("favicon を指定すると作成データに含める", async () => {
+    mockBookmarkAggregate.mockResolvedValue({ _max: { sortOrder: 0 } } as never);
+    mockBookmarkCreate.mockResolvedValue(bookmark);
+
+    await createBookmark(userId, { ...bookmarkData, favicon: "https://example.com/icon.png" });
+
+    expect(mockBookmarkCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ favicon: "https://example.com/icon.png" }),
+      }),
+    );
+  });
+
+  it("favicon 未指定の場合は null で作成する", async () => {
+    mockBookmarkAggregate.mockResolvedValue({ _max: { sortOrder: 0 } } as never);
+    mockBookmarkCreate.mockResolvedValue(bookmark);
+
+    await createBookmark(userId, bookmarkData);
+
+    expect(mockBookmarkCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ favicon: null }) }),
+    );
+  });
+
   it("tagId を指定すると自ユーザーのタグか検証してセットする", async () => {
     mockBookmarkAggregate.mockResolvedValue({ _max: { sortOrder: 0 } } as never);
     mockTagFindFirst.mockResolvedValue({ id: "tag_1" } as never);
@@ -222,6 +247,35 @@ describe("updateBookmark", () => {
     expect(mockBookmarkUpdate).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.not.objectContaining({ ogImage: expect.anything() }),
+      }),
+    );
+  });
+
+  it("favicon が undefined の場合は update データに favicon を含めない（既存値を保持）", async () => {
+    mockBookmarkFindUnique.mockResolvedValue(bookmark as never);
+    mockBookmarkUpdate.mockResolvedValue(bookmark);
+
+    await updateBookmark(userId, "bm_1", { ...bookmarkData, favicon: undefined });
+
+    expect(mockBookmarkUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.not.objectContaining({ favicon: expect.anything() }),
+      }),
+    );
+  });
+
+  it("favicon が指定された場合は update データに含める", async () => {
+    mockBookmarkFindUnique.mockResolvedValue(bookmark as never);
+    mockBookmarkUpdate.mockResolvedValue(bookmark);
+
+    await updateBookmark(userId, "bm_1", {
+      ...bookmarkData,
+      favicon: "https://example.com/icon.png",
+    });
+
+    expect(mockBookmarkUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ favicon: "https://example.com/icon.png" }),
       }),
     );
   });

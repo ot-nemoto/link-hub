@@ -313,3 +313,156 @@ describe("fetchOgpData", () => {
     expect(mockFetch).toHaveBeenCalled();
   });
 });
+
+const makeRedirectResponse = (location: string, status = 302) =>
+  new Response(null, { status, headers: { location } });
+
+describe("fetchOgpData（favicon）", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('<link rel="icon"> の絶対 href を採用する', async () => {
+    mockFetch.mockResolvedValue(
+      makeHtmlResponse(
+        `<html><head><link rel="icon" href="https://example.com/icon.png" /></head></html>`,
+      ),
+    );
+
+    const result = await fetchOgpData("https://example.com");
+
+    expect(result.favicon).toBe("https://example.com/icon.png");
+  });
+
+  it('<link rel="icon"> の相対 href を絶対 URL に解決する', async () => {
+    mockFetch.mockResolvedValue(
+      makeHtmlResponse(`<html><head><link rel="icon" href="/static/icon.svg" /></head></html>`),
+    );
+
+    const result = await fetchOgpData("https://example.com/blog/post");
+
+    expect(result.favicon).toBe("https://example.com/static/icon.svg");
+  });
+
+  it("rel が複数ある場合 icon > shortcut icon > apple-touch-icon の優先順位で採用する", async () => {
+    mockFetch.mockResolvedValue(
+      makeHtmlResponse(`
+        <html><head>
+          <link rel="apple-touch-icon" href="/apple.png" />
+          <link rel="shortcut icon" href="/shortcut.ico" />
+          <link rel="icon" href="/icon.png" />
+        </head></html>
+      `),
+    );
+
+    const result = await fetchOgpData("https://example.com");
+
+    expect(result.favicon).toBe("https://example.com/icon.png");
+  });
+
+  it("icon が無い場合 shortcut icon を採用する", async () => {
+    mockFetch.mockResolvedValue(
+      makeHtmlResponse(`
+        <html><head>
+          <link rel="apple-touch-icon" href="/apple.png" />
+          <link rel="shortcut icon" href="/shortcut.ico" />
+        </head></html>
+      `),
+    );
+
+    const result = await fetchOgpData("https://example.com");
+
+    expect(result.favicon).toBe("https://example.com/shortcut.ico");
+  });
+
+  it("<link> が無い場合 /favicon.ico にフォールバックする（image/* のみ採用）", async () => {
+    mockFetch
+      .mockResolvedValueOnce(makeHtmlResponse(`<html><head><title>No Link</title></head></html>`))
+      .mockResolvedValueOnce(
+        new Response(new Uint8Array([0, 1, 2]) as unknown as BodyInit, {
+          status: 200,
+          headers: { "Content-Type": "image/x-icon" },
+        }),
+      );
+
+    const result = await fetchOgpData("https://example.com/page");
+
+    expect(result.favicon).toBe("https://example.com/favicon.ico");
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(mockFetch.mock.calls[1][0]).toBe("https://example.com/favicon.ico");
+  });
+
+  it("/favicon.ico が HTML を返す場合（SPA 等）favicon は undefined にする", async () => {
+    mockFetch
+      .mockResolvedValueOnce(makeHtmlResponse(`<html><head><title>No Link</title></head></html>`))
+      .mockResolvedValueOnce(makeHtmlResponse(`<html><body>Not Found</body></html>`));
+
+    const result = await fetchOgpData("https://example.com/page");
+
+    expect(result.favicon).toBeUndefined();
+  });
+
+  it("/favicon.ico が 404 の場合 favicon は undefined にする", async () => {
+    mockFetch
+      .mockResolvedValueOnce(makeHtmlResponse(`<html><head><title>No Link</title></head></html>`))
+      .mockResolvedValueOnce(new Response("Not Found", { status: 404 }));
+
+    const result = await fetchOgpData("https://example.com/page");
+
+    expect(result.favicon).toBeUndefined();
+  });
+
+  it("favicon の href が http/https 以外の場合は採用しない", async () => {
+    mockFetch.mockResolvedValue(
+      makeHtmlResponse(`<html><head><link rel="icon" href="javascript:alert(1)" /></head></html>`),
+    );
+
+    const result = await fetchOgpData("https://example.com");
+
+    expect(result.favicon).toBeUndefined();
+  });
+
+  it("ページがリダイレクトした場合、相対 href はリダイレクト後の URL を基準に解決する", async () => {
+    mockFetch
+      .mockResolvedValueOnce(makeRedirectResponse("https://cdn.example.com/page"))
+      .mockResolvedValueOnce(
+        makeHtmlResponse(`<html><head><link rel="icon" href="/icon.png" /></head></html>`),
+      );
+
+    const result = await fetchOgpData("https://example.com/page");
+
+    expect(result.favicon).toBe("https://cdn.example.com/icon.png");
+  });
+
+  it("外部ホストから内部アドレスへのリダイレクトは遮断する（SSRF対策）", async () => {
+    mockFetch.mockResolvedValueOnce(
+      makeRedirectResponse("http://169.254.169.254/latest/meta-data"),
+    );
+
+    const result = await fetchOgpData("https://example.com/page");
+
+    expect(result).toEqual({ error: "取得できませんでした" });
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("リダイレクトのホップ数上限を超えると error を返す", async () => {
+    for (let i = 0; i < 10; i++) {
+      mockFetch.mockResolvedValueOnce(makeRedirectResponse(`https://example.com/hop-${i + 1}`));
+    }
+
+    const result = await fetchOgpData("https://example.com/hop-0");
+
+    expect(result).toEqual({ error: "取得できませんでした" });
+    // 初回 + MAX_REDIRECTS(5) 回のリダイレクト追従 = 6 回まで fetch し、7 回目で上限超過と判定する
+    expect(mockFetch).toHaveBeenCalledTimes(6);
+  });
+
+  it("HTML のサイズ上限を超えた分は読み捨てる", async () => {
+    // 上限（300KB）超過後に現れる og:image は解析対象に入らないことを確認する
+    const padding = "x".repeat(400 * 1024);
+    const html = `<html><head>${padding}<meta property="og:image" content="https://example.com/late.png" /></head></html>`;
+    mockFetch.mockResolvedValue(makeHtmlResponse(html));
+
+    const result = await fetchOgpData("https://example.com");
+
+    expect(result.image).toBeUndefined();
+  });
+});

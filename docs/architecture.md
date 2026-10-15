@@ -86,6 +86,20 @@ Client (Browser)
 - **単一操作ボタン（`DeleteButton` 等）**: `<form action={formAction}>` 形式のシンプルな操作に限り `useActionState` を使ってよい。それ以外は `useState` + 非同期ハンドラを使う
 - Server Action の `{ error }` を無視・握りつぶさない
 
+## ファビコン取得の契約
+
+一覧のファビコンは、外部の検索エンジン系ファビコンサービス（巡回されていないサイトでは表示できない）に依存せず、**ブックマーク保存時にブックマーク先のサイトから直接取得して DB（`Bookmark.favicon`）に保存**する（`ogImage` と同じ扱い）。表示時は保存済みの URL をブラウザが直接読むだけで、サーバーは関わらない。
+
+- **取得タイミング**: URL 入力時の OGP 自動取得（`fetchOgpData()`、`src/lib/ogp.ts`）に相乗りする。HTML 取得は 1 回のみで、OGP とファビコンを同時に抽出する。URL を変更したときの再取得要否は `ogImage` に揃える（サーバー側では自動再取得せず、呼び出し側が渡した値をそのまま保存する）
+- **取得順序・優先順位**:
+  1. 取得した HTML から `<link rel="icon">` → `rel="shortcut icon"` → `rel="apple-touch-icon"` の優先順位で `href` を採用する（同じ rel が複数ある場合は出現順で先頭を採用）。相対パスはリダイレクト後の最終 URL を基準に絶対 URL化する
+  2. `<link>` が見つからない場合は `<オリジン>/favicon.ico` を取得し、`Content-Type` が `image/*` の場合だけ採用する（本文は読み切らずヘッダーのみ確認。SPA 等で HTML が返るケースを弾くため）
+  3. どちらも無ければ `favicon` は NULL のままにする
+- **SSRF 対策**: `isAllowedUrl()`（http/https 以外・プライベート/ループバック/リンクローカル等の遮断）を HTML 取得・`/favicon.ico` 取得の両方に適用する。**リダイレクトは `redirect: "manual"` で 1 ホップずつ手動追跡し、各ホップで `isAllowedUrl()` を再検査する**（`fetch` 既定の自動追従では転送先を検査できず、外部ホストから内部アドレスへのリダイレクトが素通りするため）。ホップ数は上限 5 回。タイムアウトは OGP 取得と同じ 3 秒、HTML の受信サイズは 300KB で打ち切る
+  - DNS rebinding（ホスト名の DNS 解決結果が後からプライベートアドレスに変わるケース）への対策は本実装では見送っている。発生頻度・影響に対してオオゴト過ぎるため、ホスト名ベースの検査で十分と判断した
+- **表示**: `favicon` が http/https の有効な URL ならそれを使う（`getFaviconDisplayUrl()`、`src/lib/domain-groups.ts`）。NULL・不正な値の場合は従来どおり Google のファビコンサービス（`getFaviconUrl()`）にフォールバックする。読み込み失敗時は `GlobeIcon` を表示する（`onError` ハンドリングは既存のまま）
+- **既存データ**: 列が NULL のままでも表示は退行しない（Google サービスへフォールバックするため）。一括取得は `prisma/backfill-favicons.ts` を手動実行する（手順は `docs/development.md` 参照）
+
 ## 環境変数
 
 環境変数（`DATABASE_URL` / `DIRECT_URL` / Clerk 関連 / 開発用モックバイパス）の一覧とセットアップ・DB 操作・デプロイ手順は [`docs/development.md`](./development.md) を正とする。

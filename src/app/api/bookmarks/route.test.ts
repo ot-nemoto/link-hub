@@ -26,6 +26,7 @@ const record = {
   title: "A",
   memo: "memo",
   ogImage: null,
+  favicon: null,
   createdAt: new Date("2026-01-02T03:04:05.000Z"),
   tag: { id: "t1", name: "Cat" },
 };
@@ -66,6 +67,7 @@ describe("GET /api/bookmarks", () => {
           title: "A",
           memo: "memo",
           ogImage: null,
+          favicon: null,
           tag: { id: "t1", name: "Cat" },
           createdAt: "2026-01-02T03:04:05.000Z",
         },
@@ -153,6 +155,7 @@ describe("POST /api/bookmarks", () => {
       title: "A",
       memo: "memo",
       ogImage: null,
+      favicon: null,
       tag: { id: "t1", name: "Cat" },
       createdAt: "2026-01-02T03:04:05.000Z",
     });
@@ -160,6 +163,29 @@ describe("POST /api/bookmarks", () => {
       "user_1",
       expect.objectContaining({ url: "https://a.com", title: "A", memo: "memo" }),
     );
+  });
+
+  it("favicon を指定すると lib にそのまま渡す", async () => {
+    mockGetUser.mockResolvedValue({ id: "user_1" });
+    mockCreateBookmark.mockResolvedValue({ bookmark: record as never });
+
+    await POST(jsonReq({ url: "https://a.com", title: "A", favicon: "https://a.com/favicon.png" }));
+
+    expect(mockCreateBookmark).toHaveBeenCalledWith(
+      "user_1",
+      expect.objectContaining({ favicon: "https://a.com/favicon.png" }),
+    );
+  });
+
+  it("favicon が http/https 以外は 400（lib は呼ばれない）", async () => {
+    mockGetUser.mockResolvedValue({ id: "user_1" });
+
+    const res = await POST(
+      jsonReq({ url: "https://a.com", title: "A", favicon: "javascript:alert(1)" }),
+    );
+
+    expect(res.status).toBe(400);
+    expect(mockCreateBookmark).not.toHaveBeenCalled();
   });
 
   it("lib が例外を投げたら 500 { error }（例外の内容は返さない）", async () => {

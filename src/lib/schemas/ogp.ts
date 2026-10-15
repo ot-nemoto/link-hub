@@ -9,4 +9,5 @@ export const ogpQuerySchema = z.object({ url: httpUrlField });
 export const ogpResponseSchema = z.object({
   title: z.string().nullable(),
   image: z.string().nullable(),
+  favicon: z.string().nullable(),
 });

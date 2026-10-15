@@ -13,6 +13,7 @@ type BookmarkFormData = {
   title: string;
   memo: string;
   ogImage?: string;
+  favicon?: string;
   tagId?: string | null;
   hideOgImage?: boolean;
 };
@@ -39,6 +40,7 @@ export function BookmarkForm({
   const [submitting, setSubmitting] = useState(false);
   const [title, setTitle] = useState(defaultValues?.title ?? "");
   const [ogImage, setOgImage] = useState(defaultValues?.ogImage ?? "");
+  const [favicon, setFavicon] = useState(defaultValues?.favicon ?? "");
   const [hideOgImage, setHideOgImage] = useState(defaultValues?.hideOgImage ?? false);
   const [fetchingOgp, setFetchingOgp] = useState(false);
   const [selectedTagId, setSelectedTagId] = useState<string | null>(defaultValues?.tagId ?? null);
@@ -46,12 +48,16 @@ export function BookmarkForm({
 
   const titleRef = useRef(title);
   const ogImageRef = useRef(ogImage);
+  const faviconRef = useRef(favicon);
   useEffect(() => {
     titleRef.current = title;
   }, [title]);
   useEffect(() => {
     ogImageRef.current = ogImage;
   }, [ogImage]);
+  useEffect(() => {
+    faviconRef.current = favicon;
+  }, [favicon]);
 
   async function handleUrlBlur(e: React.FocusEvent<HTMLInputElement>) {
     const url = e.currentTarget.value.trim();
@@ -72,6 +78,7 @@ export function BookmarkForm({
 
     if (!titleRef.current && result.title) setTitle(result.title);
     if (!ogImageRef.current && result.image) setOgImage(result.image);
+    if (!faviconRef.current && result.favicon) setFavicon(result.favicon);
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -82,6 +89,7 @@ export function BookmarkForm({
       title: (form.elements.namedItem("title") as HTMLInputElement).value.trim(),
       memo: (form.elements.namedItem("memo") as HTMLTextAreaElement).value.trim(),
       ogImage: ogImage || undefined,
+      favicon: favicon || undefined,
       tagId: selectedTagId,
       hideOgImage,
     };
