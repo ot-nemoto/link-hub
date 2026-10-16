@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 import { getTagColor } from "@/lib/tag-colors";
 import { fetchOgp } from "./fetchOgp";
@@ -48,22 +48,14 @@ export function BookmarkForm({
   const isEditing = defaultValues !== undefined;
 
   const urlInputRef = useRef<HTMLInputElement>(null);
-  const titleRef = useRef(title);
-  const ogImageRef = useRef(ogImage);
-  const faviconRef = useRef(favicon);
-  useEffect(() => {
-    titleRef.current = title;
-  }, [title]);
-  useEffect(() => {
-    ogImageRef.current = ogImage;
-  }, [ogImage]);
-  useEffect(() => {
-    faviconRef.current = favicon;
-  }, [favicon]);
+  // 最後に取得に成功した URL（編集時は既存の URL）。URL がこれから変わったときだけ自動取得する
+  const fetchedUrlRef = useRef(defaultValues?.url.trim() ?? "");
+  // 取得中に URL がさらに変わった場合に、古い取得結果で上書きしないための照合用
+  const pendingUrlRef = useRef("");
 
   async function handleUrlBlur(e: React.FocusEvent<HTMLInputElement>) {
     const url = e.currentTarget.value.trim();
-    if (!url) return;
+    if (!url || url === fetchedUrlRef.current) return;
 
     try {
       const parsed = new URL(url);
@@ -72,18 +64,21 @@ export function BookmarkForm({
       return;
     }
 
-    if (titleRef.current && ogImageRef.current) return;
-
+    pendingUrlRef.current = url;
     setFetchingOgp(true);
     const result = await fetchOgp(url);
+    if (pendingUrlRef.current !== url) return;
     setFetchingOgp(false);
 
-    if (!titleRef.current && result.title) setTitle(result.title);
-    if (!ogImageRef.current && result.image) setOgImage(result.image);
-    if (!faviconRef.current && result.favicon) setFavicon(result.favicon);
+    if (result.error) return;
+    fetchedUrlRef.current = url;
+    // タイトルは必須なので、取得できなかったときは今の値を残す
+    if (result.title) setTitle(result.title);
+    setOgImage(result.image ?? "");
+    setFavicon(result.favicon ?? "");
   }
 
-  // 押した時点の URL で OGP 画像・ファビコンを取り直して上書きする（タイトルはユーザー入力を優先して触らない）
+  // URL を変えずに OGP 画像・ファビコンだけを取り直して上書きする（タイトルはユーザー入力を優先して触らない）
   async function handleRefetch() {
     const url = urlInputRef.current?.value.trim() ?? "";
     const { url: _url, refetch: _refetch, ...rest } = errors;
@@ -187,8 +182,7 @@ export function BookmarkForm({
             type="text"
             ref={urlInputRef}
             defaultValue={defaultValues?.url}
-            // 編集時は自動で取得しない（取り直しは「再取得」ボタンで明示的に行う）
-            onBlur={isEditing ? undefined : handleUrlBlur}
+            onBlur={handleUrlBlur}
             className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 disabled:bg-zinc-50 disabled:text-zinc-500"
             placeholder="https://example.com"
           />
