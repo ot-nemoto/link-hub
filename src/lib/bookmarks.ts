@@ -6,8 +6,9 @@ export type BookmarkData = {
   url: string;
   title: string;
   memo?: string;
-  ogImage?: string;
-  favicon?: string;
+  // 更新時: undefined は既存値を保持、null は既存値を消す
+  ogImage?: string | null;
+  favicon?: string | null;
   tagId?: string | null;
   hideOgImage?: boolean;
   sortOrder?: number;

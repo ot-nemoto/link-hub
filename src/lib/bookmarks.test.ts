@@ -264,6 +264,19 @@ describe("updateBookmark", () => {
     );
   });
 
+  it("ogImage / favicon が null の場合は null で更新する（既存値を消す）", async () => {
+    mockBookmarkFindUnique.mockResolvedValue(bookmark as never);
+    mockBookmarkUpdate.mockResolvedValue(bookmark);
+
+    await updateBookmark(userId, "bm_1", { ...bookmarkData, ogImage: null, favicon: null });
+
+    expect(mockBookmarkUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ ogImage: null, favicon: null }),
+      }),
+    );
+  });
+
   it("favicon が指定された場合は update データに含める", async () => {
     mockBookmarkFindUnique.mockResolvedValue(bookmark as never);
     mockBookmarkUpdate.mockResolvedValue(bookmark);

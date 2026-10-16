@@ -12,8 +12,8 @@ type BookmarkFormData = {
   url: string;
   title: string;
   memo: string;
-  ogImage?: string;
-  favicon?: string;
+  ogImage?: string | null;
+  favicon?: string | null;
   tagId?: string | null;
   hideOgImage?: boolean;
 };
@@ -43,9 +43,11 @@ export function BookmarkForm({
   const [favicon, setFavicon] = useState(defaultValues?.favicon ?? "");
   const [hideOgImage, setHideOgImage] = useState(defaultValues?.hideOgImage ?? false);
   const [fetchingOgp, setFetchingOgp] = useState(false);
+  const [refetching, setRefetching] = useState(false);
   const [selectedTagId, setSelectedTagId] = useState<string | null>(defaultValues?.tagId ?? null);
   const isEditing = defaultValues !== undefined;
 
+  const urlInputRef = useRef<HTMLInputElement>(null);
   const titleRef = useRef(title);
   const ogImageRef = useRef(ogImage);
   const faviconRef = useRef(favicon);
@@ -81,6 +83,31 @@ export function BookmarkForm({
     if (!faviconRef.current && result.favicon) setFavicon(result.favicon);
   }
 
+  // 押した時点の URL で OGP 画像・ファビコンを取り直して上書きする（タイトルはユーザー入力を優先して触らない）
+  async function handleRefetch() {
+    const url = urlInputRef.current?.value.trim() ?? "";
+    const { url: _url, refetch: _refetch, ...rest } = errors;
+    try {
+      const parsed = new URL(url);
+      if (parsed.protocol !== "http:" && parsed.protocol !== "https:") throw new Error();
+    } catch {
+      setErrors({ ...rest, url: "再取得には http:// または https:// の URL を入力してください" });
+      return;
+    }
+    setErrors(rest);
+
+    setRefetching(true);
+    const result = await fetchOgp(url);
+    setRefetching(false);
+
+    if (result.error) {
+      setErrors({ ...rest, refetch: "取得に失敗しました。URL を確認して再度お試しください" });
+      return;
+    }
+    setOgImage(result.image ?? "");
+    setFavicon(result.favicon ?? "");
+  }
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = e.currentTarget;
@@ -88,8 +115,9 @@ export function BookmarkForm({
       url: (form.elements.namedItem("url") as HTMLInputElement).value.trim(),
       title: (form.elements.namedItem("title") as HTMLInputElement).value.trim(),
       memo: (form.elements.namedItem("memo") as HTMLTextAreaElement).value.trim(),
-      ogImage: ogImage || undefined,
-      favicon: favicon || undefined,
+      // 編集時は空を null で送り、再取得で消えた値を保存に反映する
+      ogImage: ogImage || (isEditing ? null : undefined),
+      favicon: favicon || (isEditing ? null : undefined),
       tagId: selectedTagId,
       hideOgImage,
     };
@@ -157,8 +185,10 @@ export function BookmarkForm({
             id="url"
             name="url"
             type="text"
+            ref={urlInputRef}
             defaultValue={defaultValues?.url}
-            onBlur={handleUrlBlur}
+            // 編集時は自動で取得しない（取り直しは「再取得」ボタンで明示的に行う）
+            onBlur={isEditing ? undefined : handleUrlBlur}
             className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 disabled:bg-zinc-50 disabled:text-zinc-500"
             placeholder="https://example.com"
           />
@@ -199,19 +229,45 @@ export function BookmarkForm({
           {errors.memo && <p className="mt-1 text-xs text-red-500">{errors.memo}</p>}
         </div>
 
-        {isEditing && ogImage && (
+        {isEditing && (
           <div>
-            <span className="block text-sm font-medium text-zinc-700">OGP画像</span>
+            <span className="block text-sm font-medium text-zinc-700">OGP画像・アイコン</span>
             <div className="mt-1 flex items-center gap-3">
-              <img
-                src={ogImage}
-                alt=""
-                referrerPolicy="no-referrer"
-                className={`h-16 w-28 shrink-0 rounded border border-zinc-200 object-contain ${
-                  hideOgImage ? "opacity-40" : ""
-                }`}
-              />
-              <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-700">
+              {ogImage ? (
+                <img
+                  src={ogImage}
+                  alt=""
+                  referrerPolicy="no-referrer"
+                  className={`h-16 w-28 shrink-0 rounded border border-zinc-200 object-contain ${
+                    hideOgImage ? "opacity-40" : ""
+                  }`}
+                />
+              ) : (
+                <span className="flex h-16 w-28 shrink-0 items-center justify-center rounded border border-dashed border-zinc-300 text-xs text-zinc-400">
+                  画像なし
+                </span>
+              )}
+              {favicon ? (
+                <img
+                  src={favicon}
+                  alt=""
+                  referrerPolicy="no-referrer"
+                  className="h-6 w-6 shrink-0 object-contain"
+                />
+              ) : (
+                <span className="shrink-0 text-xs text-zinc-400">アイコンなし</span>
+              )}
+              <button
+                type="button"
+                disabled={refetching}
+                onClick={handleRefetch}
+                className="cursor-pointer rounded-md border border-zinc-300 px-3 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
+              >
+                {refetching ? "取得中..." : "再取得"}
+              </button>
+            </div>
+            {ogImage && (
+              <label className="mt-2 flex cursor-pointer items-center gap-2 text-sm text-zinc-700">
                 <input
                   type="checkbox"
                   checked={hideOgImage}
@@ -220,7 +276,8 @@ export function BookmarkForm({
                 />
                 一覧に表示しない
               </label>
-            </div>
+            )}
+            {errors.refetch && <p className="mt-1 text-xs text-red-500">{errors.refetch}</p>}
           </div>
         )}
 
@@ -266,7 +323,7 @@ export function BookmarkForm({
         <div className="flex gap-3">
           <button
             type="submit"
-            disabled={submitting || fetchingOgp}
+            disabled={submitting || fetchingOgp || refetching}
             className="cursor-pointer rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-50"
           >
             {submitting ? "保存中..." : "保存"}

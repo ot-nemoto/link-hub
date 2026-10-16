@@ -226,8 +226,8 @@ export function BookmarkList({
       url: string;
       title: string;
       memo: string;
-      ogImage?: string;
-      favicon?: string;
+      ogImage?: string | null;
+      favicon?: string | null;
       tagId?: string | null;
       hideOgImage?: boolean;
     }) => {
@@ -244,8 +244,9 @@ export function BookmarkList({
                   url: updated.url,
                   title: updated.title,
                   memo: updated.memo || null,
-                  ogImage: updated.ogImage ?? bm.ogImage,
-                  favicon: updated.favicon ?? bm.favicon,
+                  // undefined は既存値を保持、null は消す（BookmarkData の更新契約に合わせる）
+                  ogImage: updated.ogImage !== undefined ? updated.ogImage : bm.ogImage,
+                  favicon: updated.favicon !== undefined ? updated.favicon : bm.favicon,
                   hideOgImage: updated.hideOgImage ?? bm.hideOgImage,
                   tagId: updated.tagId ?? null,
                   tag: newTag,
