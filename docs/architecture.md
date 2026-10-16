@@ -97,7 +97,7 @@ Client (Browser)
   3. どちらも無ければ `favicon` は NULL のままにする
 - **SSRF 対策**: `isAllowedUrl()`（http/https 以外・プライベート/ループバック/リンクローカル等の遮断）を HTML 取得・`/favicon.ico` 取得の両方に適用する。**リダイレクトは `redirect: "manual"` で 1 ホップずつ手動追跡し、各ホップで `isAllowedUrl()` を再検査する**（`fetch` 既定の自動追従では転送先を検査できず、外部ホストから内部アドレスへのリダイレクトが素通りするため）。ホップ数は上限 5 回。タイムアウト（3 秒）は HTML 取得と `/favicon.ico` フォールバックを合わせた `fetchOgpData()` 呼び出し全体で 1 つの `AbortSignal` を共有する（ホップごとに個別のタイムアウトを割り当てると、リダイレクトを重ねるたびに許容時間が線形に伸びてしまうため）。HTML の受信サイズは 300KB で打ち切る
   - DNS rebinding（ホスト名の DNS 解決結果が後からプライベートアドレスに変わるケース）への対策は本実装では見送っている。発生頻度・影響に対してオオゴト過ぎるため、ホスト名ベースの検査で十分と判断した
-- **表示**: `favicon` が http/https の有効な URL ならそれを使う（`getFaviconDisplayUrl()`、`src/lib/domain-groups.ts`）。NULL・不正な値の場合は従来どおり Google のファビコンサービス（`getFaviconUrl()`）にフォールバックする。読み込み失敗時は `GlobeIcon` を表示する（`onError` ハンドリングは既存のまま）
+- **表示**: 「保存済みの `favicon` → Google のファビコンサービス」の順に候補を並べ（`getFaviconCandidates()`、`src/lib/domain-groups.ts`）、ブラウザでの読み込みに失敗したら次の候補を試す。`favicon` が NULL・http/https 以外の値なら最初から Google を使う。保存済み URL はホットリンク禁止・混在コンテンツ（https ページ上の http アイコン）・リンク切れなどで読めないことがあり、その場合も従来どおり Google で表示するため。すべての候補が失敗したらファビコンを表示しない
 - **既存データ**: 列が NULL のままでも表示は退行しない（Google サービスへフォールバックするため）。一括取得は `prisma/backfill-favicons.ts` を手動実行する（手順は `docs/development.md` 参照）
 
 ## 環境変数

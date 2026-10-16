@@ -45,21 +45,28 @@ export function getFaviconUrl(url: string, size = 64): string {
   return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=${size}`;
 }
 
-/**
- * 一覧に表示するファビコン URL を決定する。
- * 保存済みの `favicon`（ブックマーク先から取得した URL）が http/https であればそれを使い、
- * 無い・不正な場合は従来どおり Google のファビコンサービスにフォールバックする。
- */
-export function getFaviconDisplayUrl(url: string, favicon?: string | null, size = 64): string {
-  if (favicon) {
-    try {
-      const protocol = new URL(favicon).protocol;
-      if (protocol === "http:" || protocol === "https:") return favicon;
-    } catch {
-      // 不正な URL は下のフォールバックへ
-    }
+function isHttpUrl(url: string): boolean {
+  try {
+    const protocol = new URL(url).protocol;
+    return protocol === "http:" || protocol === "https:";
+  } catch {
+    return false;
   }
-  return getFaviconUrl(url, size);
+}
+
+/**
+ * 一覧に表示するファビコン URL の候補を、試す順に返す。
+ * 保存済みの `favicon`（ブックマーク先から取得した URL）が http/https であれば先頭に置き、
+ * 次に Google のファビコンサービスを置く。表示側は読み込みに失敗したら次の候補を試す
+ * （ホットリンク禁止・混在コンテンツ・リンク切れで保存済み URL が読めない場合に Google で補うため）。
+ * 不正な値・空の候補は含めない。
+ */
+export function getFaviconCandidates(url: string, favicon?: string | null, size = 64): string[] {
+  const candidates: string[] = [];
+  if (favicon && isHttpUrl(favicon)) candidates.push(favicon);
+  const google = getFaviconUrl(url, size);
+  if (google && !candidates.includes(google)) candidates.push(google);
+  return candidates;
 }
 
 export type DomainSegment<T> = {

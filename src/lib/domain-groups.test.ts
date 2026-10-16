@@ -4,7 +4,7 @@ import type { Bookmark } from "@/app/(dashboard)/bookmarks/types";
 import {
   getDisplayUrl,
   getDomain,
-  getFaviconDisplayUrl,
+  getFaviconCandidates,
   getFaviconUrl,
   groupByConsecutiveDomain,
 } from "./domain-groups";
@@ -98,41 +98,53 @@ describe("getFaviconUrl", () => {
   });
 });
 
-describe("getFaviconDisplayUrl", () => {
-  it("favicon が http/https の URL ならそれを使う", () => {
-    expect(getFaviconDisplayUrl("https://example.com", "https://cdn.example.com/icon.png")).toBe(
+describe("getFaviconCandidates", () => {
+  const google = "https://www.google.com/s2/favicons?domain=example.com&sz=64";
+
+  it("favicon が http/https の URL なら先頭に置き、次に Google を置く", () => {
+    expect(getFaviconCandidates("https://example.com", "https://cdn.example.com/icon.png")).toEqual(
+      ["https://cdn.example.com/icon.png", google],
+    );
+  });
+
+  it("favicon が null なら Google のみを返す", () => {
+    expect(getFaviconCandidates("https://example.com", null)).toEqual([google]);
+  });
+
+  it("favicon が未指定なら Google のみを返す", () => {
+    expect(getFaviconCandidates("https://example.com")).toEqual([google]);
+  });
+
+  it("favicon が空文字なら Google のみを返す", () => {
+    expect(getFaviconCandidates("https://example.com", "")).toEqual([google]);
+  });
+
+  it("favicon が http/https 以外の URL なら候補に含めない", () => {
+    expect(getFaviconCandidates("https://example.com", "javascript:alert(1)")).toEqual([google]);
+    expect(getFaviconCandidates("https://example.com", "data:image/png;base64,AAAA")).toEqual([
+      google,
+    ]);
+  });
+
+  it("favicon が不正な URL 文字列なら候補に含めない", () => {
+    expect(getFaviconCandidates("https://example.com", "not-a-url")).toEqual([google]);
+  });
+
+  it("favicon が Google の URL と同じなら重複させない", () => {
+    expect(getFaviconCandidates("https://example.com", google)).toEqual([google]);
+  });
+
+  it("ブックマークの URL が不正なら Google を含めない", () => {
+    expect(getFaviconCandidates("not-a-url", "https://cdn.example.com/icon.png")).toEqual([
       "https://cdn.example.com/icon.png",
-    );
-  });
-
-  it("favicon が null なら Google のファビコンサービスにフォールバックする", () => {
-    expect(getFaviconDisplayUrl("https://example.com", null)).toBe(
-      "https://www.google.com/s2/favicons?domain=example.com&sz=64",
-    );
-  });
-
-  it("favicon が未指定でも Google のファビコンサービスにフォールバックする", () => {
-    expect(getFaviconDisplayUrl("https://example.com")).toBe(
-      "https://www.google.com/s2/favicons?domain=example.com&sz=64",
-    );
-  });
-
-  it("favicon が http/https 以外の URL なら Google にフォールバックする", () => {
-    expect(getFaviconDisplayUrl("https://example.com", "javascript:alert(1)")).toBe(
-      "https://www.google.com/s2/favicons?domain=example.com&sz=64",
-    );
-  });
-
-  it("favicon が不正な URL 文字列なら Google にフォールバックする", () => {
-    expect(getFaviconDisplayUrl("https://example.com", "not-a-url")).toBe(
-      "https://www.google.com/s2/favicons?domain=example.com&sz=64",
-    );
+    ]);
+    expect(getFaviconCandidates("not-a-url", null)).toEqual([]);
   });
 
   it("size を指定できる", () => {
-    expect(getFaviconDisplayUrl("https://example.com", null, 32)).toBe(
+    expect(getFaviconCandidates("https://example.com", null, 32)).toEqual([
       "https://www.google.com/s2/favicons?domain=example.com&sz=32",
-    );
+    ]);
   });
 });
 

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { MemoMarkdown } from "@/components/MemoMarkdown";
-import { getDisplayUrl, getFaviconDisplayUrl } from "@/lib/domain-groups";
+import { getDisplayUrl, getFaviconCandidates } from "@/lib/domain-groups";
 import { CopyUrlButton } from "./CopyUrlButton";
 import type { Bookmark } from "./types";
 
@@ -13,20 +13,22 @@ export function BookmarkItemContent({
   onEdit: (bm: Bookmark) => void;
   onDelete: (bm: Bookmark) => void;
 }) {
-  const faviconUrl = getFaviconDisplayUrl(bm.url, bm.favicon);
   const displayUrl = getDisplayUrl(bm.url);
-  // 読込失敗した favicon の URL を保持する。URL が変われば再表示される（DOM に display:none を残さない）
-  const [erroredFaviconUrl, setErroredFaviconUrl] = useState<string | null>(null);
-  const showFavicon = faviconUrl && erroredFaviconUrl !== faviconUrl;
+  // 読込失敗した favicon の URL を保持し、失敗していない次の候補を表示する（保存済み URL → Google）。
+  // 候補が尽きたら表示しない。URL が変われば新しい候補で再表示される（DOM に display:none を残さない）
+  const [erroredFaviconUrls, setErroredFaviconUrls] = useState<string[]>([]);
+  const faviconUrl = getFaviconCandidates(bm.url, bm.favicon).find(
+    (candidate) => !erroredFaviconUrls.includes(candidate),
+  );
   return (
     <>
-      {showFavicon && (
+      {faviconUrl && (
         <img
           src={faviconUrl}
           alt=""
           className="h-4 w-4 shrink-0 rounded-sm"
           referrerPolicy="no-referrer"
-          onError={() => setErroredFaviconUrl(faviconUrl)}
+          onError={() => setErroredFaviconUrls((prev) => [...prev, faviconUrl])}
         />
       )}
       <div className="min-w-0 flex-1">
