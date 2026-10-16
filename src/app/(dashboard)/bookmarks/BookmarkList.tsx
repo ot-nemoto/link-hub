@@ -227,6 +227,7 @@ export function BookmarkList({
       title: string;
       memo: string;
       ogImage?: string;
+      favicon?: string;
       tagId?: string | null;
       hideOgImage?: boolean;
     }) => {
@@ -244,6 +245,7 @@ export function BookmarkList({
                   title: updated.title,
                   memo: updated.memo || null,
                   ogImage: updated.ogImage ?? bm.ogImage,
+                  favicon: updated.favicon ?? bm.favicon,
                   hideOgImage: updated.hideOgImage ?? bm.hideOgImage,
                   tagId: updated.tagId ?? null,
                   tag: newTag,
@@ -488,6 +490,7 @@ export function BookmarkList({
                 title: bm.title,
                 memo: bm.memo ?? "",
                 ogImage: bm.ogImage ?? undefined,
+                favicon: bm.favicon ?? undefined,
                 tagId: bm.tagId,
                 hideOgImage: bm.hideOgImage,
               }}

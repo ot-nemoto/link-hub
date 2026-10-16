@@ -58,14 +58,22 @@ describe("GET /api/ogp", () => {
     expect(mockFetchOgpData).not.toHaveBeenCalled();
   });
 
-  it("正常系: 200 で title/image を返す", async () => {
+  it("正常系: 200 で title/image/favicon を返す", async () => {
     mockGetUser.mockResolvedValue({ id: "user_1" });
-    mockFetchOgpData.mockResolvedValue({ title: "T", image: "https://example.com/og.png" });
+    mockFetchOgpData.mockResolvedValue({
+      title: "T",
+      image: "https://example.com/og.png",
+      favicon: "https://example.com/favicon.png",
+    });
 
     const res = await GET(req("url=https://example.com"));
 
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ title: "T", image: "https://example.com/og.png" });
+    expect(await res.json()).toEqual({
+      title: "T",
+      image: "https://example.com/og.png",
+      favicon: "https://example.com/favicon.png",
+    });
     expect(mockFetchOgpData).toHaveBeenCalledWith("https://example.com");
   });
 
@@ -76,16 +84,16 @@ describe("GET /api/ogp", () => {
     const res = await GET(req("url=https://example.com"));
 
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ title: null, image: null });
+    expect(await res.json()).toEqual({ title: null, image: null, favicon: null });
   });
 
-  it("title/image が undefined の場合は null に正規化する", async () => {
+  it("title/image/favicon が undefined の場合は null に正規化する", async () => {
     mockGetUser.mockResolvedValue({ id: "user_1" });
     mockFetchOgpData.mockResolvedValue({ title: "T" });
 
     const res = await GET(req("url=https://example.com"));
 
-    expect(await res.json()).toEqual({ title: "T", image: null });
+    expect(await res.json()).toEqual({ title: "T", image: null, favicon: null });
   });
 
   it("lib が例外を投げたら 500 { error }（例外の内容は返さない）", async () => {

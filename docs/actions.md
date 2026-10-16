@@ -18,7 +18,7 @@
 | `updateTag(id, name)` | タグ名の更新 | `src/app/(dashboard)/bookmarks/actions.ts` |
 | `reorderTags(ids, options?)` | タグの並び順更新 | `src/app/(dashboard)/bookmarks/actions.ts` |
 | `deleteTag(id)` | タグ削除 | `src/app/(dashboard)/bookmarks/actions.ts` |
-| `fetchOgp(url)` | URL から OGP 情報を取得 | `src/app/(dashboard)/bookmarks/fetchOgp.ts` |
+| `fetchOgp(url)` | URL から OGP 情報とファビコン URL を取得 | `src/app/(dashboard)/bookmarks/fetchOgp.ts` |
 | `generateApiKey()` | API キーの生成・再生成 | `src/app/(dashboard)/api-key-actions.ts` |
 | `revokeApiKey()` | API キーの失効（無効化） | `src/app/(dashboard)/api-key-actions.ts` |
 

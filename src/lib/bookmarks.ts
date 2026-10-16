@@ -7,6 +7,7 @@ export type BookmarkData = {
   title: string;
   memo?: string;
   ogImage?: string;
+  favicon?: string;
   tagId?: string | null;
   hideOgImage?: boolean;
   sortOrder?: number;
@@ -78,6 +79,7 @@ export async function createBookmark(userId: string, data: BookmarkData): Promis
       title: data.title,
       memo: data.memo || null,
       ogImage: data.ogImage ?? null,
+      favicon: data.favicon ?? null,
       sortOrder,
       tagId: validTagId,
     },
@@ -117,6 +119,7 @@ export async function updateBookmark(
       title: data.title,
       ...(data.memo !== undefined ? { memo: data.memo || null } : {}),
       ...(data.ogImage !== undefined ? { ogImage: data.ogImage ?? null } : {}),
+      ...(data.favicon !== undefined ? { favicon: data.favicon ?? null } : {}),
       ...(data.hideOgImage !== undefined ? { hideOgImage: data.hideOgImage } : {}),
       ...(validTagId !== undefined ? { tagId: validTagId } : {}),
       ...(data.sortOrder !== undefined ? { sortOrder: data.sortOrder } : {}),

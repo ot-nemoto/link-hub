@@ -12,6 +12,7 @@ type Props = {
     title: string;
     memo: string;
     ogImage?: string;
+    favicon?: string;
     tagId?: string | null;
     hideOgImage?: boolean;
   }) => Promise<{ error?: string }>;
@@ -21,6 +22,7 @@ type Props = {
     title: string;
     memo: string;
     ogImage?: string;
+    favicon?: string;
     tagId?: string | null;
     hideOgImage?: boolean;
   }) => void;

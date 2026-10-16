@@ -45,6 +45,30 @@ export function getFaviconUrl(url: string, size = 64): string {
   return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=${size}`;
 }
 
+function isHttpUrl(url: string): boolean {
+  try {
+    const protocol = new URL(url).protocol;
+    return protocol === "http:" || protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * 一覧に表示するファビコン URL の候補を、試す順に返す。
+ * 保存済みの `favicon`（ブックマーク先から取得した URL）が http/https であれば先頭に置き、
+ * 次に Google のファビコンサービスを置く。表示側は読み込みに失敗したら次の候補を試す
+ * （ホットリンク禁止・混在コンテンツ・リンク切れで保存済み URL が読めない場合に Google で補うため）。
+ * 不正な値・空の候補は含めない。
+ */
+export function getFaviconCandidates(url: string, favicon?: string | null, size = 64): string[] {
+  const candidates: string[] = [];
+  if (favicon && isHttpUrl(favicon)) candidates.push(favicon);
+  const google = getFaviconUrl(url, size);
+  if (google && !candidates.includes(google)) candidates.push(google);
+  return candidates;
+}
+
 export type DomainSegment<T> = {
   domain: string;
   bookmarks: T[];
