@@ -50,8 +50,19 @@ export function BookmarkForm({
   const urlInputRef = useRef<HTMLInputElement>(null);
   // 最後に取得に成功した URL（編集時は既存の URL）。URL がこれから変わったときだけ自動取得する
   const fetchedUrlRef = useRef(defaultValues?.url.trim() ?? "");
-  // 取得中に URL がさらに変わった場合に、古い取得結果で上書きしないための照合用
-  const pendingUrlRef = useRef("");
+  // 自動取得が重なったとき、最新の取得が終わるまで「取得中」を解除しないための番号
+  const blurFetchSeqRef = useRef(0);
+
+  // 結果が返った時点で URL 欄が取得した URL と違えば（URL を戻した・変えた）、古い結果として捨てる
+  async function fetchForCurrentUrl(url: string) {
+    let result: Awaited<ReturnType<typeof fetchOgp>>;
+    try {
+      result = await fetchOgp(url);
+    } catch {
+      result = { error: "fetch failed" };
+    }
+    return urlInputRef.current?.value.trim() === url ? result : null;
+  }
 
   async function handleUrlBlur(e: React.FocusEvent<HTMLInputElement>) {
     const url = e.currentTarget.value.trim();
@@ -64,18 +75,20 @@ export function BookmarkForm({
       return;
     }
 
-    pendingUrlRef.current = url;
+    const seq = ++blurFetchSeqRef.current;
     setFetchingOgp(true);
-    const result = await fetchOgp(url);
-    if (pendingUrlRef.current !== url) return;
-    setFetchingOgp(false);
+    const result = await fetchForCurrentUrl(url);
+    if (seq === blurFetchSeqRef.current) setFetchingOgp(false);
 
-    if (result.error) return;
+    if (!result || result.error) return;
     fetchedUrlRef.current = url;
     // タイトルは必須なので、取得できなかったときは今の値を残す
     if (result.title) setTitle(result.title);
     setOgImage(result.image ?? "");
     setFavicon(result.favicon ?? "");
+    // 「一覧に表示しない」は前のサイトの画像に対する設定なので戻す
+    setHideOgImage(false);
+    setErrors(({ refetch: _refetch, ...rest }) => rest);
   }
 
   // URL を変えずに OGP 画像・ファビコンだけを取り直して上書きする（タイトルはユーザー入力を優先して触らない）
@@ -92,9 +105,10 @@ export function BookmarkForm({
     setErrors(rest);
 
     setRefetching(true);
-    const result = await fetchOgp(url);
+    const result = await fetchForCurrentUrl(url);
     setRefetching(false);
 
+    if (!result) return;
     if (result.error) {
       setErrors({ ...rest, refetch: "取得に失敗しました。URL を確認して再度お試しください" });
       return;
@@ -183,6 +197,10 @@ export function BookmarkForm({
             ref={urlInputRef}
             defaultValue={defaultValues?.url}
             onBlur={handleUrlBlur}
+            // Enter で送信すると blur（URL 変更時の取得）を経ずに前のサイトの値で保存されるため
+            onKeyDown={(e) => {
+              if (e.key === "Enter") e.preventDefault();
+            }}
             className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 disabled:bg-zinc-50 disabled:text-zinc-500"
             placeholder="https://example.com"
           />
