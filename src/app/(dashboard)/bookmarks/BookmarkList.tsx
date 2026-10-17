@@ -276,7 +276,7 @@ export function BookmarkList({
       const headerTop = Number.parseFloat(style.top) + toolbar.offsetHeight;
       setTagOffsets({ headerTop, scrollMargin: headerTop + Number.parseFloat(style.marginBottom) });
     };
-    update();
+    // observe() 時点で初回の通知が来るため、ここで update() を呼ぶ必要はない
     const observer = new ResizeObserver(update);
     observer.observe(toolbar);
     return () => observer.disconnect();

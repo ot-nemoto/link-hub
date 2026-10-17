@@ -2,9 +2,10 @@ import type { ReactNode } from "react";
 import { getTagColor } from "@/lib/tag-colors";
 import type { TagItem } from "./types";
 
-// --tag-header-top / --tag-scroll-margin は BookmarkList が検索窓・タグナビの帯の高さから算出する（未算出時は従来の固定値）
-export const STICKY_GROUP_HEADER = "sticky top-[var(--tag-header-top,14rem)] z-[5]";
-export const GROUP_SCROLL_MARGIN = "scroll-mt-[var(--tag-scroll-margin,14rem)]";
+// --tag-header-top / --tag-scroll-margin は BookmarkList が検索窓・タグナビの帯の高さから算出する
+// （算出前のフォールバックは、タグナビ表示時の実測値に合わせている）
+export const STICKY_GROUP_HEADER = "sticky top-[var(--tag-header-top,190px)] z-[5]";
+export const GROUP_SCROLL_MARGIN = "scroll-mt-[var(--tag-scroll-margin,210px)]";
 
 /**
  * タググループの見出しバンド（色帯・ドット・タグ名・件数・シェブロン）。
