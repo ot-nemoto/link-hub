@@ -18,10 +18,11 @@ const titleField = z
  */
 export const bookmarkBodySchema = z.object(
   {
-    url: httpUrlField,
+    url: httpUrlField("url"),
     title: titleField,
     memo: z.string({ error: "memo は文字列で指定してください" }).optional(),
     ogImage: z.string({ error: "ogImage は文字列で指定してください" }).optional(),
+    favicon: httpUrlField("favicon").optional(),
     tagId: z.string({ error: "tagId の形式が不正です" }).nullable().optional(),
     hideOgImage: z.boolean({ error: "hideOgImage は真偽値で指定してください" }).optional(),
     sortOrder: z
@@ -43,6 +44,7 @@ export const bookmarkResponseSchema = z.object({
   title: z.string(),
   memo: z.string().nullable(),
   ogImage: z.string().nullable(),
+  favicon: z.string().nullable(),
   tag: z.object({ id: z.string(), name: z.string() }).nullable(),
   createdAt: z.string(),
 });

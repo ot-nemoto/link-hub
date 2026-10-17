@@ -6,7 +6,9 @@ export type BookmarkData = {
   url: string;
   title: string;
   memo?: string;
-  ogImage?: string;
+  // 更新時: undefined は既存値を保持、null は既存値を消す
+  ogImage?: string | null;
+  favicon?: string | null;
   tagId?: string | null;
   hideOgImage?: boolean;
   sortOrder?: number;
@@ -78,6 +80,7 @@ export async function createBookmark(userId: string, data: BookmarkData): Promis
       title: data.title,
       memo: data.memo || null,
       ogImage: data.ogImage ?? null,
+      favicon: data.favicon ?? null,
       sortOrder,
       tagId: validTagId,
     },
@@ -117,6 +120,7 @@ export async function updateBookmark(
       title: data.title,
       ...(data.memo !== undefined ? { memo: data.memo || null } : {}),
       ...(data.ogImage !== undefined ? { ogImage: data.ogImage ?? null } : {}),
+      ...(data.favicon !== undefined ? { favicon: data.favicon ?? null } : {}),
       ...(data.hideOgImage !== undefined ? { hideOgImage: data.hideOgImage } : {}),
       ...(validTagId !== undefined ? { tagId: validTagId } : {}),
       ...(data.sortOrder !== undefined ? { sortOrder: data.sortOrder } : {}),

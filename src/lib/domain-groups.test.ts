@@ -1,7 +1,13 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
 import type { Bookmark } from "@/app/(dashboard)/bookmarks/types";
-import { getDisplayUrl, getDomain, getFaviconUrl, groupByConsecutiveDomain } from "./domain-groups";
+import {
+  getDisplayUrl,
+  getDomain,
+  getFaviconCandidates,
+  getFaviconUrl,
+  groupByConsecutiveDomain,
+} from "./domain-groups";
 
 function bm(id: string, url: string): Bookmark {
   return {
@@ -10,6 +16,7 @@ function bm(id: string, url: string): Bookmark {
     title: id,
     memo: null,
     ogImage: null,
+    favicon: null,
     hideOgImage: false,
     sortOrder: 0,
     tag: null,
@@ -88,6 +95,56 @@ describe("getFaviconUrl", () => {
   it("不正な URL は空文字を返す", () => {
     expect(getFaviconUrl("not-a-url")).toBe("");
     expect(getFaviconUrl("")).toBe("");
+  });
+});
+
+describe("getFaviconCandidates", () => {
+  const google = "https://www.google.com/s2/favicons?domain=example.com&sz=64";
+
+  it("favicon が http/https の URL なら先頭に置き、次に Google を置く", () => {
+    expect(getFaviconCandidates("https://example.com", "https://cdn.example.com/icon.png")).toEqual(
+      ["https://cdn.example.com/icon.png", google],
+    );
+  });
+
+  it("favicon が null なら Google のみを返す", () => {
+    expect(getFaviconCandidates("https://example.com", null)).toEqual([google]);
+  });
+
+  it("favicon が未指定なら Google のみを返す", () => {
+    expect(getFaviconCandidates("https://example.com")).toEqual([google]);
+  });
+
+  it("favicon が空文字なら Google のみを返す", () => {
+    expect(getFaviconCandidates("https://example.com", "")).toEqual([google]);
+  });
+
+  it("favicon が http/https 以外の URL なら候補に含めない", () => {
+    expect(getFaviconCandidates("https://example.com", "javascript:alert(1)")).toEqual([google]);
+    expect(getFaviconCandidates("https://example.com", "data:image/png;base64,AAAA")).toEqual([
+      google,
+    ]);
+  });
+
+  it("favicon が不正な URL 文字列なら候補に含めない", () => {
+    expect(getFaviconCandidates("https://example.com", "not-a-url")).toEqual([google]);
+  });
+
+  it("favicon が Google の URL と同じなら重複させない", () => {
+    expect(getFaviconCandidates("https://example.com", google)).toEqual([google]);
+  });
+
+  it("ブックマークの URL が不正なら Google を含めない", () => {
+    expect(getFaviconCandidates("not-a-url", "https://cdn.example.com/icon.png")).toEqual([
+      "https://cdn.example.com/icon.png",
+    ]);
+    expect(getFaviconCandidates("not-a-url", null)).toEqual([]);
+  });
+
+  it("size を指定できる", () => {
+    expect(getFaviconCandidates("https://example.com", null, 32)).toEqual([
+      "https://www.google.com/s2/favicons?domain=example.com&sz=32",
+    ]);
   });
 });
 

@@ -6,6 +6,7 @@ export type Bookmark = {
   title: string;
   memo: string | null;
   ogImage: string | null;
+  favicon: string | null;
   hideOgImage: boolean;
   sortOrder: number;
   tag: { id: string; name: string } | null;

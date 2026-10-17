@@ -7,7 +7,7 @@ import { fetchOgpData } from "@/lib/ogp";
 
 export async function fetchOgp(
   url: string,
-): Promise<{ title?: string; image?: string; error?: string }> {
+): Promise<{ title?: string; image?: string; favicon?: string; error?: string }> {
   const session = await getSession();
   if (!session) redirect("/sign-in");
 

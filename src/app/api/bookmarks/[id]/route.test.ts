@@ -24,6 +24,7 @@ const record = {
   title: "Updated",
   memo: null,
   ogImage: null,
+  favicon: null,
   createdAt: new Date("2026-01-02T03:04:05.000Z"),
   tag: null,
 };
@@ -97,6 +98,7 @@ describe("PATCH /api/bookmarks/:id", () => {
       title: "Updated",
       memo: null,
       ogImage: null,
+      favicon: null,
       tag: null,
       createdAt: "2026-01-02T03:04:05.000Z",
     });
@@ -105,6 +107,38 @@ describe("PATCH /api/bookmarks/:id", () => {
       "bm_1",
       expect.objectContaining({ url: "https://a.com", title: "Updated" }),
     );
+  });
+
+  it("favicon を指定すると lib にそのまま渡す", async () => {
+    mockGetUser.mockResolvedValue({ id: "user_1" });
+    mockUpdate.mockResolvedValue({ bookmark: record as never });
+
+    await PATCH(
+      patchReq({
+        url: "https://a.com",
+        title: "Updated",
+        favicon: "https://a.com/favicon.png",
+      }),
+      ctx,
+    );
+
+    expect(mockUpdate).toHaveBeenCalledWith(
+      "user_1",
+      "bm_1",
+      expect.objectContaining({ favicon: "https://a.com/favicon.png" }),
+    );
+  });
+
+  it("favicon が http/https 以外は 400（lib は呼ばれない）", async () => {
+    mockGetUser.mockResolvedValue({ id: "user_1" });
+
+    const res = await PATCH(
+      patchReq({ url: "https://a.com", title: "Updated", favicon: "javascript:alert(1)" }),
+      ctx,
+    );
+
+    expect(res.status).toBe(400);
+    expect(mockUpdate).not.toHaveBeenCalled();
   });
 
   it("tagId + sortOrder を同時指定すると lib に渡す（moveBookmark 相当）", async () => {

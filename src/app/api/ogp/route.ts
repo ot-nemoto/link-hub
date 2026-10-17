@@ -16,5 +16,9 @@ export const GET = withApiErrorHandling(async (req: NextRequest) => {
   // 取得失敗・SSRF ブロックはエラーにせず空メタデータを返す（自動補完用途のためベストエフォート）
   const result = await fetchOgpData(parsed.data.url);
 
-  return NextResponse.json({ title: result.title ?? null, image: result.image ?? null });
+  return NextResponse.json({
+    title: result.title ?? null,
+    image: result.image ?? null,
+    favicon: result.favicon ?? null,
+  });
 });
