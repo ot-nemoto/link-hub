@@ -3,7 +3,7 @@
 import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { type CSSProperties, useCallback, useEffect, useRef, useState } from "react";
 import { BookmarkAddModal } from "@/components/BookmarkAddModal";
 import { BookmarkEditModal } from "@/components/BookmarkEditModal";
 import { TagManagementModal } from "@/components/TagManagementModal";
@@ -24,7 +24,7 @@ import { DragHandleIcon } from "./DragHandleIcon";
 import { GlobeIcon } from "./GlobeIcon";
 import { SearchIcon } from "./SearchIcon";
 import { TagGroup } from "./TagGroup";
-import { TagGroupHeader } from "./TagGroupHeader";
+import { GROUP_SCROLL_MARGIN, TagGroupHeader } from "./TagGroupHeader";
 import { TRASH_COLLAPSE_KEY, TrashGroup } from "./TrashGroup";
 import type { Bookmark, TagItem, TagWithCount } from "./types";
 import { UNCATEGORIZED_KEY } from "./types";
@@ -261,13 +261,46 @@ export function BookmarkList({
     [router, editingBookmarkId, allTagsState],
   );
 
+  // 検索窓・タグナビの帯は、タグナビの表示有無（グループが 1 つなら非表示）で高さが変わるため、実測して追従する
+  // - 見出しを固定する位置: 帯のすぐ下（隙間があると下を流れるブックマークがちらつくため）
+  // - タグナビで止まる位置: 帯の下の余白も含める（初期表示の最初のグループと同じ位置にし、最初のタグを押してもページが動かないようにする）
+  const toolbarRef = useRef<HTMLDivElement>(null);
+  const [tagOffsets, setTagOffsets] = useState<{ headerTop: number; scrollMargin: number } | null>(
+    null,
+  );
+  useEffect(() => {
+    const toolbar = toolbarRef.current;
+    if (!toolbar) return;
+    const update = () => {
+      const style = getComputedStyle(toolbar);
+      const headerTop = Number.parseFloat(style.top) + toolbar.offsetHeight;
+      setTagOffsets({ headerTop, scrollMargin: headerTop + Number.parseFloat(style.marginBottom) });
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(toolbar);
+    return () => observer.disconnect();
+  }, []);
+
   const scrollToTag = useCallback((key: string) => {
     document.getElementById(`tag-${key}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
 
   return (
-    <div>
-      <div className="sticky top-20 z-10 mb-5 rounded-2xl border border-zinc-200 bg-white/95 p-4 shadow-sm backdrop-blur-sm">
+    <div
+      style={
+        tagOffsets === null
+          ? undefined
+          : ({
+              "--tag-header-top": `${tagOffsets.headerTop}px`,
+              "--tag-scroll-margin": `${tagOffsets.scrollMargin}px`,
+            } as CSSProperties)
+      }
+    >
+      <div
+        ref={toolbarRef}
+        className="sticky top-20 z-10 mb-5 rounded-2xl border border-zinc-200 bg-white/95 p-4 shadow-sm backdrop-blur-sm"
+      >
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-2">
             <div className="relative min-w-0 flex-1">
@@ -376,7 +409,7 @@ export function BookmarkList({
               <div
                 key={group.key}
                 id={`tag-${group.key}`}
-                className={`mb-6 scroll-mt-56 border-l-4 pl-3 ${color ? color.border : "border-zinc-300"}`}
+                className={`mb-6 ${GROUP_SCROLL_MARGIN} border-l-4 pl-3 ${color ? color.border : "border-zinc-300"}`}
               >
                 <TagGroupHeader
                   tag={group.tag}
