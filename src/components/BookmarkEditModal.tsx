@@ -11,8 +11,8 @@ type Props = {
     url: string;
     title: string;
     memo: string;
-    ogImage?: string;
-    favicon?: string;
+    ogImage?: string | null;
+    favicon?: string | null;
     tagId?: string | null;
     hideOgImage?: boolean;
   };
@@ -20,8 +20,8 @@ type Props = {
     url: string;
     title: string;
     memo: string;
-    ogImage?: string;
-    favicon?: string;
+    ogImage?: string | null;
+    favicon?: string | null;
     tagId?: string | null;
   }) => Promise<{ error?: string }>;
   onClose: () => void;
@@ -29,8 +29,8 @@ type Props = {
     url: string;
     title: string;
     memo: string;
-    ogImage?: string;
-    favicon?: string;
+    ogImage?: string | null;
+    favicon?: string | null;
     tagId?: string | null;
   }) => void;
 };
