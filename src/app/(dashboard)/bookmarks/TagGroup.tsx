@@ -10,7 +10,7 @@ import { DragHandleIcon } from "./DragHandleIcon";
 import { GlobeIcon } from "./GlobeIcon";
 import { SortableBookmarkItem } from "./SortableBookmarkItem";
 import { TagDropZone } from "./TagDropZone";
-import { TagGroupHeader } from "./TagGroupHeader";
+import { GROUP_SCROLL_MARGIN, TagGroupHeader } from "./TagGroupHeader";
 import type { Bookmark, TagItem } from "./types";
 
 export function TagGroup({
@@ -60,7 +60,7 @@ export function TagGroup({
       ref={setNodeRef}
       style={style}
       id={`tag-${tagKey}`}
-      className={`mb-6 scroll-mt-56 border-l-4 pl-3 ${color ? color.border : "border-zinc-300"}`}
+      className={`mb-6 ${GROUP_SCROLL_MARGIN} border-l-4 pl-3 ${color ? color.border : "border-zinc-300"}`}
     >
       <TagGroupHeader
         tag={tag}
