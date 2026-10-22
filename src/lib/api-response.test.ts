@@ -85,11 +85,6 @@ describe("jsonError / unauthorized", () => {
 });
 
 describe("withApiErrorHandling", () => {
-  // console.log の spy を残すとこのファイルの後続テストに漏れる
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it("正常系: 監査ログを 1 件出力する（ステータスはハンドラの戻り値）", async () => {
     const spy = vi.spyOn(console, "log").mockImplementation(() => {});
     const handler = withApiErrorHandling(
@@ -180,7 +175,10 @@ describe("withApiErrorHandling", () => {
   beforeEach(() => {
     consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
   });
-  afterEach(() => consoleError.mockRestore());
+  // console.log の spy も含めて戻す。残すとこのファイルの後続テストに漏れる
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
   it("包んだ関数に WRAPPED の印を付ける（構造テストが実体で判定するため）", () => {
     const wrapped = withApiErrorHandling(async () => new Response(null));
