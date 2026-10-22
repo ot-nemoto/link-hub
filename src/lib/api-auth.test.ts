@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getUserByApiKey } from "./api-auth";
 import { hashApiKey } from "./api-key";
+import { buildAuditRecord } from "./audit-log";
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
@@ -122,5 +123,32 @@ describe("getUserByApiKey", () => {
       expect(await getUserByApiKey(reqWith("Bearer lh_unknown"))).toBeNull();
       expect(mockUserUpdate).not.toHaveBeenCalled();
     });
+  });
+});
+
+// 監査ログのラッパーは認証ユーザーを知らないため、getUserByApiKey が
+// Request インスタンスをキーに受け渡す。その経路を固定する。
+describe("監査ログへの userId 受け渡し", () => {
+  it("正常系: 認証が通ったユーザーが監査レコードに載る", async () => {
+    // @ts-expect-error モックのため一部フィールドのみ
+    mockUserFindUnique.mockResolvedValue({ id: "user-uuid", apiKeyLastUsedAt: new Date() });
+    const req = new Request("https://example.com/api/bookmarks", {
+      headers: { authorization: "Bearer valid-key" },
+    });
+
+    await getUserByApiKey(req as unknown as NextRequest);
+
+    expect(buildAuditRecord(req, 200).userId).toBe("user-uuid");
+  });
+
+  it("異常系: キーが一致しなければ userId は null のまま", async () => {
+    mockUserFindUnique.mockResolvedValue(null);
+    const req = new Request("https://example.com/api/bookmarks", {
+      headers: { authorization: "Bearer invalid-key" },
+    });
+
+    await getUserByApiKey(req as unknown as NextRequest);
+
+    expect(buildAuditRecord(req, 401).userId).toBeNull();
   });
 });
