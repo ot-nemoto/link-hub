@@ -1,5 +1,6 @@
 import { unstable_rethrow } from "next/navigation";
 import { NextResponse } from "next/server";
+import { logAudit } from "./audit-log";
 
 type SerializableBookmark = {
   id: string;
@@ -50,15 +51,18 @@ export function withApiErrorHandling<Args extends unknown[]>(
   handler: (...args: Args) => Promise<Response>,
 ): (...args: Args) => Promise<Response> {
   const wrapped = async (...args: Args) => {
+    const req = args[0] instanceof Request ? args[0] : null;
     try {
-      return await handler(...args);
+      const res = await handler(...args);
+      if (req) logAudit(req, res.status);
+      return res;
     } catch (e) {
       // redirect() / notFound() 等は例外で制御フローを表現する。先に再 throw しないと
       // 500 に化ける（現時点の API ルートでは未使用だが、後から足した人が気づけない）
       unstable_rethrow(e);
-      const req = args[0];
-      const where = req instanceof Request ? `${req.method} ${new URL(req.url).pathname}` : "";
+      const where = req ? `${req.method} ${new URL(req.url).pathname}` : "";
       console.error(`[api] 500 ${where}`.trimEnd(), e);
+      if (req) logAudit(req, 500);
       return jsonError("Internal Server Error", 500);
     }
   };

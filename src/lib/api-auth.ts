@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 
 import { hashApiKey } from "@/lib/api-key";
+import { setAuditUserId } from "@/lib/audit-log";
 import { prisma } from "@/lib/prisma";
 
 // 棚卸し用途には時間単位の粒度で足りるため、毎リクエストの書き込みを避ける
@@ -21,6 +22,10 @@ export async function getUserByApiKey(req: NextRequest): Promise<{ id: string } 
     where: { apiKeyHash: await hashApiKey(apiKey) },
     select: { id: true, apiKeyLastUsedAt: true },
   });
+  // 監査ログのラッパーへ受け渡す（ラッパーは認証ユーザーを知らない）。
+  // キー未一致で user が null の場合は記録せず、監査レコードの userId は null になる。
+  if (user) setAuditUserId(req, user.id);
+
   if (!user) return null;
 
   const now = new Date();
