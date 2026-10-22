@@ -119,7 +119,20 @@ export function buildOpenApiDocument(options: { version?: string; serverUrl?: st
       responses: Object.fromEntries(
         Object.entries(ERROR_RESPONSES).map(([name, description]) => [
           name,
-          jsonResponse(description, ref("Error")),
+          name === "Unauthorized"
+            ? {
+                // RFC 9110 が求める WWW-Authenticate チャレンジを宣言する。
+                // 配信 spec を仕様の唯一の正とするため、実装が返すヘッダは spec にも載せる。
+                ...jsonResponse(description, ref("Error")),
+                headers: {
+                  "WWW-Authenticate": {
+                    description: "認証方式（RFC 6750 の Bearer）",
+                    schema: { type: "string" },
+                    example: "Bearer",
+                  },
+                },
+              }
+            : jsonResponse(description, ref("Error")),
         ]),
       ),
     },

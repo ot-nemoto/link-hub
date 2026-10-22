@@ -153,6 +153,17 @@ describe("buildOpenApiDocument", () => {
     }
   });
 
+  // 実装（unauthorized()）が返す WWW-Authenticate を spec にも載せる。
+  // 配信 spec を仕様の唯一の正とするため、片方だけ消えるのを防ぐ。
+  it("components.responses.Unauthorized が WWW-Authenticate ヘッダを宣言する", () => {
+    const doc = buildOpenApiDocument();
+    const res = doc.components.responses.Unauthorized as {
+      headers?: Record<string, unknown>;
+    };
+
+    expect(res.headers?.["WWW-Authenticate"]).toBeTruthy();
+  });
+
   it("info.description に認証・共通仕様・エラー形式・破壊的変更・クイックスタートを含む", () => {
     const description = doc.info.description;
     for (const expected of [
