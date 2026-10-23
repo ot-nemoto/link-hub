@@ -17,7 +17,10 @@ export async function generateApiKey(): Promise<{ apiKey?: string; error?: strin
     const apiKey = await libGenerateApiKey(session.user.id);
     revalidatePath("/bookmarks");
     return { apiKey };
-  } catch {
+  } catch (e) {
+    // 画面内（モーダル）に文言を出すため { error } に変換するが、変換すると digest による
+    // サーバーログとの突き合わせが失われる。痕跡を残すため記録してから返す。
+    console.error(e);
     return { error: "API キーの生成に失敗しました" };
   }
 }
@@ -30,7 +33,10 @@ export async function revokeApiKey(): Promise<{ error?: string }> {
     await libRevokeApiKey(session.user.id);
     revalidatePath("/bookmarks");
     return {};
-  } catch {
+  } catch (e) {
+    // 画面内（モーダル）に文言を出すため { error } に変換するが、変換すると digest による
+    // サーバーログとの突き合わせが失われる。痕跡を残すため記録してから返す。
+    console.error(e);
     return { error: "API キーの失効に失敗しました" };
   }
 }
