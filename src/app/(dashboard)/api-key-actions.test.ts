@@ -42,14 +42,19 @@ describe("generateApiKey action", () => {
     expect(result).toEqual({ apiKey: "key-generated" });
   });
 
-  it("lib が失敗した場合は { error } を返す", async () => {
+  it("lib が失敗した場合は { error } を返し、ログに残す", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const error = new Error("db error");
     mockGetSession.mockResolvedValue(session);
-    mockLibGenerate.mockRejectedValue(new Error("db error"));
+    mockLibGenerate.mockRejectedValue(error);
 
     const result = await generateApiKey();
 
     expect(result).toEqual({ error: "API キーの生成に失敗しました" });
     expect(mockRevalidatePath).not.toHaveBeenCalled();
+    // 変換すると digest による突き合わせが失われるため、記録が無いと痕跡が完全に消える。
+    expect(consoleError).toHaveBeenCalledWith(error);
+    consoleError.mockRestore();
   });
 
   it("未認証の場合 redirect を呼ぶ", async () => {
@@ -75,14 +80,19 @@ describe("revokeApiKey action", () => {
     expect(result).toEqual({});
   });
 
-  it("lib が失敗した場合は { error } を返す", async () => {
+  it("lib が失敗した場合は { error } を返し、ログに残す", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const error = new Error("db error");
     mockGetSession.mockResolvedValue(session);
-    mockLibRevoke.mockRejectedValue(new Error("db error"));
+    mockLibRevoke.mockRejectedValue(error);
 
     const result = await revokeApiKey();
 
     expect(result).toEqual({ error: "API キーの失効に失敗しました" });
     expect(mockRevalidatePath).not.toHaveBeenCalled();
+    // 変換すると digest による突き合わせが失われるため、記録が無いと痕跡が完全に消える。
+    expect(consoleError).toHaveBeenCalledWith(error);
+    consoleError.mockRestore();
   });
 
   it("未認証の場合 redirect を呼ぶ", async () => {
