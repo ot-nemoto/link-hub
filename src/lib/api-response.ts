@@ -1,5 +1,6 @@
 import { unstable_rethrow } from "next/navigation";
 import { NextResponse } from "next/server";
+import { logAudit } from "./audit-log";
 
 type SerializableBookmark = {
   id: string;
@@ -50,15 +51,18 @@ export function withApiErrorHandling<Args extends unknown[]>(
   handler: (...args: Args) => Promise<Response>,
 ): (...args: Args) => Promise<Response> {
   const wrapped = async (...args: Args) => {
+    const req = args[0] instanceof Request ? args[0] : null;
     try {
-      return await handler(...args);
+      const res = await handler(...args);
+      if (req) logAudit(req, res.status);
+      return res;
     } catch (e) {
       // redirect() / notFound() 等は例外で制御フローを表現する。先に再 throw しないと
       // 500 に化ける（現時点の API ルートでは未使用だが、後から足した人が気づけない）
       unstable_rethrow(e);
-      const req = args[0];
-      const where = req instanceof Request ? `${req.method} ${new URL(req.url).pathname}` : "";
+      const where = req ? `${req.method} ${new URL(req.url).pathname}` : "";
       console.error(`[api] 500 ${where}`.trimEnd(), e);
+      if (req) logAudit(req, 500);
       return jsonError("Internal Server Error", 500);
     }
   };
@@ -69,5 +73,17 @@ export function withApiErrorHandling<Args extends unknown[]>(
 
 /** 認証失敗（401）レスポンス。 */
 export function unauthorized() {
-  return jsonError("Unauthorized", 401);
+  const res = jsonError("Unauthorized", 401);
+  // RFC 9110 は 401 応答に WWW-Authenticate を含めることを求める。
+  // これが無いとクライアントは応答から認証方式を判断できない。
+  //
+  // Basic は使わない（ブラウザがネイティブの認証ダイアログを出す）。Bearer は出さない。
+  // RFC 6750 の error="invalid_token" は付けない: トークン未指定と無効を区別するには
+  // 認証関数が理由を返す必要があり、現状はいずれも null を返すため区別できない。
+  //
+  // CORS 応答ではブラウザの JS から既定で読めない（Access-Control-Expose-Headers が必要）。
+  // 外部連携のクライアントは curl / サーバーサイドが主で最初から読めるため、
+  // 露出ヘッダは増やさない。必要になった時点で追加する。
+  res.headers.set("WWW-Authenticate", "Bearer");
+  return res;
 }
