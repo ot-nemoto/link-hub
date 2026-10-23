@@ -19,6 +19,34 @@ const EXPECTED_PATHS = [
 
 const HTTP_METHODS = ["get", "post", "patch", "put", "delete"];
 
+/**
+ * 操作ごとに宣言するステータス集合。`"METHOD /path"` をキーにする
+ * （本リポジトリの spec は `operationId` を持たないため）。
+ *
+ * これは**列挙**で、spec に無いステータスを見つける検査ではない。狙いは回帰の防止:
+ * ステータスを足す/消すときにこの表の更新を強制し、**無言の変更を起こさせない**。
+ * 「未使用の `responses` も無い」検査は参照が 1 箇所のステータスしか守れず、
+ * `Unauthorized` のように複数から参照されるものは 1 箇所消しても素通りしていた。
+ * キー集合は下の検査で spec と双方向に一致させる。
+ */
+const EXPECTED_STATUS: Record<string, string[]> = {
+  "GET /api/bookmarks": ["200", "401", "500"],
+  "POST /api/bookmarks": ["201", "400", "401", "404", "500"],
+  "DELETE /api/bookmarks": ["204", "400", "401", "500"],
+  "POST /api/bookmarks/reorder": ["200", "400", "401", "403", "500"],
+  "GET /api/bookmarks/trash": ["200", "401", "500"],
+  "DELETE /api/bookmarks/trash": ["204", "401", "500"],
+  "PATCH /api/bookmarks/{id}": ["200", "400", "401", "403", "404", "500"],
+  "DELETE /api/bookmarks/{id}": ["204", "401", "403", "404", "500"],
+  "POST /api/bookmarks/{id}/restore": ["200", "401", "403", "404", "500"],
+  "GET /api/tags": ["200", "401", "500"],
+  "POST /api/tags": ["201", "400", "401", "409", "500"],
+  "POST /api/tags/reorder": ["200", "400", "401", "403", "500"],
+  "PATCH /api/tags/{id}": ["200", "400", "401", "403", "404", "409", "500"],
+  "DELETE /api/tags/{id}": ["204", "401", "403", "404", "500"],
+  "GET /api/ogp": ["200", "400", "401", "500"],
+};
+
 describe("buildOpenApiDocument", () => {
   it("OpenAPI 3.1・version・security scheme（Bearer）", () => {
     expect(doc.openapi).toBe("3.1.0");
@@ -126,6 +154,8 @@ describe("buildOpenApiDocument", () => {
   it("4xx / 5xx はすべて components.responses への $ref（{ error } スキーマを持つ）", () => {
     for (const [path, item] of Object.entries(doc.paths)) {
       for (const [method, op] of Object.entries(item)) {
+        // path item 階層には parameters・summary など operation 以外のキーも置ける。
+        if (!HTTP_METHODS.includes(method)) continue;
         for (const [status, res] of Object.entries(op.responses)) {
           if (Number(status) < 400) continue;
           expect(res, `${method.toUpperCase()} ${path} ${status}`).toEqual({
@@ -142,9 +172,28 @@ describe("buildOpenApiDocument", () => {
     }
   });
 
+  // 操作ごとのステータス集合を双方向で固定する。片方向だと、表の更新を忘れた操作が
+  // 検査対象から外れて素通りする。
+  it("操作ごとに宣言するステータス集合が EXPECTED_STATUS と一致する", () => {
+    const actual: Record<string, string[]> = {};
+    for (const [path, item] of Object.entries(doc.paths)) {
+      for (const [method, op] of Object.entries(item)) {
+        if (!HTTP_METHODS.includes(method)) continue;
+        actual[`${method.toUpperCase()} ${path}`] = Object.keys(
+          op.responses as Record<string, unknown>,
+        ).sort();
+      }
+    }
+    expect(Object.keys(actual).sort()).toEqual(Object.keys(EXPECTED_STATUS).sort());
+    for (const [key, codes] of Object.entries(actual)) {
+      expect(codes, key).toEqual([...EXPECTED_STATUS[key]].sort());
+    }
+  });
+
   it("全オペレーションが 500 InternalError を持つ（共通ラッパーで例外を 500 { error } にするため）", () => {
     for (const [path, item] of Object.entries(doc.paths)) {
       for (const [method, op] of Object.entries(item)) {
+        if (!HTTP_METHODS.includes(method)) continue;
         expect(
           (op.responses as Record<string, unknown>)[500],
           `${method.toUpperCase()} ${path}`,
